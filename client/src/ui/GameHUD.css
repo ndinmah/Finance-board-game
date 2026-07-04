@@ -1,0 +1,17 @@
+/* GameHUD.css */
+.hud-container { display: flex; gap: 12px; align-items: flex-start; pointer-events: none; }
+.hud-turn-badge { background: rgba(13,27,62,0.85); backdrop-filter: blur(12px); border: 1.5px solid rgba(74,144,217,0.3); border-radius: 12px; padding: 8px 16px; display: flex; flex-direction: column; min-width: 140px; }
+.turn-label { font-size: 11px; color: #8faad4; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.turn-player { font-size: 15px; font-weight: 700; color: #f5c518; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.hud-scoreboard { display: flex; gap: 8px; flex-wrap: wrap; }
+.hud-player { display: flex; align-items: center; gap: 8px; background: rgba(13,27,62,0.8); backdrop-filter: blur(8px); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 6px 10px; min-width: 130px; transition: border-color 0.2s; }
+.hud-player.active { border-color: #f5c518; box-shadow: 0 0 12px rgba(245,197,24,0.3); }
+.hud-player.is-me { border-color: rgba(74,144,217,0.5); }
+.hud-player.bankrupt { opacity: 0.4; }
+.hud-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: white; flex-shrink: 0; position: relative; }
+.jail-icon, .bot-icon, .dc-icon { position: absolute; bottom: -4px; right: -4px; font-size: 10px; }
+.hud-info { display: flex; flex-direction: column; min-width: 0; }
+.hud-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+.hud-money { font-size: 11px; color: #f5c518; font-weight: 600; }
+.active-indicator { width: 8px; height: 8px; border-radius: 50%; background: #f5c518; box-shadow: 0 0 8px #f5c518; animation: pulse 1s ease-in-out infinite; flex-shrink: 0; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }

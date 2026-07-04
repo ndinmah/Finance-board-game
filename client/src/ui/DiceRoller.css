@@ -1,0 +1,20 @@
+/* DiceRoller.css */
+.dice-panel { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 24px; background: rgba(13,27,62,0.88); backdrop-filter: blur(16px); border-top: 1.5px solid rgba(74,144,217,0.25); border-radius: 20px 20px 0 0; min-width: 280px; }
+.dice-display { display: flex; gap: 16px; align-items: center; position: relative; }
+.die { font-size: 44px; line-height: 1; user-select: none; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); transition: transform 0.1s; }
+.die.spin { animation: dieSpin 0.06s linear infinite; }
+@keyframes dieSpin { 0% { transform: rotate(0) scale(1.1); } 100% { transform: rotate(10deg) scale(1.05); } }
+.dice-display.double .die { animation: doubleGlow 0.5s ease-in-out; }
+@keyframes doubleGlow { 0%,100% { filter: drop-shadow(0 0 0 transparent); } 50% { filter: drop-shadow(0 0 12px #f5c518); } }
+.double-badge { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: #f5c518; color: #1a1a00; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+.dice-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.btn-roll { background: linear-gradient(135deg, #f5c518, #e67e22); color: #1a1a00; font-size: 17px; font-weight: 800; padding: 12px 32px; border-radius: 14px; box-shadow: 0 4px 20px rgba(245,197,24,0.4); letter-spacing: 0.3px; border: none; cursor: pointer; transition: all 0.15s ease; }
+.btn-roll:hover:not(:disabled) { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 28px rgba(245,197,24,0.6); }
+.btn-roll:active:not(:disabled) { transform: scale(0.96); }
+.btn-bail { background: rgba(231,76,60,0.2); border: 1.5px solid #e74c3c; color: #ff8080; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
+.buy-decision { display: flex; align-items: center; gap: 8px; }
+.buy-prompt { font-size: 14px; font-weight: 600; color: #f5c518; margin-right: 4px; }
+.btn-buy { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; font-weight: 700; padding: 10px 20px; border-radius: 10px; box-shadow: 0 3px 12px rgba(46,204,113,0.4); border: none; cursor: pointer; }
+.btn-skip { background: rgba(231,76,60,0.15); border: 1.5px solid rgba(231,76,60,0.4); color: #ff8080; font-weight: 600; padding: 10px 20px; border-radius: 10px; cursor: pointer; }
+.action-hint { font-size: 13px; color: #7ec8e3; font-style: italic; text-align: center; }
+.waiting-turn { font-size: 13px; color: #8faad4; }
