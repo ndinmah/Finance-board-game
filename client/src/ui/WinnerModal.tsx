@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useGameStore } from '../store/gameStore';
 import { leaveRoom } from '../net/colyseusClient';
 import './WinnerModal.css';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { createRoom, joinRoom } from '../net/colyseusClient';
 import { useGameStore } from '../store/gameStore';
 import './LobbyScreen.css';

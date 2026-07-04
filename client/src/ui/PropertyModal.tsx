@@ -1,6 +1,5 @@
-import React from 'react';
+
 import { useGameStore } from '../store/gameStore';
-import type { TileState } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { MAP_TILE_COLORS } from '../game/tileConstants';
 import './PropertyModal.css';
@@ -18,7 +17,6 @@ export default function PropertyModal({ tileId, onClose }: Props) {
   const isMyTurn = currentPlayerId === myPlayerId;
   const accentColor = tile.colorGroup ? `#${(MAP_TILE_COLORS[tile.colorGroup] || 0x888888).toString(16).padStart(6, '0')}` : '#666';
 
-  const currentRent = [tile.baseRent, tile.rent1, tile.rent2, tile.rent3, tile.rentHotel][tile.houseCount] || tile.baseRent;
   const houseLabel  = tile.houseCount === 4 ? 'Khách sạn' : tile.houseCount > 0 ? `${tile.houseCount} nhà` : 'Đất trống';
 
   const canUpgrade = isOwner && !tile.isMortgaged && tile.houseCount < 4 && (me?.money || 0) >= tile.buildCost;

@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { gsap } from 'gsap';
 import type { TileState, PlayerState } from '../store/gameStore';
 import { TILE_COORDINATES } from './boardCoords';
-import { CORNER_TILES, TILE_COUNT } from './tileConstants';
+import { TILE_COUNT } from './tileConstants';
 
 export interface BoardCallbacks {
   onTileClick: (tileId: number) => void;
@@ -22,7 +22,7 @@ export class IsoBoard {
   private editMode: boolean = false;
   private editAnchors: PIXI.Graphics[] = [];
 
-  constructor(canvas: HTMLCanvasElement, callbacks: BoardCallbacks) {
+  constructor(callbacks: BoardCallbacks) {
     this.callbacks = callbacks;
     this.app = new PIXI.Application();
     this.boardContainer = new PIXI.Container();
@@ -30,7 +30,8 @@ export class IsoBoard {
     this.uiContainer    = new PIXI.Container();
   }
 
-  async init(canvas: HTMLCanvasElement): Promise<void> {
+  async init(): Promise<void> {
+    const canvas = this.app.canvas; // Fallback so we don't break logic though app.init handles it
     await this.app.init({
       canvas,
       width:       canvas.parentElement?.clientWidth  || 800,
@@ -247,8 +248,6 @@ export class IsoBoard {
     // offsets[-1] sẽ là undefined!
     const index = Math.max(0, myIndex);
     const off = offsets[index % offsets.length] || { dx: 0, dy: 0 };
-    
-    console.log(`[Token Pos] Player ${playerId} (pos: ${position}): base=(${base.x},${base.y}), myIndex=${myIndex}, index=${index}, off=(${off.dx},${off.dy}) -> final=(${base.x + off.dx}, ${base.y + off.dy})`);
     
     return { x: base.x + off.dx, y: base.y + off.dy };
   }

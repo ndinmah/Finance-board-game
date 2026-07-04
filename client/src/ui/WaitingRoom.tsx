@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useGameStore } from '../store/gameStore';
 import { send, getCurrentRoom } from '../net/colyseusClient';
 import './WaitingRoom.css';

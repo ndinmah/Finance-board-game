@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useGameStore } from './store/gameStore';
 import LobbyScreen from './ui/LobbyScreen';
 import WaitingRoom from './ui/WaitingRoom';
@@ -6,7 +6,7 @@ import GameScreen  from './ui/GameScreen';
 import './App.css';
 
 export default function App() {
-  const { gamePhase, players, myPlayerId } = useGameStore();
+  const { gamePhase, myPlayerId } = useGameStore();
 
   // Not joined any room yet
   if (!myPlayerId) return <LobbyScreen />;
