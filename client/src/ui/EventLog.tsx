@@ -1,6 +1,14 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import './EventLog.css';
+
+const EVENT_ICONS: Record<string, string> = {
+  rent: '💸', buy: '🏡', upgrade: '🔨', mortgage: '🔒',
+  bankrupt: '💔', jail_enter: '⛓️', jail_exit: '🔓', jail_bail: '💰',
+  go_salary: '💵', festival: '🎉', festival_done: '⭐', airport: '✈️',
+  airport_select: '✈️', start: '🎮', game_over: '🏆', reconnect: '📡',
+  disconnect: '⚡', port: '🚢', own_land: '🏠', buy_offer: '🤔',
+};
 
 export default function EventLog() {
   const { events } = useGameStore();
@@ -9,14 +17,7 @@ export default function EventLog() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [events]);
 
   const getIcon = (type: string) => {
-    const icons: Record<string, string> = {
-      rent: '💸', buy: '🏡', upgrade: '🔨', mortgage: '🔒',
-      bankrupt: '💔', jail_enter: '⛓️', jail_exit: '🔓', jail_bail: '💰',
-      go_salary: '💵', festival: '🎉', festival_done: '⭐', airport: '✈️',
-      airport_select: '✈️', start: '🎮', game_over: '🏆', reconnect: '📡',
-      disconnect: '⚡', port: '🚢', own_land: '🏠', buy_offer: '🤔',
-    };
-    return icons[type] || '📢';
+    return EVENT_ICONS[type] || '📢';
   };
 
   const recent = events.slice(-20);

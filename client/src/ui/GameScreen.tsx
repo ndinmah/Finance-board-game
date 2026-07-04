@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { IsoBoard } from '../game/IsoBoard';
-import { send } from '../net/colyseusClient';
 import GameHUD from './GameHUD';
 import DiceRoller from './DiceRoller';
 import PropertyModal from './PropertyModal';
@@ -15,21 +14,21 @@ export default function GameScreen() {
   const boardRef    = useRef<IsoBoard | null>(null);
   const wrapperRef  = useRef<HTMLDivElement>(null);
 
-  const { board, players, myPlayerId, selectedTileId, setSelectedTile, winnerId, gamePhase } = useGameStore();
-  const setSelectedTileFn = useGameStore(s => s.setSelectedTile);
+  const { board, players, selectedTileId, setSelectedTile, winnerId, gamePhase } = useGameStore();
   const [prevSelected, setPrevSelected] = useState<number | null>(null);
 
   // Init PixiJS board
   useEffect(() => {
     if (!canvasRef.current) return;
-    const iso = new IsoBoard(canvasRef.current, {
+    const iso = new IsoBoard({
       onTileClick: (id) => {
-        setPrevSelected(selectedTileId);
-        setSelectedTileFn(selectedTileId === id ? null : id);
+        const currentSelected = useGameStore.getState().selectedTileId;
+        setPrevSelected(currentSelected);
+        useGameStore.getState().setSelectedTile(currentSelected === id ? null : id);
       },
       onTileHover: () => {},
     });
-    iso.init(canvasRef.current).then(() => { boardRef.current = iso; });
+    iso.init().then(() => { boardRef.current = iso; });
     return () => { boardRef.current?.destroy(); boardRef.current = null; };
   }, []);
 
@@ -72,9 +71,9 @@ export default function GameScreen() {
 
       {/* Modals */}
       {selectedTileId !== null && (
-        <PropertyModal tileId={selectedTileId} onClose={() => setSelectedTileFn(null)} />
+        <PropertyModal tileId={selectedTileId} onClose={() => setSelectedTile(null)} />
       )}
-      {gamePhase === 'ended' && winnerId && <WinnerModal />}
+      {gamePhase === 'ended' && winnerId ? <WinnerModal /> : null}
 
       {/* Editor Controls (Uncomment when you need to recalibrate coordinates)
       <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: '8px' }}>
