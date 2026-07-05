@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import './ChatBox.css';
@@ -7,20 +7,17 @@ export default function ChatBox() {
   const { chat, myPlayerId, players } = useGameStore();
   const [text, setText] = useState('');
   const [open, setOpen] = useState(false);
-  const [lastReadIndex, setLastReadIndex] = useState(chat.length);
+  const [unread, setUnread] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  if (open && lastReadIndex < chat.length) {
-    setLastReadIndex(chat.length);
-  }
-  
-  const unread = Math.max(0, chat.length - lastReadIndex);
+  const prevLenRef = useRef(0);
 
   useEffect(() => {
+    if (!open && chat.length > prevLenRef.current) setUnread(u => u + 1);
+    prevLenRef.current = chat.length;
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chat, open]);
 
-  const handleOpen = () => { setOpen(true); setLastReadIndex(chat.length); };
+  const handleOpen = () => { setOpen(true); setUnread(0); };
 
   const handleSend = () => {
     if (!text.trim()) return;

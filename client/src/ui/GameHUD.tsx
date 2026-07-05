@@ -1,15 +1,13 @@
-import { useMemo } from 'react';
+import React from 'react';
 import { useGameStore } from '../store/gameStore';
 import './GameHUD.css';
 
 export default function GameHUD() {
   const { players, currentPlayerId, myPlayerId, turnNumber, turnOrder } = useGameStore();
 
-  const activePlayers = useMemo(() => {
-    return turnOrder
-      .map(id => players.get(id))
-      .filter(Boolean);
-  }, [turnOrder, players]);
+  const activePlayers = turnOrder
+    .map(id => players.get(id))
+    .filter(Boolean);
 
   return (
     <div className="hud-container">
