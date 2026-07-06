@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { IsoBoard } from '../game/IsoBoard';
-import { send } from '../net/colyseusClient';
 import GameHUD from './GameHUD';
 import DiceRoller from './DiceRoller';
 import PropertyModal from './PropertyModal';
@@ -15,14 +14,14 @@ export default function GameScreen() {
   const boardRef    = useRef<IsoBoard | null>(null);
   const wrapperRef  = useRef<HTMLDivElement>(null);
 
-  const { board, players, myPlayerId, selectedTileId, setSelectedTile, winnerId, gamePhase } = useGameStore();
+  const { board, players, selectedTileId, winnerId, gamePhase } = useGameStore();
   const setSelectedTileFn = useGameStore(s => s.setSelectedTile);
   const [prevSelected, setPrevSelected] = useState<number | null>(null);
 
   // Init PixiJS board
   useEffect(() => {
     if (!canvasRef.current) return;
-    const iso = new IsoBoard(canvasRef.current, {
+    const iso = new IsoBoard({
       onTileClick: (id) => {
         setPrevSelected(selectedTileId);
         setSelectedTileFn(selectedTileId === id ? null : id);
@@ -76,22 +75,22 @@ export default function GameScreen() {
       )}
       {gamePhase === 'ended' && winnerId && <WinnerModal />}
 
-      {/* Editor Controls (Uncomment when you need to recalibrate coordinates)
+      {/* Editor Controls (Uncomment when you need to recalibrate coordinates) */}
       <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: '8px' }}>
-        <button 
+        <button
           onClick={() => boardRef.current?.toggleEditMode()}
           style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
         >
           Toggle Map Editor
         </button>
-        <button 
+        <button
           onClick={() => boardRef.current?.exportWaypoints()}
           style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
         >
           Export Waypoints
         </button>
       </div>
-      */}
+
     </div>
   );
 }

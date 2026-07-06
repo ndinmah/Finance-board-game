@@ -9,7 +9,7 @@ interface Props { tileId: number; onClose: () => void; }
 export default function PropertyModal({ tileId, onClose }: Props) {
   const { board, players, myPlayerId, turnPhase, currentPlayerId } = useGameStore();
   const tile = board.get(tileId);
-  if (!tile || tile.tileType !== 'property') { onClose(); return null; }
+  if (!tile || (tile.tileType !== 'property' && tile.tileType !== 'port')) { onClose(); return null; }
 
   const owner   = tile.ownerId ? players.get(tile.ownerId) : null;
   const me      = players.get(myPlayerId);
@@ -17,9 +17,9 @@ export default function PropertyModal({ tileId, onClose }: Props) {
   const isMyTurn = currentPlayerId === myPlayerId;
   const accentColor = tile.colorGroup ? `#${(MAP_TILE_COLORS[tile.colorGroup] || 0x888888).toString(16).padStart(6, '0')}` : '#666';
 
-  const houseLabel  = tile.houseCount === 4 ? 'Khách sạn' : tile.houseCount > 0 ? `${tile.houseCount} nhà` : 'Đất trống';
+  const houseLabel  = tile.tileType === 'port' ? 'Cảng' : (tile.houseCount === 4 ? 'Khách sạn' : tile.houseCount > 0 ? `${tile.houseCount} nhà` : 'Đất trống');
 
-  const canUpgrade = isOwner && !tile.isMortgaged && tile.houseCount < 4 && (me?.money || 0) >= tile.buildCost;
+  const canUpgrade = tile.tileType === 'property' && isOwner && !tile.isMortgaged && tile.houseCount < 4 && (me?.money || 0) >= tile.buildCost;
   const canMortgage = isOwner && !tile.isMortgaged;
 
   const handleAirportSelect = () => { send('selectAirport', { tileId }); onClose(); };
@@ -30,9 +30,10 @@ export default function PropertyModal({ tileId, onClose }: Props) {
       <div className="property-modal" onClick={e => e.stopPropagation()} style={{ '--accent': accentColor } as any}>
         {/* Color header */}
         <div className="property-header" style={{ background: accentColor }}>
-          <span className="property-icon">🏢</span>
+          <span className="property-icon">{tile.tileType === 'port' ? '⚓' : '🏢'}</span>
           <h3>{tile.name}</h3>
           {tile.colorGroup && <span className="group-badge">{tile.colorGroup.toUpperCase()}</span>}
+          {tile.tileType === 'port' && <span className="group-badge" style={{background: '#0284c7'}}>PORT</span>}
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -46,27 +47,39 @@ export default function PropertyModal({ tileId, onClose }: Props) {
           </div>
 
           {/* Price table */}
-          <table className="rent-table">
-            <thead><tr><th>Trạng thái</th><th>Tô</th></tr></thead>
-            <tbody>
-              {[
-                ['Đất trống', tile.baseRent],
-                ['1 nhà',     tile.rent1],
-                ['2 nhà',     tile.rent2],
-                ['3 nhà',     tile.rent3],
-                ['Khách sạn', tile.rentHotel],
-              ].map(([label, val], i) => (
-                <tr key={i} className={tile.houseCount === i ? 'current-row' : ''}>
-                  <td>{label}</td>
-                  <td>{(val as number).toLocaleString()}đ</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {tile.tileType === 'property' ? (
+            <table className="rent-table">
+              <thead><tr><th>Trạng thái</th><th>Tô</th></tr></thead>
+              <tbody>
+                {[
+                  ['Đất trống', tile.baseRent],
+                  ['1 nhà',     tile.rent1],
+                  ['2 nhà',     tile.rent2],
+                  ['3 nhà',     tile.rent3],
+                  ['Khách sạn', tile.rentHotel],
+                ].map(([label, val], i) => (
+                  <tr key={i} className={tile.houseCount === i ? 'current-row' : ''}>
+                    <td>{label}</td>
+                    <td>{(val as number).toLocaleString()}đ</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', lineHeight: '1.4' }}>
+              <p style={{ margin: '0 0 8px 0', color: '#38bdf8', fontWeight: 'bold' }}>Phí qua cảng:</p>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                <li>1 Cảng: 25đ</li>
+                <li>2 Cảng: 50đ</li>
+                <li>3 Cảng: 75đ</li>
+                <li style={{ color: '#fbbf24' }}>4 Cảng: <strong>THẮNG NGAY LẬP TỨC!</strong></li>
+              </ul>
+            </div>
+          )}
 
           <div className="property-meta">
             <span>💰 Giá mua: <strong>{tile.price.toLocaleString()}đ</strong></span>
-            {!tile.isMortgaged && <span>🔨 Xây nhà: <strong>{tile.buildCost.toLocaleString()}đ</strong></span>}
+            {!tile.isMortgaged && tile.tileType === 'property' && <span>🔨 Xây nhà: <strong>{tile.buildCost.toLocaleString()}đ</strong></span>}
             {tile.isMortgaged && <span>🔓 Cầm cố: <strong>{tile.mortgageValue.toLocaleString()}đ</strong></span>}
           </div>
 

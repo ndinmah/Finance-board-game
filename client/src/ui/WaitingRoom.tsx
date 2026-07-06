@@ -40,11 +40,18 @@ export default function WaitingRoom() {
           ))}
         </div>
 
-        {!me?.isReady && (
-          <button id="btn-ready" className="btn-ready" onClick={handleReady}>
-            ✅ Sẵn Sàng!
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          {!me?.isReady && (
+            <button id="btn-ready" className="btn-ready" onClick={handleReady}>
+              ✅ Sẵn Sàng!
+            </button>
+          )}
+          {playerList.length < 6 && (
+            <button className="btn-ready" onClick={() => send('addBot')} style={{ background: '#4ECDC4' }}>
+              🤖 Thêm Bot
+            </button>
+          )}
+        </div>
         {me?.isReady && !allReady && (
           <p className="waiting-hint">Đang chờ người chơi khác sẵn sàng...</p>
         )}

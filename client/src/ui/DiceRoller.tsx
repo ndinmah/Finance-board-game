@@ -6,13 +6,16 @@ import './DiceRoller.css';
 const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
 export default function DiceRoller() {
-  const { currentPlayerId, myPlayerId, turnPhase, dice, players } = useGameStore();
+  const { currentPlayerId, myPlayerId, turnPhase, dice, players, board } = useGameStore();
   const [rolling, setRolling] = useState(false);
   const [displayDice, setDisplayDice] = useState({ d1: 1, d2: 1 });
+  const [devMode] = useState(() => window.location.search.includes('dev=1'));
+  const [devD1, setDevD1] = useState('');
+  const [devD2, setDevD2] = useState('');
   const rollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isMyTurn   = currentPlayerId === myPlayerId;
-  const canRoll    = isMyTurn && turnPhase === 'wait_roll';
+  const canRoll    = isMyTurn && (turnPhase === 'wait_roll' || turnPhase === 'airport_select');
   const canBuy     = isMyTurn && turnPhase === 'buy_decision';
   const canAirport = isMyTurn && turnPhase === 'airport_select';
   const canFestival = isMyTurn && turnPhase === 'festival_select';
@@ -38,12 +41,22 @@ export default function DiceRoller() {
     return () => { if (rollTimer.current) clearInterval(rollTimer.current); };
   }, [dice.die1, dice.die2]);
 
-  const handleRoll = () => { if (!canRoll || rolling) return; send('rollDice'); };
-  const handleBuy  = () => send('buyProperty');
+  const handleRoll = () => { 
+    if (!canRoll || rolling) return; 
+    if (devMode) {
+      send('rollDice', { d1: parseInt(devD1) || 1, d2: parseInt(devD2) || 1 });
+    } else {
+      send('rollDice'); 
+    }
+  };
   const handleSkip = () => send('skipBuy');
 
   // Jail options
   const canPayBail = isMyTurn && me?.isInJail && turnPhase === 'wait_roll';
+
+  // Airport options
+  const canStartAirport = isMyTurn && turnPhase === 'wait_roll' && me?.position === 24;
+  console.log('[DiceRoller] isMyTurn:', isMyTurn, 'turnPhase:', turnPhase, 'position:', me?.position, 'canStartAirport:', canStartAirport);
 
   return (
     <div className="dice-panel">
@@ -61,20 +74,83 @@ export default function DiceRoller() {
       {/* Actions */}
       <div className="dice-actions">
         {canRoll && (
-          <button id="btn-roll" className="btn-roll" onClick={handleRoll}>
-            🎲 Tung Xúc Xắc
+          <>
+            {devMode && (
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                <input type="text" placeholder="d1" value={devD1} onChange={e => setDevD1(e.target.value)} style={{ width: '40px', textAlign: 'center' }} />
+                <input type="text" placeholder="d2" value={devD2} onChange={e => setDevD2(e.target.value)} style={{ width: '40px', textAlign: 'center' }} />
+              </div>
+            )}
+            <button id="btn-roll" className="btn-roll" onClick={handleRoll}>
+              {me?.isInJail ? '🎲 Đổ xúc xắc đôi thoát tù' : '🎲 Tung Xúc Xắc'}
+            </button>
+          </>
+        )}
+        {canStartAirport && (
+          <button className="btn-bail" onClick={() => send('startAirportSelect')} style={{ background: '#4CAF50' }}>
+            ✈️ Mua vé bay (50đ)
           </button>
         )}
         {canPayBail && (
-          <button id="btn-bail" className="btn-bail" onClick={() => send('payBail')}>
-            💸 Nộp tiền thoát tù (1,000đ)
-          </button>
+          <>
+            <button id="btn-bail" className="btn-bail" onClick={() => send('payBail')}>
+              💸 Trả nóng 200đ
+            </button>
+            <button className="btn-bail" disabled style={{ background: '#ccc', cursor: 'not-allowed', opacity: 0.7 }}>
+              🎟 Dùng thẻ ra tù (Chưa có)
+            </button>
+          </>
         )}
         {canBuy && (
           <div className="buy-decision">
-            <p className="buy-prompt">Mua đất này?</p>
-            <button id="btn-buy"  className="btn-buy"  onClick={handleBuy}>✅ Mua</button>
-            <button id="btn-skip" className="btn-skip" onClick={handleSkip}>❌ Bỏ qua</button>
+            <p className="buy-prompt">Mua {board.get(me?.position || 0)?.name}?</p>
+            {(() => {
+              const tile = board.get(me?.position || 0);
+              if (!tile || !me) return null;
+              if (tile.tileType === 'port') {
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                    {me.money >= tile.price && (
+                      <button className="btn-buy" onClick={() => send('buyProperty', { houses: 0 })}>✅ Mua Cảng ({tile.price.toLocaleString()}đ)</button>
+                    )}
+                    <button className="btn-skip" onClick={handleSkip}>❌ Bỏ qua</button>
+                  </div>
+                );
+              }
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                  {[0, 1, 2, 3].map(h => {
+                    const cost = tile.price + h * tile.buildCost;
+                    if (me.money >= cost) {
+                      const label = h === 0 ? 'Chỉ mua đất' : `Đất + ${h} nhà`;
+                      return <button key={h} className="btn-buy" onClick={() => send('buyProperty', { houses: h })}>✅ {label} ({cost.toLocaleString()}đ)</button>;
+                    }
+                    return null;
+                  })}
+                  <button className="btn-skip" onClick={handleSkip}>❌ Bỏ qua</button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+        {isMyTurn && turnPhase === 'buyout_decision' && (
+          <div className="buy-decision buyout-decision">
+            {(() => {
+              const tile = board.get(me?.position || 0);
+              if (!tile || !me) return null;
+              const totalValue = tile.price + (tile.houseCount * tile.buildCost);
+              const buyoutPrice = totalValue * 2;
+              return (
+                <>
+                  <p className="buy-prompt">Cướp {tile.name}?</p>
+                  <p style={{fontSize: '12px', margin: '4px 0', color: '#ffc107', textAlign: 'center'}}>Giá: {buyoutPrice.toLocaleString()}đ (x2 gốc)</p>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button className="btn-buy" style={{background: '#e11d48'}} onClick={() => send('acceptBuyout')}>⚔️ Cướp Đất</button>
+                    <button className="btn-skip" onClick={() => send('skipBuyout')}>❌ Bỏ qua</button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
         {canAirport && (
