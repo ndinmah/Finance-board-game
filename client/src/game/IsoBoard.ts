@@ -18,7 +18,7 @@ export class IsoBoard {
   private tiles: Map<number, PIXI.Container> = new Map();
   private tokens: Map<string, PIXI.Container> = new Map();
   private callbacks: BoardCallbacks;
-  
+
   private editMode: boolean = false;
   private editAnchors: PIXI.Graphics[] = [];
 
@@ -30,8 +30,7 @@ export class IsoBoard {
     this.uiContainer    = new PIXI.Container();
   }
 
-  async init(): Promise<void> {
-    const canvas = this.app.canvas; // Fallback so we don't break logic though app.init handles it
+  async init(canvas: HTMLCanvasElement): Promise<void> {
     await this.app.init({
       canvas,
       width:       canvas.parentElement?.clientWidth  || 800,
@@ -61,12 +60,12 @@ export class IsoBoard {
     // User đã map toạ độ ở màn hình xấp xỉ 1536x666 -> mappedBgScale ~ 0.946
     const IMG_W = 1525;
     const IMG_H = 704;
-    
+
     const currentBgScale = Math.min(this.app.screen.width / IMG_W, this.app.screen.height / IMG_H);
     const mappedBgScale = Math.min(1536 / IMG_W, 666 / IMG_H);
-    
+
     const scale = currentBgScale / mappedBgScale;
-    
+
     this.boardContainer.scale.set(scale);
     this.tokenContainer.scale.set(scale);
   }
@@ -91,9 +90,9 @@ export class IsoBoard {
     container.eventMode = 'static';
     container.cursor   = 'pointer';
 
-    // Vẽ hitbox tàng hình (vòng tròn to) để nhận sự kiện click
+    // Vẽ hitbox tàng hình (hình chữ nhật isometric) để nhận sự kiện click
     const hitbox = new PIXI.Graphics();
-    hitbox.circle(0, 0, 40);
+    hitbox.poly(this._getIsoPolygon(tileId));
     hitbox.fill({ color: 0xffffff, alpha: 0.01 }); // Tàng hình nhưng vẫn bắt event
     container.addChild(hitbox);
 
@@ -109,6 +108,39 @@ export class IsoBoard {
 
     this.boardContainer.addChild(container);
     this.tiles.set(tileId, container);
+  }
+
+  private _getIsoPolygon(tileId: number): number[] {
+    let w = 0, h = 0;
+
+    if (tileId % 8 === 0) {
+      w = 108; h = 108;
+    } else if ((tileId > 0 && tileId < 8) || (tileId > 16 && tileId < 24)) {
+      w = 64; h = 110;
+    } else {
+      w = 110; h = 64;
+    }
+
+    const hw = w / 2;
+    const hh = h / 2;
+    const pts = [
+      { x: -hw, y: -hh },
+      { x: hw, y: -hh },
+      { x: hw, y: hh },
+      { x: -hw, y: hh }
+    ];
+
+    const cos = 0.70710678118; // Math.cos(Math.PI / 4)
+    const sin = 0.70710678118; // Math.sin(Math.PI / 4)
+    const scaleY = 0.572;
+
+    const poly = [];
+    for (const p of pts) {
+      const rx = p.x * cos - p.y * sin;
+      const ry = p.x * sin + p.y * cos;
+      poly.push(rx, ry * scaleY);
+    }
+    return poly;
   }
 
   // ─── Update Visuals (Houses, Owners) ───────────────────────────────────────
@@ -128,9 +160,9 @@ export class IsoBoard {
       if (tile.ownerId && players.has(tile.ownerId)) {
         const owner = players.get(tile.ownerId)!;
         const ownerColor = parseInt(owner.color.replace('#', '0x'));
-        
+
         const ownerRing = new PIXI.Graphics();
-        ownerRing.circle(0, 0, 35);
+        ownerRing.poly(this._getIsoPolygon(id));
         ownerRing.stroke({ color: ownerColor, width: 4, alpha: 0.8 });
         visualLayer.addChild(ownerRing);
       }
@@ -162,7 +194,7 @@ export class IsoBoard {
       dot.circle(0, 0, dotR);
       dot.fill({ color: dotColor });
       dot.stroke({ color: 0xffffff, width: 2 });
-      
+
       const spread = (dotCount - 1) * 14;
       dot.position.set(-spread / 2 + i * 14, -25);
       container.addChild(dot);
@@ -248,7 +280,7 @@ export class IsoBoard {
     // offsets[-1] sẽ là undefined!
     const index = Math.max(0, myIndex);
     const off = offsets[index % offsets.length] || { dx: 0, dy: 0 };
-    
+
     return { x: base.x + off.dx, y: base.y + off.dy };
   }
 
@@ -266,7 +298,7 @@ export class IsoBoard {
       if (curr) {
         const bg = new PIXI.Graphics();
         bg.label = 'highlight';
-        bg.circle(0, 0, 45);
+        bg.poly(this._getIsoPolygon(tileId));
         bg.fill({ color: 0xffffff, alpha: 0.3 });
         curr.addChildAt(bg, 0);
       }
@@ -286,7 +318,7 @@ export class IsoBoard {
 
   toggleEditMode() {
     this.editMode = !this.editMode;
-    
+
     if (this.editMode) {
       // Create draggables
       for (let i = 0; i < TILE_COUNT; i++) {
@@ -295,7 +327,7 @@ export class IsoBoard {
         g.circle(0, 0, 15);
         g.fill({ color: 0xff0000, alpha: 0.6 });
         g.stroke({ color: 0xffffff, width: 2 });
-        
+
         const label = new PIXI.Text({ text: i.toString(), style: { fontSize: 12, fill: 0xffffff } });
         label.anchor.set(0.5);
         g.addChild(label);
@@ -311,7 +343,7 @@ export class IsoBoard {
             const newPos = this.boardContainer.toLocal(e.global);
             g.position.set(newPos.x, newPos.y);
             TILE_COORDINATES[i] = { x: Math.round(newPos.x), y: Math.round(newPos.y) };
-            
+
             // Sync logic hitbox
             const tile = this.tiles.get(i);
             if (tile) tile.position.set(newPos.x, newPos.y);
