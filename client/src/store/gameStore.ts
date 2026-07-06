@@ -7,6 +7,7 @@ export interface TileState {
   colorGroup: string;
   price: number;
   buildCost: number;
+  hotelCost: number;
   mortgageValue: number;
   ownerId: string;
   houseCount: number;
@@ -37,7 +38,7 @@ export interface ChatMsg { playerId: string; playerName: string; text: string; t
 export interface GameEvt  { type: string; playerId: string; targetId: string; amount: number; tileId: number; message: string; timestamp: number; }
 
 export type GamePhase = 'waiting' | 'playing' | 'ended';
-export type TurnPhase = 'wait_roll' | 'moving' | 'land_event' | 'buy_decision' | 'airport_select' | 'festival_select' | 'game_over';
+export type TurnPhase = 'wait_roll' | 'moving' | 'land_event' | 'buy_decision' | 'buyout_decision' | 'airport_select' | 'festival_select' | 'game_over';
 
 interface GameStore {
   // My identity
@@ -104,7 +105,7 @@ export const useGameStore = create<GameStore>((set) => ({
       const id = parseInt(key);
       board.set(id, {
         id, name: t.name, tileType: t.tileType, colorGroup: t.colorGroup,
-        price: t.price, buildCost: t.buildCost, mortgageValue: t.mortgageValue,
+        price: t.price, buildCost: t.buildCost, hotelCost: t.hotelCost, mortgageValue: t.mortgageValue,
         ownerId: t.ownerId, houseCount: t.houseCount, isMortgaged: t.isMortgaged,
         baseRent: t.baseRent, rent1: t.rent1, rent2: t.rent2, rent3: t.rent3, rentHotel: t.rentHotel,
       });

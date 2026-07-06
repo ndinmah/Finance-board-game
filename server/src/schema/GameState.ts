@@ -8,6 +8,7 @@ export class MapTile extends Schema {
   @type('string') colorGroup: string = '';
   @type('number') price: number = 0;
   @type('number') buildCost: number = 0;
+  @type('number') hotelCost: number = 0;
   @type('number') mortgageValue: number = 0;
   @type('string') ownerId: string = '';    // '' = unowned
   @type('number') houseCount: number = 0;  // 0-3 = houses, 4 = hotel
@@ -73,6 +74,7 @@ export type TurnPhase =
   | 'moving'          // animation in progress (client-side)
   | 'land_event'      // processing tile event
   | 'buy_decision'    // waiting for buy/skip decision
+  | 'buyout_decision' // waiting for buyout/skip decision
   | 'airport_select'  // waiting for airport destination select
   | 'festival_select' // waiting for festival city select
   | 'game_over';
