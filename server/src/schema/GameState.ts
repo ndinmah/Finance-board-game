@@ -9,15 +9,15 @@ export class MapTile extends Schema {
   @type('number') price: number = 0;
   @type('number') buildCost: number = 0;
   @type('number') hotelCost: number = 0;
-  @type('number') mortgageValue: number = 0;
   @type('string') ownerId: string = '';    // '' = unowned
   @type('number') houseCount: number = 0;  // 0-3 = houses, 4 = hotel
-  @type('boolean') isMortgaged: boolean = false;
+  @type('boolean') hasMonopoly: boolean = false;
   @type('number') baseRent: number = 0;
   @type('number') rent1: number = 0;
   @type('number') rent2: number = 0;
   @type('number') rent3: number = 0;
   @type('number') rentHotel: number = 0;
+  @type('number') currentRent: number = 0;
 }
 
 // ─── Player Schema ────────────────────────────────────────────────────────────
@@ -39,6 +39,10 @@ export class Player extends Schema {
   @type('number') airportTarget: number = -1;
   // Festival: applied flag
   @type('boolean') hasFestivalBonus: boolean = false;
+  @type('number') passCount: number = 0;
+  // Debt: amount owed and to whom
+  @type('number') debtAmount: number = 0;
+  @type('string') debtTo: string = '';
 }
 
 // ─── Dice Schema ──────────────────────────────────────────────────────────────
@@ -75,8 +79,11 @@ export type TurnPhase =
   | 'land_event'      // processing tile event
   | 'buy_decision'    // waiting for buy/skip decision
   | 'buyout_decision' // waiting for buyout/skip decision
+  | 'upgrade_decision'// waiting for upgrade/skip decision
   | 'airport_select'  // waiting for airport destination select
   | 'festival_select' // waiting for festival city select
+  | 'go_remote_upgrade' // waiting for remote upgrade when landing on go
+  | 'pay_debt'        // waiting for player to sell properties to pay debt
   | 'game_over';
 
 // ─── Root GameState Schema ────────────────────────────────────────────────────
@@ -88,6 +95,8 @@ export class GameState extends Schema {
   @type('number') turnNumber: number = 0;
   @type('number') doublesCount: number = 0;   // consecutive doubles this turn
   @type('string') winnerId: string = '';
+
+  @type('number') activeFestivalTile: number = -1;
 
   @type({ map: Player })  players = new MapSchema<Player>();
   @type({ map: MapTile }) board   = new MapSchema<MapTile>();
