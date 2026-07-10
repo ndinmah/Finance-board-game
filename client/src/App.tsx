@@ -1,4 +1,3 @@
-
 import { useGameStore } from './store/gameStore';
 import LobbyScreen from './ui/LobbyScreen';
 import WaitingRoom from './ui/WaitingRoom';
@@ -8,11 +7,18 @@ import './App.css';
 import { useEffect } from 'react';
 
 export default function App() {
-  const { gamePhase, myPlayerId } = useGameStore();
+  const { gamePhase, myPlayerId, loadDevState } = useGameStore();
 
   useEffect(() => {
-    // The dev hack is removed. Use "Thêm Bot" in Waiting Room instead to test!
+    // Dev route check
+    const isDev = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev1');
+    if (isDev) {
+      loadDevState();
+    }
   }, []);
+
+  const isDev = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev1');
+  if (isDev) return <GameScreen />;
 
   // Not joined any room yet
   if (!myPlayerId) return <LobbyScreen />;
