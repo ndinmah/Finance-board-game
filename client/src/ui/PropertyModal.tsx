@@ -17,13 +17,27 @@ export default function PropertyModal({ tileId, onClose }: Props) {
   const isMyTurn = currentPlayerId === myPlayerId;
   const accentColor = tile.colorGroup ? `#${(MAP_TILE_COLORS[tile.colorGroup] || 0x888888).toString(16).padStart(6, '0')}` : '#666';
 
-  const houseLabel  = tile.tileType === 'port' ? 'Cảng' : (tile.houseCount === 4 ? 'Khách sạn' : tile.houseCount > 0 ? `${tile.houseCount} nhà` : 'Đất trống');
+  const getMaxHouses = (passCount: number, currentHouses: number) => {
+    if (passCount === 0) return 2;
+    if (currentHouses < 3) return 3;
+    return 4;
+  };
 
-  const canUpgrade = tile.tileType === 'property' && isOwner && !tile.isMortgaged && tile.houseCount < 4 && (me?.money || 0) >= tile.buildCost;
-  const canMortgage = isOwner && !tile.isMortgaged;
+  const houseLabel  = tile.tileType === 'port' ? 'Cảng' : (tile.houseCount === 4 ? 'Khách sạn' : tile.houseCount > 0 ? `${tile.houseCount} nhà` : 'Đất trống');
 
   const handleAirportSelect = () => { send('selectAirport', { tileId }); onClose(); };
   const handleFestivalSelect = () => { send('selectFestival', { tileId }); onClose(); };
+  const handleSellForDebt = () => { send('sellForDebt', { tileId }); onClose(); };
+
+  let sellValue = tile.price;
+  if (tile.tileType !== 'port' && tile.houseCount > 0) {
+    if (tile.houseCount === 4) {
+      sellValue += (tile.buildCost * 3 + tile.hotelCost);
+    } else {
+      sellValue += tile.houseCount * tile.buildCost;
+    }
+  }
+  sellValue = Math.floor(sellValue * 0.5);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -40,8 +54,8 @@ export default function PropertyModal({ tileId, onClose }: Props) {
         <div className="property-body">
           {/* Status */}
           <div className="property-status">
-            <span className={`status-chip ${tile.isMortgaged ? 'mortgaged' : tile.ownerId ? 'owned' : 'free'}`}>
-              {tile.isMortgaged ? '🔒 Cầm cố' : tile.ownerId ? `👤 ${owner?.name || 'Có chủ'}` : '🟢 Đất trống'}
+            <span className={`status-chip ${tile.ownerId ? 'owned' : 'free'}`}>
+              {tile.ownerId ? `👤 ${owner?.name || 'Có chủ'}` : '🟢 Đất trống'}
             </span>
             <span className="house-label">{houseLabel}</span>
           </div>
@@ -57,12 +71,16 @@ export default function PropertyModal({ tileId, onClose }: Props) {
                   ['2 nhà',     tile.rent2],
                   ['3 nhà',     tile.rent3],
                   ['Khách sạn', tile.rentHotel],
-                ].map(([label, val], i) => (
-                  <tr key={i} className={tile.houseCount === i ? 'current-row' : ''}>
-                    <td>{label}</td>
-                    <td>{(val as number).toLocaleString()}đ</td>
-                  </tr>
-                ))}
+                ].map(([label, val], i) => {
+                  const actualVal = tile.hasMonopoly ? (val as number) * 2 : (val as number);
+                  const displayLabel = tile.hasMonopoly ? `${label} (Độc quyền x2)` : label;
+                  return (
+                    <tr key={i} className={tile.currentRent === actualVal ? 'current-row' : ''}>
+                      <td>{displayLabel}</td>
+                      <td>{actualVal.toLocaleString()}đ</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           ) : (
@@ -79,25 +97,39 @@ export default function PropertyModal({ tileId, onClose }: Props) {
 
           <div className="property-meta">
             <span>💰 Giá mua: <strong>{tile.price.toLocaleString()}đ</strong></span>
-            {!tile.isMortgaged && tile.tileType === 'property' && <span>🔨 Xây nhà: <strong>{tile.buildCost.toLocaleString()}đ</strong></span>}
-            {tile.isMortgaged && <span>🔓 Cầm cố: <strong>{tile.mortgageValue.toLocaleString()}đ</strong></span>}
+            {tile.tileType === 'property' && <span>🔨 Xây nhà: <strong>{tile.buildCost.toLocaleString()}đ</strong></span>}
           </div>
 
-          {/* Owner actions */}
-          {isOwner && isMyTurn && (
+          {/* Remote upgrade actions */}
+          {isOwner && isMyTurn && turnPhase === 'go_remote_upgrade' && tile.tileType === 'property' && (
             <div className="property-actions">
-              {canUpgrade && (
-                <button id={`btn-upgrade-${tileId}`} className="btn-upgrade"
-                  onClick={() => { send('upgradeProperty', { tileId }); onClose(); }}>
-                  🔨 Xây {tile.houseCount < 3 ? `Nhà cấp ${tile.houseCount + 1}` : 'Khách sạn'} ({tile.buildCost.toLocaleString()}đ)
-                </button>
-              )}
-              {canMortgage && (
-                <button id={`btn-mortgage-${tileId}`} className="btn-mortgage"
-                  onClick={() => { if (confirm(`Cầm cố ${tile.name} lấy ${tile.mortgageValue.toLocaleString()}đ?`)) { send('mortgageProperty', { tileId }); onClose(); } }}>
-                  🔒 Cầm cố ({tile.mortgageValue.toLocaleString()}đ)
-                </button>
-              )}
+              {(() => {
+                const maxHouses = getMaxHouses(me?.passCount || 0, tile.houseCount);
+                const options = [];
+                for (let target = tile.houseCount + 1; target <= maxHouses; target++) {
+                  let cost = 0;
+                  for (let i = tile.houseCount + 1; i <= target; i++) {
+                    cost += (i === 4 ? tile.hotelCost : tile.buildCost);
+                  }
+                  if ((me?.money || 0) >= cost) {
+                    const label = target === 4 ? 'Khách sạn' : `Nhà ${target}`;
+                    options.push(
+                      <button key={target} className="btn-upgrade" style={{ background: '#0ea5e9' }}
+                        onClick={() => { send('remoteUpgradeProperty', { tileId, targetHouses: target }); onClose(); }}>
+                        ✨ Nâng cấp lên {label} ({cost.toLocaleString()}đ)
+                      </button>
+                    );
+                  }
+                }
+                
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {options.length > 0 ? options : (
+                      <p style={{fontSize: '12px', color: '#888', textAlign: 'center'}}>Không đủ điều kiện nâng cấp mảnh đất này.</p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -112,6 +144,13 @@ export default function PropertyModal({ tileId, onClose }: Props) {
           {turnPhase === 'festival_select' && currentPlayerId === myPlayerId && isOwner && (
             <button className="btn-festival-select" onClick={handleFestivalSelect}>
               🎉 Nhân đôi tô ô này!
+            </button>
+          )}
+
+          {/* Sell for Debt */}
+          {turnPhase === 'pay_debt' && currentPlayerId === myPlayerId && isOwner && (
+            <button className="btn-mortgage" style={{background: '#ef4444', marginTop: '12px'}} onClick={handleSellForDebt}>
+              ⚠️ Bán trả nợ (nhận {sellValue.toLocaleString()}đ)
             </button>
           )}
         </div>

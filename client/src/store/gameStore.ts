@@ -8,12 +8,12 @@ export interface TileState {
   price: number;
   buildCost: number;
   hotelCost: number;
-  mortgageValue: number;
   ownerId: string;
   houseCount: number;
-  isMortgaged: boolean;
+  hasMonopoly: boolean;
   baseRent: number;
   rent1: number; rent2: number; rent3: number; rentHotel: number;
+  currentRent: number;
 }
 
 export interface PlayerState {
@@ -30,6 +30,9 @@ export interface PlayerState {
   avatarIndex: string;
   isReady: boolean;
   airportTarget: number;
+  debtAmount: number;
+  debtTo: string;
+  passCount: number;
 }
 
 export interface DiceState { die1: number; die2: number; isDouble: boolean; }
@@ -38,7 +41,7 @@ export interface ChatMsg { playerId: string; playerName: string; text: string; t
 export interface GameEvt  { type: string; playerId: string; targetId: string; amount: number; tileId: number; message: string; timestamp: number; }
 
 export type GamePhase = 'waiting' | 'playing' | 'ended';
-export type TurnPhase = 'wait_roll' | 'moving' | 'land_event' | 'buy_decision' | 'buyout_decision' | 'airport_select' | 'festival_select' | 'game_over';
+export type TurnPhase = 'wait_roll' | 'moving' | 'land_event' | 'buy_decision' | 'buyout_decision' | 'upgrade_decision' | 'go_remote_upgrade' | 'airport_select' | 'festival_select' | 'game_over' | 'pay_debt';
 
 interface GameStore {
   // My identity
@@ -50,6 +53,7 @@ interface GameStore {
   currentPlayerId: string;
   turnNumber: number;
   winnerId: string;
+  activeFestivalTile: number;
   players: Map<string, PlayerState>;
   board: Map<number, TileState>;
   dice: DiceState;
@@ -75,6 +79,7 @@ const defaultState = {
   currentPlayerId: '',
   turnNumber: 0,
   winnerId: '',
+  activeFestivalTile: -1,
   players: new Map<string, PlayerState>(),
   board: new Map<number, TileState>(),
   dice: { die1: 1, die2: 1, isDouble: false },
@@ -97,6 +102,7 @@ export const useGameStore = create<GameStore>((set) => ({
         isInJail: p.isInJail, jailTurns: p.jailTurns, isBankrupt: p.isBankrupt,
         isConnected: p.isConnected, isBot: p.isBot, color: p.color,
         avatarIndex: p.avatarIndex, isReady: p.isReady, airportTarget: p.airportTarget,
+        debtAmount: p.debtAmount, debtTo: p.debtTo, passCount: p.passCount,
       });
     });
 
@@ -105,9 +111,9 @@ export const useGameStore = create<GameStore>((set) => ({
       const id = parseInt(key);
       board.set(id, {
         id, name: t.name, tileType: t.tileType, colorGroup: t.colorGroup,
-        price: t.price, buildCost: t.buildCost, hotelCost: t.hotelCost, mortgageValue: t.mortgageValue,
-        ownerId: t.ownerId, houseCount: t.houseCount, isMortgaged: t.isMortgaged,
-        baseRent: t.baseRent, rent1: t.rent1, rent2: t.rent2, rent3: t.rent3, rentHotel: t.rentHotel,
+        price: t.price, buildCost: t.buildCost, hotelCost: t.hotelCost,
+        ownerId: t.ownerId, houseCount: t.houseCount, hasMonopoly: t.hasMonopoly,
+        baseRent: t.baseRent, rent1: t.rent1, rent2: t.rent2, rent3: t.rent3, rentHotel: t.rentHotel, currentRent: t.currentRent,
       });
     });
 
@@ -124,10 +130,12 @@ export const useGameStore = create<GameStore>((set) => ({
       myPlayerId: myId,
       gamePhase: state.gamePhase as GamePhase,
       turnPhase: state.turnPhase as TurnPhase,
-      currentPlayerId: state.currentPlayerId,
-      turnNumber: state.turnNumber,
-      winnerId: state.winnerId,
-      players, board,
+      currentPlayerId: state.currentPlayerId || '',
+      turnNumber: state.turnNumber || 0,
+      winnerId: state.winnerId || '',
+      activeFestivalTile: state.activeFestivalTile ?? -1,
+      players,
+      board,
       dice: { die1: state.dice.die1, die2: state.dice.die2, isDouble: state.dice.isDouble },
       chat, events, turnOrder,
     });

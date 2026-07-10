@@ -19,6 +19,7 @@ export default function DiceRoller() {
   const canBuy     = isMyTurn && turnPhase === 'buy_decision';
   const canAirport = isMyTurn && turnPhase === 'airport_select';
   const canFestival = isMyTurn && turnPhase === 'festival_select';
+  const isPayingDebt = isMyTurn && turnPhase === 'pay_debt';
   const me = players.get(myPlayerId);
 
   // When server updates dice, animate then settle
@@ -52,10 +53,14 @@ export default function DiceRoller() {
   const handleSkip = () => send('skipBuy');
 
   // Jail options
-  const canPayBail = isMyTurn && me?.isInJail && turnPhase === 'wait_roll';
-
-  // Airport options
+  const canPayBail = isMyTurn && turnPhase === 'wait_roll' && me?.isInJail;
   const canStartAirport = isMyTurn && turnPhase === 'wait_roll' && me?.position === 24;
+
+  const getMaxHouses = (passCount: number, currentHouses: number) => {
+    if (passCount === 0) return 2;
+    if (currentHouses < 3) return 3;
+    return 4;
+  };
   console.log('[DiceRoller] isMyTurn:', isMyTurn, 'turnPhase:', turnPhase, 'position:', me?.position, 'canStartAirport:', canStartAirport);
 
   return (
@@ -117,17 +122,56 @@ export default function DiceRoller() {
                   </div>
                 );
               }
+              const maxHouses = getMaxHouses(me.passCount || 0, 0);
+              const options = [];
+              for (let h = 0; h <= maxHouses; h++) {
+                const cost = tile.price + h * tile.buildCost;
+                if (me.money >= cost) {
+                  const label = h === 0 ? 'Chỉ mua đất' : `Đất + ${h} nhà`;
+                  options.push(
+                    <button key={h} className="btn-buy" onClick={() => send('buyProperty', { houses: h })}>
+                      ✅ {label} ({cost.toLocaleString()}đ)
+                    </button>
+                  );
+                }
+              }
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                  {[0, 1, 2, 3].map(h => {
-                    const cost = tile.price + h * tile.buildCost;
-                    if (me.money >= cost) {
-                      const label = h === 0 ? 'Chỉ mua đất' : `Đất + ${h} nhà`;
-                      return <button key={h} className="btn-buy" onClick={() => send('buyProperty', { houses: h })}>✅ {label} ({cost.toLocaleString()}đ)</button>;
-                    }
-                    return null;
-                  })}
+                  {options}
                   <button className="btn-skip" onClick={handleSkip}>❌ Bỏ qua</button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+        {isMyTurn && turnPhase === 'upgrade_decision' && (
+          <div className="buy-decision">
+            <p className="buy-prompt">Nâng cấp {board.get(me?.position || 0)?.name}?</p>
+            {(() => {
+              const tile = board.get(me?.position || 0);
+              if (!tile || !me) return null;
+              
+              const maxHouses = getMaxHouses(me.passCount || 0, tile.houseCount);
+              const options = [];
+              for (let target = tile.houseCount + 1; target <= maxHouses; target++) {
+                let cost = 0;
+                for (let i = tile.houseCount + 1; i <= target; i++) {
+                  cost += (i === 4 ? tile.hotelCost : tile.buildCost);
+                }
+                if (me.money >= cost) {
+                  const label = target === 4 ? 'Khách sạn' : `Nhà ${target}`;
+                  options.push(
+                    <button key={target} className="btn-buy" style={{ background: '#FF9800' }} onClick={() => send('upgradeProperty', { targetHouses: target })}>
+                      🔨 Lên {label} ({cost.toLocaleString()}đ)
+                    </button>
+                  );
+                }
+              }
+              
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                  {options}
+                  <button className="btn-skip" onClick={() => send('skipUpgrade')}>❌ Bỏ qua</button>
                 </div>
               );
             })()}
@@ -158,6 +202,21 @@ export default function DiceRoller() {
         )}
         {canFestival && (
           <p className="action-hint">🎉 Click vào đất của bạn để nhân đôi tô</p>
+        )}
+        {isPayingDebt && (
+          <div className="buy-decision">
+            <p className="buy-prompt" style={{color: '#ef4444'}}>CẢNH BÁO NỢ NẦN</p>
+            <p style={{fontSize: '14px', margin: '4px 0', textAlign: 'center'}}>Bạn đang nợ <strong>{me?.debtAmount?.toLocaleString()}đ</strong></p>
+            <p className="action-hint">⚠️ Click vào đất của bạn để bán trả nợ (giá 50%)</p>
+          </div>
+        )}
+        {isMyTurn && turnPhase === 'go_remote_upgrade' && (
+          <div className="buy-decision">
+            <p className="action-hint" style={{ color: '#0ea5e9' }}>✨ Click vào một ô đất của bạn trên bàn cờ để nâng cấp từ xa!</p>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+              <button className="btn-skip" onClick={() => send('skipRemoteUpgrade')}>❌ Bỏ qua</button>
+            </div>
+          </div>
         )}
         {!isMyTurn && turnPhase !== 'game_over' && (
           <p className="waiting-turn">
