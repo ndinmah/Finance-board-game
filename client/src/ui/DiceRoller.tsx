@@ -201,7 +201,12 @@ export default function DiceRoller() {
           <p className="action-hint">✈️ Click vào ô trên bản đồ để chọn điểm đến</p>
         )}
         {canFestival && (
-          <p className="action-hint">🎉 Click vào đất của bạn để nhân đôi tô</p>
+          <div className="buy-decision">
+            <p className="action-hint">🎉 Click vào đất của bạn để tổ chức sự kiện (phí: 50đ)</p>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+              <button className="btn-skip" onClick={() => send('skipFestival')}>❌ Bỏ qua</button>
+            </div>
+          </div>
         )}
         {isPayingDebt && (
           <div className="buy-decision">

@@ -179,6 +179,14 @@ export class IsoBoard {
         visualLayer.addChild(lock);
       }
 
+      // Tourist spot indicator
+      if (tile.isTouristSpot) {
+        const spot = new PIXI.Text({ text: '🏖️', style: { fontSize: 28 } });
+        spot.anchor.set(0.5);
+        spot.position.set(0, -50); // Above the houses
+        visualLayer.addChild(spot);
+      }
+
       container.addChild(visualLayer);
     });
   }

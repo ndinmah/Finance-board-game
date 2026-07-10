@@ -18,6 +18,7 @@ export class MapTile extends Schema {
   @type('number') rent3: number = 0;
   @type('number') rentHotel: number = 0;
   @type('number') currentRent: number = 0;
+  @type('boolean') isTouristSpot: boolean = false;
 }
 
 // ─── Player Schema ────────────────────────────────────────────────────────────

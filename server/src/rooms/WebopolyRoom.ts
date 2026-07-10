@@ -16,6 +16,7 @@ const MOVE_ANIMATION_MS = 800; // time client needs to animate movement
 export class WebopolyRoom extends Room<GameState> {
   maxClients = MAX_PLAYERS;
   private turnTimer: Delayed | null = null;
+  private gameTimer: Delayed | null = null;
   private botTimers: Map<string, NodeJS.Timeout> = new Map();
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
@@ -41,6 +42,7 @@ export class WebopolyRoom extends Room<GameState> {
     this.onMessage('startAirportSelect', (client) => this._handleStartAirportSelect(client));
     this.onMessage('selectAirport',   (client, data) => this._handleAirportSelect(client, data));
     this.onMessage('selectFestival',  (client, data) => this._handleFestivalSelect(client, data));
+    this.onMessage('skipFestival',    (client) => this._handleSkipFestival(client));
     this.onMessage('sellForDebt',     (client, data) => this._handleSellForDebt(client, data));
     this.onMessage('animationDone',   (client) => this._handleAnimationDone(client));
     this.onMessage('chat',            (client, data) => this._handleChat(client, data));
@@ -192,8 +194,50 @@ export class WebopolyRoom extends Room<GameState> {
     state.turnPhase = 'wait_roll';
 
     this._pushEvent('start', '', '', 0, -1, 'Game bắt đầu! Chúc vui vẻ!');
+    
+    // Pick 3 random tourist spots
+    const purchasableTiles: MapTile[] = [];
+    state.board.forEach(t => {
+      if (t.tileType === 'property' || t.tileType === 'port') purchasableTiles.push(t);
+    });
+    this._shuffleArray(purchasableTiles);
+    for (let i = 0; i < 3 && i < purchasableTiles.length; i++) {
+      purchasableTiles[i].isTouristSpot = true;
+    }
+
     this._startTurnTimer();
+    
+    // 1-hour time limit
+    this.gameTimer = this.clock.setTimeout(() => this._handleGameTimeout(), 60 * 60 * 1000);
+    
     console.log('[WebopolyRoom] Game started. Turn order:', ids);
+  }
+
+  private _handleGameTimeout() {
+    const state = this.state;
+    if (state.gamePhase !== 'playing') return;
+
+    let maxAssets = -1;
+    let richestPlayerId = '';
+
+    state.players.forEach((player, id) => {
+      if (player.isBankrupt) return;
+      let propertyValue = 0;
+      state.board.forEach(t => {
+        if (t.ownerId === id) propertyValue += this._getTileSellValue(t) * 2;
+      });
+      const totalAssets = player.money + propertyValue;
+      if (totalAssets > maxAssets) {
+        maxAssets = totalAssets;
+        richestPlayerId = id;
+      }
+    });
+
+    if (richestPlayerId) {
+      this._endGame(richestPlayerId, 'Hết thời gian (1 tiếng) - TÀI SẢN CAO NHẤT!');
+    } else {
+      this._endGame('', 'Hết thời gian (1 tiếng)');
+    }
   }
 
   // ─── Turn Timer ──────────────────────────────────────────────────────────────
@@ -269,11 +313,11 @@ export class WebopolyRoom extends Room<GameState> {
       } else {
         player.jailTurns -= 1;
         if (player.jailTurns <= 0) {
-          // Must pay bail
           player.isInJail = false;
           player.jailTurns = 0;
-          this._applyMoneyChange(playerId, -BAIL_COST, 'bail');
-          this._pushEvent('jail_bail', playerId, '', BAIL_COST, JAIL_TILE, `${player.name} hết lượt trong tù, trả ${BAIL_COST.toLocaleString()}đ tiền bảo lãnh.`);
+          this._pushEvent('jail_free', playerId, '', 0, JAIL_TILE, `${player.name} đã hết thời gian ngồi tù, được thả tự do!`);
+          this._advanceTurn();
+          return;
         } else {
           this._pushEvent('jail_stay', playerId, '', 0, JAIL_TILE, `${player.name} ở lại tù (còn ${player.jailTurns} lượt).`);
           this._advanceTurn();
@@ -565,6 +609,10 @@ export class WebopolyRoom extends Room<GameState> {
     if (tile.hasMonopoly) {
       rent *= 2;
     }
+    // Tourist Spot bonus: x2 rent
+    if (tile.isTouristSpot) {
+      rent *= 2;
+    }
     // Festival bonus: x2 rent if this is the active festival tile
     if (state.activeFestivalTile === tile.id) {
       rent *= 2;
@@ -612,6 +660,8 @@ export class WebopolyRoom extends Room<GameState> {
     this._pushEvent('buy', playerId, '', cost, tile.id, `${player.name} mua ${tile.name}${houseLabel} với giá ${cost.toLocaleString()}đ!`);
     
     if (this._checkPortWin(playerId)) return;
+    if (this._checkLineWin(playerId)) return;
+    if (this._checkTripleMonopolyWin(playerId)) return;
     
     this._advanceTurn();
   }
@@ -661,6 +711,8 @@ export class WebopolyRoom extends Room<GameState> {
     this._pushEvent('buyout', client.sessionId, oldOwnerId, buyoutPrice, tile.id, `${player.name} đã CƯỚP ĐẤT ${tile.name} từ ${oldOwner?.name || 'người khác'} với giá ${buyoutPrice.toLocaleString()}đ!`);
     
     if (this._checkPortWin(client.sessionId)) return;
+    if (this._checkLineWin(client.sessionId)) return;
+    if (this._checkTripleMonopolyWin(client.sessionId)) return;
     
     this._advanceTurn();
   }
@@ -851,15 +903,16 @@ export class WebopolyRoom extends Room<GameState> {
       (t: MapTile) => t.ownerId === playerId && t.tileType === 'property'
     );
 
-    if (ownedTiles.length === 0) {
-      this._pushEvent('festival_skip', playerId, '', 0, FESTIVAL_TILE, `${player.name} không có đất để nhân đôi tô.`);
+    if (ownedTiles.length === 0 || player.money < 50) {
+      const reason = ownedTiles.length === 0 ? 'không có đất' : 'không đủ tiền (cần 50đ)';
+      this._pushEvent('festival_skip', playerId, '', 0, FESTIVAL_TILE, `${player.name} bỏ qua Lễ Hội do ${reason}.`);
       this._advanceTurn();
       return;
     }
 
     state.turnPhase = 'festival_select';
     this._startTurnTimer();
-    this._pushEvent('festival', playerId, '', 0, FESTIVAL_TILE, `${player.name} đến Lễ Hội! Chọn 1 thành phố để nhân đôi tô.`);
+    this._pushEvent('festival', playerId, '', 0, FESTIVAL_TILE, `${player.name} đến Lễ Hội! Chọn 1 thành phố để tổ chức sự kiện (50đ).`);
   }
 
   private _handleFestivalSelect(client: Client, data: { tileId: number }) {
@@ -869,14 +922,32 @@ export class WebopolyRoom extends Room<GameState> {
 
     const tile = state.board.get(String(data.tileId));
     if (!tile || tile.ownerId !== client.sessionId) return;
+    
+    const player = state.players.get(client.sessionId);
+    if (!player || player.money < 50) return;
+
+    this._applyMoneyChange(client.sessionId, -50, 'festival_fee');
 
     // Remove old * 2 on base variables
     state.activeFestivalTile = data.tileId;
     this._updateAllRents();
 
-    const player = state.players.get(client.sessionId);
-    this._pushEvent('festival_done', client.sessionId, '', 0, data.tileId,
-      `${player?.name} tổ chức Lễ Hội tại ${tile.name}! Tiền tô nhân đôi.`);
+    this._pushEvent('festival_done', client.sessionId, '', 50, data.tileId,
+      `${player.name} trả 50đ tổ chức Lễ Hội tại ${tile.name}! Tiền tô nhân đôi.`);
+    this._advanceTurn();
+  }
+
+  private _handleSkipFestival(client: Client) {
+    const state = this.state;
+    if (client.sessionId !== state.currentPlayerId) return;
+    if (state.turnPhase !== 'festival_select') return;
+    this._doSkipFestival(client.sessionId);
+  }
+
+  private _doSkipFestival(playerId: string) {
+    const player = this.state.players.get(playerId);
+    if (!player) return;
+    this._pushEvent('festival_skip', playerId, '', 0, FESTIVAL_TILE, `${player.name} đã bỏ qua việc tổ chức Lễ Hội.`);
     this._advanceTurn();
   }
 
@@ -1101,12 +1172,59 @@ export class WebopolyRoom extends Room<GameState> {
     return false;
   }
 
+  private _checkLineWin(playerId: string): boolean {
+    const lines = [
+      { start: 1, end: 7, name: 'Hàng 1 (Cạnh Dưới)' },
+      { start: 9, end: 15, name: 'Hàng 2 (Cạnh Trái)' },
+      { start: 17, end: 23, name: 'Hàng 3 (Cạnh Trên)' },
+      { start: 25, end: 31, name: 'Hàng 4 (Cạnh Phải)' }
+    ];
+
+    for (const line of lines) {
+      let purchasableCount = 0;
+      let ownedCount = 0;
+
+      for (let id = line.start; id <= line.end; id++) {
+        const tile = this.state.board.get(String(id));
+        if (tile && (tile.tileType === 'property' || tile.tileType === 'port')) {
+          purchasableCount++;
+          if (tile.ownerId === playerId) {
+            ownedCount++;
+          }
+        }
+      }
+
+      if (purchasableCount > 0 && ownedCount === purchasableCount) {
+        this._endGame(playerId, `Độc quyền toàn bộ ${line.name} - LINE MONOPOLY!`);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private _checkTripleMonopolyWin(playerId: string): boolean {
+    const monopolizedGroups = new Set<string>();
+    this.state.board.forEach(t => {
+      if (t.ownerId === playerId && t.hasMonopoly && t.colorGroup) {
+        monopolizedGroups.add(t.colorGroup);
+      }
+    });
+
+    if (monopolizedGroups.size >= 3) {
+      this._endGame(playerId, 'Sở hữu 3 nhóm màu Độc Quyền - TRIPLE MONOPOLY!');
+      return true;
+    }
+    return false;
+  }
+
   private _endGame(winnerId: string, customMessage?: string) {
     const state = this.state;
     state.gamePhase = 'ended';
     state.turnPhase = 'game_over';
     state.winnerId = winnerId;
     this.turnTimer?.clear();
+    this.gameTimer?.clear();
 
     const winner = state.players.get(winnerId);
     const msg = customMessage ? `🏆 ${winner?.name || 'Không có ai'} đã thắng: ${customMessage}` : `🏆 ${winner?.name || 'Không có ai'} giành chiến thắng!`;
@@ -1230,7 +1348,22 @@ export class WebopolyRoom extends Room<GameState> {
       } else if (state.turnPhase === 'airport_select') {
         this._advanceTurn();
       } else if (state.turnPhase === 'festival_select') {
-        this._advanceTurn();
+        let bestTile: any = null;
+        let highestRent = -1;
+        state.board.forEach((t) => {
+          if (t.ownerId === playerId && t.tileType === 'property') {
+            const rent = this._calculateRent(t);
+            if (rent > highestRent) {
+              highestRent = rent;
+              bestTile = t;
+            }
+          }
+        });
+        if (bestTile && player.money >= 50) {
+          this._handleFestivalSelect({ sessionId: playerId } as Client, { tileId: bestTile.id });
+        } else {
+          this._doSkipFestival(playerId);
+        }
       } else if (state.turnPhase === 'pay_debt') {
         this._autoSellDebt(playerId);
       }

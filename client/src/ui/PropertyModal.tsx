@@ -48,6 +48,7 @@ export default function PropertyModal({ tileId, onClose }: Props) {
           <h3>{tile.name}</h3>
           {tile.colorGroup && <span className="group-badge">{tile.colorGroup.toUpperCase()}</span>}
           {tile.tileType === 'port' && <span className="group-badge" style={{background: '#0284c7'}}>PORT</span>}
+          {tile.isTouristSpot && <span className="group-badge" style={{background: '#f59e0b', fontSize: '10px'}}>🏖️ DU LỊCH (x2)</span>}
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -72,8 +73,18 @@ export default function PropertyModal({ tileId, onClose }: Props) {
                   ['3 nhà',     tile.rent3],
                   ['Khách sạn', tile.rentHotel],
                 ].map(([label, val], i) => {
-                  const actualVal = tile.hasMonopoly ? (val as number) * 2 : (val as number);
-                  const displayLabel = tile.hasMonopoly ? `${label} (Độc quyền x2)` : label;
+                  let actualVal = val as number;
+                  let displayLabel = label as string;
+                  
+                  if (tile.hasMonopoly) {
+                    actualVal *= 2;
+                    displayLabel += ' (Độc quyền x2)';
+                  }
+                  if (tile.isTouristSpot) {
+                    actualVal *= 2;
+                    displayLabel += ' (Du Lịch x2)';
+                  }
+                  
                   return (
                     <tr key={i} className={tile.currentRent === actualVal ? 'current-row' : ''}>
                       <td>{displayLabel}</td>
@@ -143,7 +154,7 @@ export default function PropertyModal({ tileId, onClose }: Props) {
           {/* Festival selection */}
           {turnPhase === 'festival_select' && currentPlayerId === myPlayerId && isOwner && (
             <button className="btn-festival-select" onClick={handleFestivalSelect}>
-              🎉 Nhân đôi tô ô này!
+              🎉 Tổ chức Lễ Hội (50đ)
             </button>
           )}
 
