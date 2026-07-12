@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@700;800;900&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 :root {
   --bg:       #0d1b3e;
@@ -34,6 +34,7 @@ button {
   cursor: pointer;
   transition: all 0.15s ease;
   border-radius: var(--radius);
+  touch-action: manipulation;
 }
 button:active { transform: scale(0.96); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }

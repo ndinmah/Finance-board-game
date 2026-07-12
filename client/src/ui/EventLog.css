@@ -13,3 +13,9 @@
 .event-buy .ev-text, .event-upgrade .ev-text { color: #2ecc71; }
 .event-rent .ev-text { color: #e67e22; }
 .event-game_over .ev-text { color: #f5c518; font-weight: 700; }
+
+@media (max-width: 900px) {
+  .event-log {
+    display: none !important;
+  }
+}

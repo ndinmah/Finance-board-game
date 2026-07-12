@@ -15,3 +15,75 @@
 .hud-money { font-size: 11px; color: #f5c518; font-weight: 600; }
 .active-indicator { width: 8px; height: 8px; border-radius: 50%; background: #f5c518; box-shadow: 0 0 8px #f5c518; animation: pulse 1s ease-in-out infinite; flex-shrink: 0; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* Responsive styles */
+@media (max-width: 900px) {
+  .hud-container {
+    width: 100%;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .hud-turn-badge {
+    min-width: unset;
+    padding: 6px 10px;
+    border-radius: 8px;
+  }
+  
+  .turn-label {
+    font-size: 9px;
+  }
+  
+  .turn-player {
+    font-size: 11px;
+    max-width: 70px;
+  }
+  
+  .hud-scoreboard {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    flex-grow: 1;
+    padding-bottom: 0;
+    scrollbar-width: none; /* Firefox */
+    gap: 4px;
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+  }
+  
+  .hud-scoreboard::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  .hud-player {
+    min-width: unset;
+    padding: 4px 6px;
+    gap: 4px;
+    border-radius: 8px;
+  }
+  
+  .hud-avatar {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+  
+  .jail-icon, .bot-icon, .dc-icon {
+    font-size: 8px;
+    bottom: -2px;
+    right: -2px;
+  }
+  
+  .hud-name {
+    display: none; /* Hide name on mobile to save space */
+  }
+  
+  .hud-money {
+    font-size: 10px;
+  }
+  
+  .active-indicator {
+    width: 5px;
+    height: 5px;
+  }
+}

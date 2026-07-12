@@ -497,3 +497,128 @@
   font-weight: 600;
 }
 
+/* Mobile responsive overrides */
+@media (max-width: 900px) {
+  /* Common Modal Container Adjustments */
+  .bu-modal-container, .port-modal-container {
+    width: 95% !important;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 16px;
+    padding-bottom: 16px;
+  }
+  
+  .bu-modal-container::after, .port-modal-container::after {
+    display: none !important; /* Hide double shadow card stack to save space */
+  }
+
+  .bu-modal-header, .port-modal-header {
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    border-radius: 12px 12px 0 0;
+    position: relative !important;
+    box-shadow: none;
+    margin-bottom: 12px;
+  }
+  
+  .bu-modal-header::before, .bu-modal-header::after,
+  .port-modal-header::before, .port-modal-header::after {
+    display: none !important; /* Hide side ribbon folds */
+  }
+  
+  .bu-modal-header h2, .port-modal-header h2 {
+    font-size: 18px !important;
+  }
+  
+  .bu-modal-body {
+    padding: 12px 16px !important;
+  }
+
+  /* Cards (Upgrade options) stacking */
+  .bu-cards-container {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  
+  .bu-card {
+    flex-direction: row !important;
+    justify-content: flex-start;
+    padding: 10px 16px !important;
+    gap: 16px;
+    align-items: center;
+    border-radius: 10px;
+  }
+  
+  .bu-card-iso {
+    width: 50px !important;
+    height: 40px !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .bu-card-tile {
+    width: 40px !important;
+    height: 40px !important;
+    top: 5px !important;
+  }
+  
+  .bu-card-icon {
+    font-size: 24px !important;
+    bottom: 2px !important;
+  }
+  
+  .bu-card-label {
+    margin-bottom: 0 !important;
+    font-size: 14px !important;
+    flex: 1;
+    text-align: left;
+  }
+  
+  .bu-checkbox {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+  }
+
+  .bu-card-badge {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: auto !important;
+    transform: none !important;
+    font-size: 9px !important;
+    margin-bottom: 4px;
+    padding: 2px 6px !important;
+  }
+
+  /* Port specific layout column stack */
+  .port-layout-columns {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .port-image-box {
+    max-height: 120px;
+  }
+
+  .port-modal-body {
+    padding: 16px !important;
+  }
+  
+  .port-buy-button, .bu-buy-btn {
+    font-size: 16px !important;
+    padding: 12px 30px !important;
+    width: 100% !important;
+    justify-content: center;
+  }
+  
+  .bu-rent-info {
+    font-size: 15px !important;
+  }
+  
+  .bu-rent-info strong {
+    font-size: 18px !important;
+  }
+}
+

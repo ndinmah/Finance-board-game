@@ -58,22 +58,39 @@ export default function DiceRoller() {
 
   console.log('[DiceRoller] isMyTurn:', isMyTurn, 'turnPhase:', turnPhase, 'position:', me?.position, 'canStartAirport:', canStartAirport);
 
+  const hasAction = canRoll || canStartAirport || canPayBail || (isMyTurn && turnPhase === 'buyout_decision');
+  const isInteractive = canAirport || canFestival || isPayingDebt || (isMyTurn && turnPhase === 'go_remote_upgrade');
+  
+  let stateClass = 'state-waiting';
+  if (canRoll || rolling) {
+    stateClass = 'state-roll';
+  } else if (hasAction) {
+    stateClass = 'state-decision';
+  } else if (isInteractive) {
+    stateClass = 'state-interactive';
+  }
+
+  const showRollButton = canRoll && !rolling;
+  const showDiceDisplay = rolling || (!canRoll && turnPhase !== 'wait_roll' && (dice.die1 > 1 || dice.die2 > 1));
+
   return (
-    <div className="dice-panel">
+    <div className={`dice-panel ${stateClass} ${isMyTurn ? 'my-turn' : 'other-turn'}`}>
       {/* Dice display */}
-      <div className={`dice-display ${rolling ? 'rolling' : ''} ${dice.isDouble && !rolling ? 'double' : ''}`}>
-        <span className={`die die-1 ${rolling ? 'spin' : ''}`}>
-          {DIE_FACES[(displayDice.d1 - 1)]}
-        </span>
-        <span className={`die die-2 ${rolling ? 'spin' : ''}`} style={{ animationDelay: '0.05s' }}>
-          {DIE_FACES[(displayDice.d2 - 1)]}
-        </span>
-        {dice.isDouble && !rolling && <span className="double-badge">DOUBLE!</span>}
-      </div>
+      {showDiceDisplay && (
+        <div className={`dice-display ${rolling ? 'rolling' : ''} ${dice.isDouble && !rolling ? 'double' : ''}`}>
+          <span className={`die die-1 ${rolling ? 'spin' : ''}`}>
+            {DIE_FACES[(displayDice.d1 - 1)]}
+          </span>
+          <span className={`die die-2 ${rolling ? 'spin' : ''}`} style={{ animationDelay: '0.05s' }}>
+            {DIE_FACES[(displayDice.d2 - 1)]}
+          </span>
+          {dice.isDouble && !rolling && <span className="double-badge">DOUBLE!</span>}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="dice-actions">
-        {canRoll && (
+        {showRollButton && (
           <>
             {devMode && (
               <div className="dev-dice-inputs" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', background: 'rgba(255, 255, 255, 0.05)', padding: '6px 10px', borderRadius: '6px', border: '1px dashed #ef4444' }}>

@@ -56,3 +56,23 @@
   border-top: 1px solid rgba(74,144,217,0.15);
   color: #8faad4; font-size: 12px;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 900px) {
+  .lobby-overlay {
+    padding: 12px;
+  }
+  
+  .lobby-card {
+    padding: 24px 16px;
+    border-radius: 16px;
+  }
+  
+  .logo-title {
+    font-size: 28px;
+  }
+  
+  .logo-icon {
+    font-size: 44px;
+  }
+}

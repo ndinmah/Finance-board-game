@@ -18,3 +18,35 @@
 .waiting-hint { text-align: center; color: #8faad4; font-size: 14px; margin-top: 16px; }
 .waiting-hint.starting { color: #2ecc71; font-weight: 700; animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+/* Mobile responsive styles */
+@media (max-width: 900px) {
+  .waiting-overlay {
+    padding: 12px;
+  }
+  
+  .waiting-card {
+    padding: 24px 16px;
+    border-radius: 16px;
+  }
+  
+  .waiting-title {
+    font-size: 22px;
+  }
+  
+  .player-row {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  
+  .player-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+  
+  .btn-ready {
+    padding: 12px;
+    font-size: 16px;
+  }
+}

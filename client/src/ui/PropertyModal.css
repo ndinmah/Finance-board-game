@@ -26,3 +26,34 @@
 .btn-mortgage { background: rgba(231,76,60,0.12); border: 1.5px solid rgba(231,76,60,0.35); color: #ff8080; font-weight: 600; padding: 10px; border-radius: 10px; font-size: 13px; cursor: pointer; width: 100%; }
 .btn-airport-select { background: linear-gradient(135deg, #3498db, #2980b9); color: white; font-weight: 700; padding: 10px; border-radius: 10px; font-size: 14px; width: 100%; border: none; cursor: pointer; }
 .btn-festival-select { background: linear-gradient(135deg, #f39c12, #e67e22); color: white; font-weight: 700; padding: 10px; border-radius: 10px; font-size: 14px; width: 100%; border: none; cursor: pointer; }
+
+/* Mobile bottom sheet style */
+@media (max-width: 900px) {
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  
+  .property-modal {
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    animation: modalSlideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+  
+  @keyframes modalSlideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  
+  .property-body {
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    gap: 12px;
+  }
+}
