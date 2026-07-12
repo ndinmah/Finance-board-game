@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { MAP_TILE_COLORS } from '../game/tileConstants';
-import { formatMoney } from '../utils/format';
+import { formatMoneyFull } from '../utils/format';
 import portResortImg from '../assets/port_resort.png';
+import './CardModal.css';
 import './BuyUpgradeModal.css';
 export default function BuyUpgradeModal() {
   const { currentPlayerId, myPlayerId, turnPhase, board, players } = useGameStore();
@@ -55,6 +56,8 @@ export default function BuyUpgradeModal() {
     else send('skipUpgrade');
   };
 
+  const headerColor = me.color ? (me.color.startsWith('#') ? me.color : `#${me.color}`) : '#9e9e9e';
+
   if (tile.tileType === 'port') {
     const ownedPorts = Array.from(board.values()).filter(t => t.tileType === 'port' && t.ownerId === myPlayerId).length;
     const nextPortCount = Math.min(4, ownedPorts + 1);
@@ -63,13 +66,14 @@ export default function BuyUpgradeModal() {
     const expectedRent = 25 * nextPortCount;
 
     return (
-      <div className="bu-modal-backdrop">
-        <div className="port-modal-container">
-          <div className="port-modal-header">
-            <h2>{tile.name}</h2>
-            <button className="port-close-btn" onClick={handleSkip}>✖</button>
-          </div>
-          <div className="port-modal-body">
+      <div className="card-modal-backdrop" style={{ zIndex: 1000 }}>
+        <div className="card-modal-wrapper">
+          <div className="card-modal">
+            <div className="card-header" style={{ backgroundColor: headerColor }}>
+              <h3>{tile.name}</h3>
+              <button className="card-modal-close" onClick={handleSkip}>✕</button>
+            </div>
+            <div className="card-body" style={{ padding: '20px' }}>
             <div className="port-layout-columns">
               <div className="port-column-left">
                 <div className="port-image-box">
@@ -84,15 +88,15 @@ export default function BuyUpgradeModal() {
                   <tbody>
                     <tr className={nextPortCount === 1 ? 'highlighted' : ''}>
                       <td className="rent-label">1 cảng</td>
-                      <td className="rent-value">25K 💵</td>
+                      <td className="rent-value">25K $</td>
                     </tr>
                     <tr className={nextPortCount === 2 ? 'highlighted' : ''}>
                       <td className="rent-label">2 cảng</td>
-                      <td className="rent-value">50K 💵</td>
+                      <td className="rent-value">50K $</td>
                     </tr>
                     <tr className={nextPortCount === 3 ? 'highlighted' : ''}>
                       <td className="rent-label">3 cảng</td>
-                      <td className="rent-value">75K 💵</td>
+                      <td className="rent-value">75K $</td>
                     </tr>
                     <tr className={nextPortCount === 4 ? 'highlighted' : ''}>
                       <td className="rent-label">4 cảng</td>
@@ -104,7 +108,7 @@ export default function BuyUpgradeModal() {
             </div>
             <div className="port-action-section">
               <div className="port-rent-preview">
-                Giá thuê: <strong>{formatMoney(expectedRent)}</strong> <span className="money-icon">💵</span>
+                Giá thuê: <strong>{formatMoneyFull(expectedRent)}</strong> <span className="money-icon">$</span>
               </div>
               <button
                 className={`port-buy-button ${!canAfford ? 'disabled' : ''}`}
@@ -113,7 +117,7 @@ export default function BuyUpgradeModal() {
                 }}
                 disabled={!canAfford}
               >
-                MUA VỚI GIÁ {formatMoney(portPrice)} <span className="money-icon">💵</span>
+                MUA VỚI GIÁ {formatMoneyFull(portPrice)} <span className="money-icon">$</span>
               </button>
               <div className="port-footer-note">
                 Các cảng không thể bị mua lại (cướp đất)
@@ -122,6 +126,7 @@ export default function BuyUpgradeModal() {
           </div>
         </div>
       </div>
+    </div>
     );
   }
 
@@ -162,13 +167,14 @@ export default function BuyUpgradeModal() {
     { level: 3, label: 'Nhà 3', icon: '🏢', maxAllowed: 3 },
   ];
   return (
-    <div className="bu-modal-backdrop">
-      <div className="bu-modal-container">
-        <div className="bu-modal-header" style={{ backgroundColor: accentColor }}>
-          <h2>{tile.name.toUpperCase()}</h2>
-          <button className="bu-close-btn" onClick={handleSkip}>✖</button>
-        </div>
-        <div className="bu-modal-body">
+    <div className="card-modal-backdrop" style={{ zIndex: 1000 }}>
+      <div className="card-modal-wrapper">
+        <div className="card-modal">
+          <div className="card-header" style={{ backgroundColor: headerColor }}>
+            <h3>{tile.name.toUpperCase()}</h3>
+            <button className="card-modal-close" onClick={handleSkip}>✕</button>
+          </div>
+          <div className="card-body" style={{ padding: '20px' }}>
           <div className="bu-cards-container">
             {cards.map((card) => {
               const isBuilt = card.level <= tile.houseCount && !isBuy;
@@ -204,17 +210,18 @@ export default function BuyUpgradeModal() {
           </div>
           <div className="bu-info-section">
             <div className="bu-rent-info">
-              Giá thuê: <strong>{formatMoney(rentAtLevel)}</strong> <span className="money-icon">💵</span>
+              Giá thuê: <strong>{formatMoneyFull(rentAtLevel)}</strong> <span className="money-icon">$</span>
             </div>
             <button
               className={`bu-buy-btn ${!canAfford ? 'disabled' : ''}`}
               onClick={handleConfirm}
               disabled={!canAfford}
             >
-              {isBuy ? 'MUA VỚI GIÁ' : 'NÂNG CẤP VỚI GIÁ'} {formatMoney(totalCost)} <span className="money-icon">💵</span>
+              {isBuy ? 'MUA VỚI GIÁ' : 'NÂNG CẤP VỚI GIÁ'} {formatMoneyFull(totalCost)} <span className="money-icon">$</span>
             </button>
             <div className="bu-buyout-info">
-              Những người chơi khác có thể sẽ mua lại bằng: <strong>{formatMoney(buyoutPrice)}</strong> <span className="money-icon">💵</span>
+              Những người chơi khác có thể sẽ mua lại bằng: <strong>{formatMoneyFull(buyoutPrice)}</strong> <span className="money-icon">$</span>
+            </div>
             </div>
           </div>
         </div>

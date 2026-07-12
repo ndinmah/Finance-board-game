@@ -1,59 +1,270 @@
-/* PropertyModal.css */
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
-.property-modal { background: #162040; border: 1.5px solid rgba(74,144,217,0.3); border-radius: 20px; width: 100%; max-width: 380px; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.7); animation: modalSlide 0.25s cubic-bezier(0.34,1.56,0.64,1); }
-@keyframes modalSlide { from { opacity: 0; transform: translateY(24px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
-.property-header { display: flex; align-items: center; gap: 10px; padding: 18px 20px; position: relative; }
-.property-icon { font-size: 28px; }
-.property-header h3 { font-size: 18px; font-weight: 800; color: white; flex: 1; }
-.group-badge { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: white; letter-spacing: 0.5px; }
-.modal-close { position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.15); color: white; width: 28px; height: 28px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; }
-.property-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-.property-status { display: flex; gap: 8px; align-items: center; }
-.status-chip { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-.status-chip.free { background: rgba(46,204,113,0.2); color: #2ecc71; }
-.status-chip.owned { background: rgba(74,144,217,0.2); color: #7ec8e3; }
-.status-chip.mortgaged { background: rgba(127,127,127,0.2); color: #888; }
-.house-label { font-size: 12px; color: #8faad4; margin-left: auto; }
-.rent-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.rent-table th { text-align: left; color: #8faad4; padding: 4px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-.rent-table td { padding: 6px 8px; border-radius: 6px; color: #c8d8f0; }
-.rent-table td:last-child { text-align: right; font-weight: 600; }
-.rent-table .current-row td { background: rgba(245,197,24,0.1); color: #f5c518; }
-.property-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #8faad4; }
-.property-meta strong { color: #e8f0ff; }
-.property-actions { display: flex; flex-direction: column; gap: 8px; }
-.btn-upgrade { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; font-weight: 700; padding: 10px; border-radius: 10px; font-size: 14px; border: none; cursor: pointer; width: 100%; }
-.btn-mortgage { background: rgba(231,76,60,0.12); border: 1.5px solid rgba(231,76,60,0.35); color: #ff8080; font-weight: 600; padding: 10px; border-radius: 10px; font-size: 13px; cursor: pointer; width: 100%; }
-.btn-airport-select { background: linear-gradient(135deg, #3498db, #2980b9); color: white; font-weight: 700; padding: 10px; border-radius: 10px; font-size: 14px; width: 100%; border: none; cursor: pointer; }
-.btn-festival-select { background: linear-gradient(135deg, #f39c12, #e67e22); color: white; font-weight: 700; padding: 10px; border-radius: 10px; font-size: 14px; width: 100%; border: none; cursor: pointer; }
+/* PropertyModal.css — card-style, light background, reference design */
 
-/* Mobile bottom sheet style */
+/* ── Backdrop ── */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 16px;
+}
+
+/* ── Card ── */
+.property-modal-wrapper {
+  position: relative;
+  width: 100%; max-width: 460px;
+  animation: propertyModalSlide 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes propertyModalSlide {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Simulate the stacked paper effect underneath */
+.property-modal-wrapper::before,
+.property-modal-wrapper::after {
+  content: '';
+  position: absolute;
+  background: #fdfaf5;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: -1;
+  inset: 0;
+  border: 1px solid #efeae0;
+}
+.property-modal-wrapper::before {
+  transform: rotate(-2deg) translate(-2px, 8px);
+}
+.property-modal-wrapper::after {
+  transform: rotate(2.5deg) translate(4px, 6px);
+  z-index: -2;
+  background: #f5f0e6;
+}
+
+.property-modal {
+  background: #f5f0e8;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Header band ── */
+.property-header {
+  display: flex; align-items: center; justify-content: center;
+  padding: 14px 48px;
+  position: relative;
+  min-height: 52px;
+}
+.property-header h3 {
+  font-size: 17px; font-weight: 900;
+  color: #fff;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  margin: 0;
+}
+.modal-close {
+  position: absolute; top: 50%; right: 14px;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.25);
+  border: 2px solid rgba(255,255,255,0.6);
+  color: white;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.4); }
+
+/* ── Body ── */
+.property-body {
+  padding: 18px 16px 20px;
+  display: flex; flex-direction: column; gap: 0;
+  background: #f5f0e8;
+}
+
+/* ── Two-column layout ── */
+.property-content-row {
+  display: flex; gap: 12px; align-items: stretch;
+}
+
+/* Left: property illustration */
+.property-image-col {
+  flex: 0 0 130px;
+  display: flex; align-items: center; justify-content: center;
+  background: #e8e0d0;
+  border-radius: 10px;
+  min-height: 150px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.property-image-col canvas {
+  width: 120px; height: 120px;
+}
+.property-image-placeholder {
+  font-size: 52px; opacity: 0.6;
+  user-select: none;
+}
+
+/* Right: upgrade table */
+.property-table-col {
+  flex: 1;
+  display: flex; flex-direction: column; justify-content: center;
+}
+
+/* ── Upgrade Table ── */
+.upgrade-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px;
+}
+.upgrade-table thead tr th {
+  color: #888; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  padding: 0 6px 6px;
+  border-bottom: 1px solid #d8cfc0;
+}
+.upgrade-table thead tr th:first-child { text-align: left; }
+.upgrade-table thead tr th:last-child  { text-align: right; }
+
+.upgrade-table tbody tr td {
+  padding: 5px 6px;
+  color: #444;
+  vertical-align: middle;
+}
+.upgrade-table tbody tr td:last-child {
+  text-align: right;
+  font-weight: 700;
+  color: #333;
+  white-space: nowrap;
+}
+
+/* Row states */
+.upgrade-table tbody tr.row-done td {
+  color: #888;
+}
+.upgrade-table tbody tr.row-current {
+  background: #7ec84a;
+  border-radius: 6px;
+}
+.upgrade-table tbody tr.row-current td {
+  color: #fff; font-weight: 800;
+}
+.upgrade-table tbody tr.row-current td:first-child {
+  border-radius: 6px 0 0 6px;
+}
+.upgrade-table tbody tr.row-current td:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+/* Checkmark */
+.row-check {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px;
+  background: #7ec84a; border-radius: 50%;
+  color: white; font-size: 10px; font-weight: 900;
+  margin-right: 5px; flex-shrink: 0;
+  vertical-align: middle;
+}
+.row-check.current {
+  background: rgba(255,255,255,0.35);
+}
+.row-check.empty {
+  background: transparent;
+}
+
+/* Coin icon */
+.coin-icon { 
+  font-size: 14px; 
+  margin-left: 3px;
+  color: #2e7d32;
+  font-weight: 900;
+}
+
+/* ── Footer info ── */
+.property-footer {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #d8cfc0;
+  display: flex; flex-direction: column; gap: 4px;
+  align-items: flex-end;
+}
+.footer-line {
+  font-size: 13px; color: #555;
+  display: flex; align-items: center; gap: 6px;
+}
+.footer-line strong {
+  color: #222; font-weight: 800; font-size: 14px;
+}
+
+/* ── Action buttons ── */
+.property-actions {
+  margin-top: 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.btn-upgrade {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  color: white; font-weight: 700; padding: 10px;
+  border-radius: 10px; font-size: 14px; border: none;
+  cursor: pointer; width: 100%;
+  transition: filter 0.15s;
+}
+.btn-upgrade:hover { filter: brightness(1.1); }
+.btn-airport-select {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white; font-weight: 700; padding: 10px;
+  border-radius: 10px; font-size: 14px; width: 100%; border: none; cursor: pointer;
+}
+.btn-festival-select {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white; font-weight: 700; padding: 10px;
+  border-radius: 10px; font-size: 14px; width: 100%; border: none; cursor: pointer;
+}
+.btn-mortgage {
+  background: rgba(231,76,60,0.1); border: 1.5px solid rgba(231,76,60,0.4);
+  color: #e74c3c; font-weight: 700; padding: 10px;
+  border-radius: 10px; font-size: 13px; cursor: pointer; width: 100%;
+}
+
+/* Port info box */
+.port-info {
+  background: rgba(0,0,0,0.06);
+  border-radius: 10px; padding: 12px 14px;
+  font-size: 13px; line-height: 1.6; color: #555;
+  flex: 1;
+}
+.port-info-title {
+  color: #2980b9; font-weight: 700; margin-bottom: 6px; font-size: 13px;
+}
+.port-info ul { margin: 0; padding-left: 18px; }
+.port-info li { color: #444; }
+.port-info .port-win { color: #e67e22; font-weight: 700; }
+
+/* ── Mobile bottom sheet ── */
 @media (max-width: 900px) {
-  .modal-backdrop {
-    align-items: flex-end;
-    padding: 0;
-  }
-  
-  .property-modal {
+  .modal-backdrop { align-items: flex-end; padding: 0; }
+  .property-modal-wrapper {
     max-width: 100%;
+    animation: propertyModalSlideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+  @keyframes propertyModalSlideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .property-modal {
     border-radius: 24px 24px 0 0;
-    border-bottom: none;
-    border-left: none;
-    border-right: none;
-    animation: modalSlideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
-  
-  @keyframes modalSlideUp {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
+  .property-modal-wrapper::before,
+  .property-modal-wrapper::after {
+    border-radius: 24px 24px 0 0;
+    bottom: -20px;
   }
-  
-  .property-body {
-    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-    gap: 12px;
-  }
+  .property-body { padding: 16px 14px calc(16px + env(safe-area-inset-bottom)); }
+  .property-image-col { flex: 0 0 100px; min-height: 110px; }
+  .property-image-placeholder { font-size: 40px; }
 }

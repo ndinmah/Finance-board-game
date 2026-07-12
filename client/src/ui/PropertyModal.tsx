@@ -2,21 +2,51 @@
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { MAP_TILE_COLORS } from '../game/tileConstants';
-import { formatMoney } from '../utils/format';
+import { formatMoneyFull } from '../utils/format';
 import './PropertyModal.css';
 
 interface Props { tileId: number; onClose: () => void; }
+
+// Emoji fallback representing each upgrade level
+const LEVEL_EMOJI = ['🏕️', '🏠', '🏡', '🏘️', '🏨'];
 
 export default function PropertyModal({ tileId, onClose }: Props) {
   const { board, players, myPlayerId, turnPhase, currentPlayerId } = useGameStore();
   const tile = board.get(tileId);
   if (!tile || (tile.tileType !== 'property' && tile.tileType !== 'port')) { onClose(); return null; }
 
-  const owner   = tile.ownerId ? players.get(tile.ownerId) : null;
-  const me      = players.get(myPlayerId);
-  const isOwner = tile.ownerId === myPlayerId;
+  const owner    = tile.ownerId ? players.get(tile.ownerId) : null;
+  const me       = players.get(myPlayerId);
+  const isOwner  = tile.ownerId === myPlayerId;
   const isMyTurn = currentPlayerId === myPlayerId;
-  const accentColor = tile.colorGroup ? `#${(MAP_TILE_COLORS[tile.colorGroup] || 0x888888).toString(16).padStart(6, '0')}` : '#666';
+
+  // Header band color: owner color if owned, neutral gray if not
+  const ownerColor = owner?.color
+    ? (owner.color.startsWith('#') ? owner.color : `#${owner.color}`)
+    : null;
+  const headerColor = ownerColor ?? '#9e9e9e';
+
+  // Tile group accent (still used for pill)
+  const accentColor = tile.colorGroup
+    ? `#${(MAP_TILE_COLORS[tile.colorGroup] || 0x888888).toString(16).padStart(6, '0')}`
+    : '#888';
+
+  // Upgrade rows for property
+  const upgradeRows = tile.tileType === 'property' ? [
+    { label: 'Đất',       level: 0, cost: tile.price,        rent: tile.baseRent  },
+    { label: 'Nhà 1',     level: 1, cost: tile.buildCost,    rent: tile.rent1     },
+    { label: 'Nhà 2',     level: 2, cost: tile.buildCost,    rent: tile.rent2     },
+    { label: 'Nhà 3',     level: 3, cost: tile.buildCost,    rent: tile.rent3     },
+    { label: 'Khách sạn', level: 4, cost: tile.hotelCost,    rent: tile.rentHotel },
+  ] : [];
+
+  // Determine row state
+  const getRowState = (level: number) => {
+    if (!tile.ownerId) return 'upcoming';
+    if (level < tile.houseCount) return 'done';
+    if (level === tile.houseCount) return 'current';
+    return 'upcoming';
+  };
 
   const getMaxHouses = (passCount: number, currentHouses: number) => {
     if (passCount === 0) return 2;
@@ -24,95 +54,119 @@ export default function PropertyModal({ tileId, onClose }: Props) {
     return 4;
   };
 
-  const houseLabel  = tile.tileType === 'port' ? 'Cảng' : (tile.houseCount === 4 ? 'Khách sạn' : tile.houseCount > 0 ? `${tile.houseCount} nhà` : 'Đất trống');
-
-  const handleAirportSelect = () => { send('selectAirport', { tileId }); onClose(); };
-  const handleFestivalSelect = () => { send('selectFestival', { tileId }); onClose(); };
-  const handleSellForDebt = () => { send('sellForDebt', { tileId }); onClose(); };
-
-  let sellValue = tile.price;
+  let totalValue = tile.price;
   if (tile.tileType !== 'port' && tile.houseCount > 0) {
     if (tile.houseCount === 4) {
-      sellValue += (tile.buildCost * 3 + tile.hotelCost);
+      totalValue += (tile.buildCost * 3 + tile.hotelCost);
     } else {
-      sellValue += tile.houseCount * tile.buildCost;
+      totalValue += tile.houseCount * tile.buildCost;
     }
   }
-  sellValue = Math.floor(sellValue * 0.5);
+  const mortgageValue = Math.floor(totalValue * 0.5);
+  const buyoutValue = totalValue * 2;
+
+  const displayRent = tile.ownerId ? tile.currentRent : 0;
+
+  const handleAirportSelect  = () => { send('selectAirport',  { tileId }); onClose(); };
+  const handleFestivalSelect = () => { send('selectFestival', { tileId }); onClose(); };
+  const handleSellForDebt    = () => { send('sellForDebt',    { tileId }); onClose(); };
+
+  // Illustration emoji based on current level
+  const currentLevelEmoji = tile.tileType === 'port'
+    ? '⚓'
+    : LEVEL_EMOJI[Math.min(tile.houseCount, 4)];
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="property-modal" onClick={e => e.stopPropagation()} style={{ '--accent': accentColor } as any}>
-        {/* Color header */}
-        <div className="property-header" style={{ background: accentColor }}>
-          <span className="property-icon">{tile.tileType === 'port' ? '⚓' : '🏢'}</span>
+      <div className="property-modal-wrapper">
+        <div
+          className="property-modal"
+          onClick={e => e.stopPropagation()}
+          style={{ '--accent': accentColor } as any}
+        >
+          {/* ── Header band ── */}
+        <div className="property-header" style={{ background: headerColor }}>
           <h3>{tile.name}</h3>
-          {tile.colorGroup && <span className="group-badge">{tile.colorGroup.toUpperCase()}</span>}
-          {tile.tileType === 'port' && <span className="group-badge" style={{background: '#0284c7'}}>PORT</span>}
-          {tile.isTouristSpot && <span className="group-badge" style={{background: '#f59e0b', fontSize: '10px'}}>🏖️ DU LỊCH (x2)</span>}
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
+        {/* ── Body ── */}
         <div className="property-body">
-          {/* Status */}
-          <div className="property-status">
-            <span className={`status-chip ${tile.ownerId ? 'owned' : 'free'}`}>
-              {tile.ownerId ? `👤 ${owner?.name || 'Có chủ'}` : '🟢 Đất trống'}
-            </span>
-            <span className="house-label">{houseLabel}</span>
-          </div>
+          <div className="property-content-row">
 
-          {/* Price table */}
-          {tile.tileType === 'property' ? (
-            <table className="rent-table">
-              <thead><tr><th>Trạng thái</th><th>Tô</th></tr></thead>
-              <tbody>
-                {[
-                  ['Đất trống', tile.baseRent],
-                  ['1 nhà',     tile.rent1],
-                  ['2 nhà',     tile.rent2],
-                  ['3 nhà',     tile.rent3],
-                  ['Khách sạn', tile.rentHotel],
-                ].map(([label, val], i) => {
-                  let actualVal = val as number;
-                  let displayLabel = label as string;
-                  
-                  if (tile.hasMonopoly) {
-                    actualVal *= 2;
-                    displayLabel += ' (Độc quyền x2)';
-                  }
-                  if (tile.isTouristSpot) {
-                    actualVal *= 2;
-                    displayLabel += ' (Du Lịch x2)';
-                  }
-                  
-                  return (
-                    <tr key={i} className={tile.currentRent === actualVal ? 'current-row' : ''}>
-                      <td>{displayLabel}</td>
-                      <td>{formatMoney(actualVal)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', lineHeight: '1.4' }}>
-              <p style={{ margin: '0 0 8px 0', color: '#38bdf8', fontWeight: 'bold' }}>Phí qua cảng:</p>
-              <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                <li>1 Cảng: 25K</li>
-                <li>2 Cảng: 50K</li>
-                <li>3 Cảng: 75K</li>
-                <li style={{ color: '#fbbf24' }}>4 Cảng: <strong>THẮNG NGAY LẬP TỨC!</strong></li>
-              </ul>
+            {/* Left: property illustration */}
+            <div className="property-image-col">
+              <span className="property-image-placeholder">{currentLevelEmoji}</span>
             </div>
-          )}
 
-          <div className="property-meta">
-            <span>💰 Giá mua: <strong>{formatMoney(tile.price)}</strong></span>
-            {tile.tileType === 'property' && <span>🔨 Xây nhà: <strong>{formatMoney(tile.buildCost)}</strong></span>}
+            {/* Right: upgrade table or port info */}
+            <div className="property-table-col">
+              {tile.tileType === 'property' ? (
+                <table className="upgrade-table">
+                  <thead>
+                    <tr>
+                      <th>Xây dựng</th>
+                      <th>Giá nâng cấp</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {upgradeRows.map(({ label, level, cost }) => {
+                      const state = getRowState(level);
+                      const isCurrent = state === 'current';
+                      const isDone    = state === 'done';
+                      return (
+                        <tr key={level} className={
+                          isCurrent ? 'row-current' :
+                          isDone    ? 'row-done'    : ''
+                        }>
+                          <td>
+                            {isDone ? (
+                              <span className="row-check">✓</span>
+                            ) : isCurrent ? (
+                              <span className="row-check current">✓</span>
+                            ) : (
+                              <span className="row-check empty" style={{ width: 16, height: 16, display: 'inline-block' }} />
+                            )}
+                            {label}
+                          </td>
+                          <td>
+                            {formatMoneyFull(cost)} <span className="coin-icon">$</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="port-info">
+                  <div className="port-info-title">Phí qua cảng:</div>
+                  <ul>
+                    <li>1 Cảng: 25K</li>
+                    <li>2 Cảng: 50K</li>
+                    <li>3 Cảng: 75K</li>
+                    <li className="port-win">4 Cảng: <strong>THẮNG NGAY!</strong></li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Remote upgrade actions */}
+          {/* ── Footer: price info ── */}
+          <div className="property-footer">
+            {tile.ownerId && tile.tileType === 'property' && (
+              <div className="footer-line">
+                Giá mua lại <strong>{formatMoneyFull(buyoutValue)}</strong>
+                <span className="coin-icon">$</span>
+              </div>
+            )}
+            <div className="footer-line">
+              Giá thuê hiện tại{' '}
+              <strong>{formatMoneyFull(displayRent)}</strong>
+              <span className="coin-icon">$</span>
+            </div>
+          </div>
+
+          {/* ── Remote upgrade actions ── */}
           {isOwner && isMyTurn && turnPhase === 'go_remote_upgrade' && tile.tileType === 'property' && (
             <div className="property-actions">
               {(() => {
@@ -126,46 +180,48 @@ export default function PropertyModal({ tileId, onClose }: Props) {
                   if ((me?.money || 0) >= cost) {
                     const label = target === 4 ? 'Khách sạn' : `Nhà ${target}`;
                     options.push(
-                      <button key={target} className="btn-upgrade" style={{ background: '#0ea5e9' }}
+                      <button key={target} className="btn-upgrade"
                         onClick={() => { send('remoteUpgradeProperty', { tileId, targetHouses: target }); onClose(); }}>
-                        ✨ Nâng cấp lên {label} ({formatMoney(cost)})
+                        ✨ Nâng cấp lên {label} ({formatMoneyFull(cost)})
                       </button>
                     );
                   }
                 }
-                
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {options.length > 0 ? options : (
-                      <p style={{fontSize: '12px', color: '#888', textAlign: 'center'}}>Không đủ điều kiện nâng cấp mảnh đất này.</p>
-                    )}
-                  </div>
+                return options.length > 0 ? options : (
+                  <p style={{ fontSize: '12px', color: '#888', textAlign: 'center', margin: 0 }}>
+                    Không đủ điều kiện nâng cấp mảnh đất này.
+                  </p>
                 );
               })()}
             </div>
           )}
 
-          {/* Airport selection */}
+          {/* ── Airport / Festival / Sell actions ── */}
           {turnPhase === 'airport_select' && currentPlayerId === myPlayerId && (
-            <button className="btn-airport-select" onClick={handleAirportSelect}>
-              ✈️ Bay đến đây!
-            </button>
+            <div className="property-actions">
+              <button className="btn-airport-select" onClick={handleAirportSelect}>
+                ✈️ Bay đến đây!
+              </button>
+            </div>
           )}
 
-          {/* Festival selection */}
           {turnPhase === 'festival_select' && currentPlayerId === myPlayerId && isOwner && (
-            <button className="btn-festival-select" onClick={handleFestivalSelect}>
-              🎉 Tổ chức Lễ Hội (50K)
-            </button>
+            <div className="property-actions">
+              <button className="btn-festival-select" onClick={handleFestivalSelect}>
+                🎉 Tổ chức Lễ Hội (50K)
+              </button>
+            </div>
           )}
 
-          {/* Sell for Debt */}
           {turnPhase === 'pay_debt' && currentPlayerId === myPlayerId && isOwner && (
-            <button className="btn-mortgage" style={{background: '#ef4444', marginTop: '12px'}} onClick={handleSellForDebt}>
-              ⚠️ Bán trả nợ (nhận {formatMoney(sellValue)})
-            </button>
+            <div className="property-actions">
+              <button className="btn-mortgage" onClick={handleSellForDebt}>
+                ⚠️ Bán trả nợ (nhận {formatMoneyFull(mortgageValue)})
+              </button>
+            </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

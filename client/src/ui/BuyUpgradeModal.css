@@ -239,6 +239,9 @@
 }
 .money-icon {
   font-style: normal;
+  color: #2e7d32;
+  font-weight: 900;
+  font-size: 1.1em;
 }
 
 /* Port Custom Modal Layout */
