@@ -31,7 +31,11 @@ export async function joinOrCreate(playerName: string): Promise<void> {
 export function getCurrentRoom(): Room | null { return room; }
 
 export function send(type: string, data?: any) {
-  room?.send(type, data);
+  if (room) {
+    room.send(type, data);
+  } else {
+    useGameStore.getState().handleDevMessage(type, data);
+  }
 }
 
 export function leaveRoom() {

@@ -10,14 +10,13 @@ export default function App() {
   const { gamePhase, myPlayerId, loadDevState } = useGameStore();
 
   useEffect(() => {
-    // Dev route check
-    const isDev = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev1');
+    const isDev = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev');
     if (isDev) {
       loadDevState();
     }
   }, []);
 
-  const isDev = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev1');
+  const isDev = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev');
   if (isDev) return <GameScreen />;
 
   // Not joined any room yet
