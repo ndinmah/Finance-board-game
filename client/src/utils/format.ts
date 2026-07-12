@@ -17,3 +17,13 @@ export function formatMoney(val: number): string {
 
   return isNegative ? `-${result}` : result;
 }
+
+/**
+ * Formats a money value to its full number representation.
+ * - Multiplies the internal value by 1000.
+ * - e.g. 345 -> "345 000"
+ */
+export function formatMoneyFull(val: number): string {
+  const fullVal = val * 1000;
+  return fullVal.toLocaleString('en-US').replace(/,/g, ' ');
+}
