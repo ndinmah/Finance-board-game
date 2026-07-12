@@ -172,19 +172,188 @@ export class IsoBoard {
         this._drawHouseIndicators(visualLayer, tile.houseCount);
       }
 
-      // Mortgage indicator
-      if (tile.isMortgaged) {
-        const lock = new PIXI.Text({ text: '🔒', style: { fontSize: 24 } });
-        lock.anchor.set(0.5);
-        visualLayer.addChild(lock);
-      }
-
       // Tourist spot indicator
       if (tile.isTouristSpot) {
         const spot = new PIXI.Text({ text: '🏖️', style: { fontSize: 28 } });
         spot.anchor.set(0.5);
         spot.position.set(0, -50); // Above the houses
         visualLayer.addChild(spot);
+      }
+
+      // Hiện tên tỉnh và giá tiền tô trên ô đất
+      if (tile.tileType === 'property' || tile.tileType === 'port') {
+        let w = 0, h = 0;
+        if (id % 8 === 0) {
+          w = 108; h = 108;
+        } else if ((id > 0 && id < 8) || (id > 16 && id < 24)) {
+          w = 64; h = 110;
+        } else {
+          w = 110; h = 64;
+        }
+
+        const hw = w / 2;
+        const hh = h / 2;
+        const cos = 0.70710678118; // Math.cos(Math.PI / 4)
+        const sin = 0.70710678118; // Math.sin(Math.PI / 4)
+        const scaleY = 0.572;
+
+        // Xác định tâm của cạnh và góc xoay
+        let cx = 0, cy = 0;
+        let angle = 0;
+
+        if ((id > 0 && id < 8) || (id > 16 && id < 24)) {
+          // Hàng 1-7 (cạnh trái-dưới) và 17-23 (cạnh phải-trên)
+          // Hàng 1-7 chữ nằm ở mép ngoài, hàng 17-23 chữ nằm ở mép trong
+          // Cả 2 đều dùng chung toạ độ điểm neo và góc nghiêng để đối xứng
+          cx = 0; cy = hh;
+          angle = 0;
+        } else if ((id > 8 && id < 16) || (id > 24 && id < 32)) {
+          // Hàng 9-15 (cạnh trái-trên) và 25-31 (cạnh phải-dưới)
+          // Hàng 25-31 chữ nằm ở mép ngoài, hàng 9-15 chữ nằm ở mép trong
+          cx = hw; cy = 0;
+          angle = -Math.PI / 2;
+        }
+
+        // Tính toạ độ screen
+        const screenX = (cx * cos - cy * sin);
+        const screenY = (cx * sin + cy * cos) * scaleY;
+
+        // Container cha chịu trách nhiệm scale Y (Áp dụng sau cùng theo hệ toạ độ thế giới)
+        const isoParent = new PIXI.Container();
+        // Lùi vào tâm 20% (0.8) để chữ nằm gọn bên trong hitbox
+        isoParent.position.set(screenX * 0.95, screenY * 0.95);
+        isoParent.scale.y = scaleY;
+
+        // Container con chịu trách nhiệm xoay 45 độ (Áp dụng trước để tạo ra mặt phẳng sàn)
+        const isoFloor = new PIXI.Container();
+        isoFloor.rotation = Math.PI / 4;
+
+        // Container gộp chứa cả Tên Tỉnh và Giá Tiền
+        const textWrapper = new PIXI.Container();
+        textWrapper.rotation = angle;
+
+        // Render Tên Tỉnh
+        if (tile.name) {
+          const nameLabel = new PIXI.Text({
+            text: tile.name,
+            style: new PIXI.TextStyle({
+              fontSize: 12,
+              fill: 0x000000,
+              fontWeight: '700',
+              fontFamily: 'Inter, sans-serif',
+            }),
+          });
+          nameLabel.anchor.set(0.5, 1);
+          // Đặt chữ tên tỉnh cao hơn (giá trị y âm) so với giá tiền
+          // Bạn có thể chỉnh sửa số -18 này để điều chỉnh khoảng cách
+          nameLabel.position.set(0, -40);
+          nameLabel.alpha = 0.55;
+          textWrapper.addChild(nameLabel);
+        }
+
+        // Render Giá Tiền
+        if (tile.currentRent > 0) {
+          const rentLabel = new PIXI.Text({
+            text: `${tile.currentRent}K`,
+            style: new PIXI.TextStyle({
+              fontSize: 18,
+              fill: 0x000000,
+              fontWeight: '800',
+              fontFamily: 'Inter, sans-serif',
+            }),
+          });
+          rentLabel.anchor.set(0.5, 1);
+          rentLabel.position.set(0, 0);
+          rentLabel.alpha = 0.7;
+          textWrapper.addChild(rentLabel);
+        }
+
+        isoFloor.addChild(textWrapper);
+        isoParent.addChild(isoFloor);
+        visualLayer.addChild(isoParent);
+      }
+
+      // Hiện chữ tên cho ô Cơ Cơ và Ô Thuế
+      if (tile.tileType === 'chance' || tile.tileType === 'tax') {
+        let w = 0, h = 0;
+        if (id % 8 === 0) {
+          w = 108; h = 108;
+        } else if ((id > 0 && id < 8) || (id > 16 && id < 24)) {
+          w = 64; h = 110;
+        } else {
+          w = 110; h = 64;
+        }
+
+        const hw = w / 2;
+        const hh = h / 2;
+        const cos = 0.70710678118; // Math.cos(Math.PI / 4)
+        const sin = 0.70710678118; // Math.sin(Math.PI / 4)
+        const scaleY = 0.572;
+
+        let cx = 0, cy = 0;
+        let angle = 0;
+
+        if ((id > 0 && id < 8) || (id > 16 && id < 24)) {
+          cx = 0; cy = hh;
+          angle = 0;
+        } else if ((id > 8 && id < 16) || (id > 24 && id < 32)) {
+          cx = hw; cy = 0;
+          angle = -Math.PI / 2;
+        }
+
+        const screenX = (cx * cos - cy * sin);
+        const screenY = (cx * sin + cy * cos) * scaleY;
+
+        const isoParent = new PIXI.Container();
+        isoParent.position.set(screenX * 0.95, screenY * 0.95);
+        isoParent.scale.y = scaleY;
+
+        const isoFloor = new PIXI.Container();
+        isoFloor.rotation = Math.PI / 4;
+
+        const textWrapper = new PIXI.Container();
+        textWrapper.rotation = angle;
+
+        if (tile.name) {
+          const nameLabel = new PIXI.Text({
+            text: tile.name,
+            style: new PIXI.TextStyle({
+              fontSize: 14,
+              fill: 0x000000,
+              fontWeight: '700',
+              fontFamily: 'Inter, sans-serif',
+            }),
+          });
+          nameLabel.anchor.set(0.5, 1);
+          // Vị trí y = 0 giống với chữ giá tiền
+          nameLabel.position.set(0, -5);
+          nameLabel.alpha = 0.55;
+          textWrapper.addChild(nameLabel);
+        }
+
+        isoFloor.addChild(textWrapper);
+        isoParent.addChild(isoFloor);
+         visualLayer.addChild(isoParent);
+      }
+
+      // Hiện chữ thẳng cho 4 ô góc (Xuất Phát, Nhà Tù, Lễ Hội, Sân Bay)
+      if (id % 8 === 0 && tile.name) {
+        const cornerLabel = new PIXI.Text({
+          text: tile.name,
+          style: new PIXI.TextStyle({
+            fontSize: 16,
+            fill: 0xffffff, // Chữ màu trắng
+            stroke: { color: 0x000000, width: 2 }, // Viền chữ màu đen (Pixi v8)
+            fontWeight: '100',
+            fontFamily: 'Inter, sans-serif',
+          }),
+        });
+        cornerLabel.anchor.set(0.5, 1);
+        // Căn chỉnh vị trí Y của nhãn (số dương đẩy xuống dưới tâm)
+        // Để tự điều chỉnh, bạn thay đổi số 18 ở dòng dưới
+        cornerLabel.position.set(0, 5);
+        cornerLabel.alpha = 0.9; // Tăng alpha để màu trắng và viền đen hiển thị rõ nét nhất
+        visualLayer.addChild(cornerLabel);
       }
 
       container.addChild(visualLayer);
