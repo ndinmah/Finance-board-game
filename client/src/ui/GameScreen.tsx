@@ -4,6 +4,11 @@ import { IsoBoard } from '../game/IsoBoard';
 import GameHUD from './GameHUD';
 import DiceRoller from './DiceRoller';
 import PropertyModal from './PropertyModal';
+import TaxModal from './TaxModal';
+import AirportModal from './AirportModal';
+import FestivalModal from './FestivalModal';
+import JailModal from './JailModal';
+import ChanceModal from './ChanceModal';
 import BuyUpgradeModal from './BuyUpgradeModal';
 import EventLog from './EventLog';
 import WinnerModal from './WinnerModal';
@@ -69,9 +74,32 @@ export default function GameScreen() {
       </div>
 
       {/* Modals */}
-      {selectedTileId !== null && (
-        <PropertyModal tileId={selectedTileId} onClose={() => setSelectedTileFn(null)} />
-      )}
+      {selectedTileId !== null && (() => {
+        const t = board.get(selectedTileId);
+        if (!t) return null;
+        if (t.tileType === 'property' || t.tileType === 'port') {
+          return <PropertyModal tileId={selectedTileId} onClose={() => setSelectedTileFn(null)} />;
+        }
+        if (t.tileType === 'tax') {
+          return <TaxModal onClose={() => setSelectedTileFn(null)} />;
+        }
+        if (t.tileType === 'airport') {
+          return <AirportModal onClose={() => setSelectedTileFn(null)} />;
+        }
+        if (t.tileType === 'festival') {
+          return <FestivalModal onClose={() => setSelectedTileFn(null)} />;
+        }
+        if (t.tileType === 'jail') {
+          return <JailModal onClose={() => setSelectedTileFn(null)} />;
+        }
+        if (t.tileType === 'chance') {
+          return <ChanceModal onClose={() => setSelectedTileFn(null)} />;
+        }
+        // Fallback for go if we just want to close them instantly
+        // or we can just leave them as not rendering a modal. 
+        // If users click on them, they shouldn't trigger an error, just no modal.
+        return null;
+      })()}
       <BuyUpgradeModal />
       {gamePhase === 'ended' && winnerId && <WinnerModal />}
 

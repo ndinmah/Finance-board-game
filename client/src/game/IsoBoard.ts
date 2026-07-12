@@ -341,7 +341,7 @@ export class IsoBoard {
         }
 
         // Render Giá Tiền
-        if (tile.currentRent > 0) {
+        if (tile.ownerId && tile.currentRent > 0) {
           const rentLabel = new PIXI.Text({
             text: `${tile.currentRent}K`,
             style: new PIXI.TextStyle({
