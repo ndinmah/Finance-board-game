@@ -235,10 +235,10 @@ export class IsoBoard {
         let flagRot = 0;
 
         if ((id > 0 && id < 8) || (id > 16 && id < 24)) {
-          tcx = 0; tcy = hh * 0.55; // Cạnh CY: cạnh trái-dưới & phải-trên
+          tcx = 0; tcy = -hh * 0.90; // Cạnh CY: cạnh trái-dưới & phải-trên
           flagRot = 0;
         } else if ((id > 8 && id < 16) || (id > 24 && id < 32)) {
-          tcx = hw * 0.55; tcy = 0; // Cạnh CX: cạnh trái-trên & phải-dưới
+          tcx = -hw * 0.90; tcy = 0; // Cạnh CX: cạnh trái-trên & phải-dưới
           flagRot = -Math.PI / 2;
         }
 
@@ -250,9 +250,9 @@ export class IsoBoard {
 
         const g = new PIXI.Graphics();
 
-        // Đế cột cờ (hình elip nằm dẹt trên sàn để tạo chiều sâu)
-        g.ellipse(0, 0, 7, 3.5);
-        g.fill({ color: 0x9E9E9E });
+        // // Đế cột cờ (hình elip nằm dẹt trên sàn để tạo chiều sâu)
+        // g.ellipse(0, 0, 7, 3.5);
+        // g.fill({ color: 0x9E9E9E });
 
         // Thân cột cờ (luôn hướng thẳng đứng lên trên màn hình)
         g.rect(-1.2, -50, 2.4, 50);
@@ -905,36 +905,78 @@ export class IsoBoard {
     const c = new PIXI.Container();
     const color = parseInt(player.color.replace('#', '0x'));
 
+    // Tính màu tối hơn cho chân/tay, và màu sáng hơn cho đầu
+    const cr = (color >> 16) & 0xFF;
+    const cg = (color >> 8)  & 0xFF;
+    const cb =  color        & 0xFF;
+    const darkColor  = (Math.floor(cr * 0.6) << 16) | (Math.floor(cg * 0.6) << 8) | Math.floor(cb * 0.6);
+    const lightColor = (Math.min(255, Math.floor(cr * 1.25)) << 16) | (Math.min(255, Math.floor(cg * 1.25)) << 8) | Math.min(255, Math.floor(cb * 1.25));
+
+    // Bóng đổ (tĩnh, không nảy)
     const shadow = new PIXI.Graphics();
-    shadow.ellipse(0, 8, 12, 6);
-    shadow.fill({ color: 0x000000, alpha: 0.4 });
-    root.addChild(shadow); // Bóng đứng yên
+    shadow.ellipse(0, 2, 14, 5);
+    shadow.fill({ color: 0x000000, alpha: 0.3 });
+    root.addChild(shadow);
 
-    const body = new PIXI.Graphics();
-    body.circle(0, -12, 10);
-    body.fill({ color });
-    body.roundRect(-7, -6, 14, 14, 4);
-    body.fill({ color });
-    body.stroke({ color: 0xffffff, width: 1.5, alpha: 0.8 });
-    c.addChild(body);
+    const g = new PIXI.Graphics();
 
-    const letter = new PIXI.Text({
-      text: player.name.charAt(0).toUpperCase(),
-      style: new PIXI.TextStyle({ fontSize: 10, fill: 0xffffff, fontWeight: 'bold', fontFamily: 'Inter, sans-serif' }),
-    });
-    letter.anchor.set(0.5, 0.5);
-    letter.position.set(0, -12);
-    c.addChild(letter);
+    // Chân trái
+    g.roundRect(-6, -10, 4, 10, 2);
+    g.fill({ color: darkColor });
+    // Chân phải
+    g.roundRect(2, -10, 4, 10, 2);
+    g.fill({ color: darkColor });
 
+    // Thân (hình thang: rộng dưới, hẹp trên)
+    g.poly([-8, -10, 8, -10, 5.5, -26, -5.5, -26]);
+    g.fill({ color });
+    g.stroke({ color: 0xFFFFFF, width: 1, alpha: 0.25 });
+
+    // Tay trái
+    g.roundRect(-12, -25, 4, 13, 2);
+    g.fill({ color: darkColor });
+    // Tay phải
+    g.roundRect(8, -25, 4, 13, 2);
+    g.fill({ color: darkColor });
+
+    // Cổ
+    g.rect(-3, -30, 6, 5);
+    g.fill({ color });
+
+    // Đầu
+    g.circle(0, -38, 10);
+    g.fill({ color: lightColor });
+    g.stroke({ color: 0xFFFFFF, width: 1.5, alpha: 0.45 });
+
+    // Mắt trái (lòng trắng)
+    g.circle(-3.5, -39, 2.2);
+    g.fill({ color: 0xFFFFFF });
+    // Mắt phải (lòng trắng)
+    g.circle(3.5, -39, 2.2);
+    g.fill({ color: 0xFFFFFF });
+
+    // Con ngươi trái
+    g.circle(-3.5, -39, 1.1);
+    g.fill({ color: 0x111111 });
+    // Con ngươi phải
+    g.circle(3.5, -39, 1.1);
+    g.fill({ color: 0x111111 });
+
+    // Điểm sáng trên đầu (specular highlight)
+    g.circle(-4, -43, 3);
+    g.fill({ color: 0xFFFFFF, alpha: 0.35 });
+
+    c.addChild(g);
     root.addChild(c);
 
+    // Animation nảy lên xuống
     gsap.to(c, {
-      y: '-=4',
-      duration: 0.8,
+      y: '-=5',
+      duration: 0.9,
       repeat: -1,
       yoyo: true,
       ease: 'power1.inOut',
-      delay: Math.random() * 0.5,
+      delay: Math.random() * 0.8,
     });
 
     return root;
@@ -965,16 +1007,7 @@ export class IsoBoard {
         if (bg) bg.destroy();
       }
     }
-    if (tileId !== null) {
-      const curr = this.tiles.get(tileId);
-      if (curr) {
-        const bg = new PIXI.Graphics();
-        bg.label = 'highlight';
-        bg.poly(this._getIsoPolygon(tileId));
-        bg.fill({ color: 0xffffff, alpha: 0.3 });
-        curr.addChildAt(bg, 0);
-      }
-    }
+    // Đã bỏ lớp phủ mờ khi click theo yêu cầu
   }
 
   resize(w: number, h: number) {
