@@ -4,6 +4,7 @@ import { IsoBoard } from '../game/IsoBoard';
 import GameHUD from './GameHUD';
 import DiceRoller from './DiceRoller';
 import PropertyModal from './PropertyModal';
+import BuyUpgradeModal from './BuyUpgradeModal';
 import EventLog from './EventLog';
 import ChatBox from './ChatBox';
 import WinnerModal from './WinnerModal';
@@ -73,6 +74,7 @@ export default function GameScreen() {
       {selectedTileId !== null && (
         <PropertyModal tileId={selectedTileId} onClose={() => setSelectedTileFn(null)} />
       )}
+      <BuyUpgradeModal />
       {gamePhase === 'ended' && winnerId && <WinnerModal />}
 
       {/* Editor Controls (Uncomment when you need to recalibrate coordinates) */}

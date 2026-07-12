@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
+import { formatMoney } from '../utils/format';
 import './DiceRoller.css';
 
 const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
@@ -9,14 +10,13 @@ export default function DiceRoller() {
   const { currentPlayerId, myPlayerId, turnPhase, dice, players, board } = useGameStore();
   const [rolling, setRolling] = useState(false);
   const [displayDice, setDisplayDice] = useState({ d1: 1, d2: 1 });
-  const [devMode] = useState(() => window.location.search.includes('dev=1'));
+  const [devMode] = useState(() => window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev'));
   const [devD1, setDevD1] = useState('');
   const [devD2, setDevD2] = useState('');
   const rollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isMyTurn   = currentPlayerId === myPlayerId;
   const canRoll    = isMyTurn && (turnPhase === 'wait_roll' || turnPhase === 'airport_select');
-  const canBuy     = isMyTurn && turnPhase === 'buy_decision';
   const canAirport = isMyTurn && turnPhase === 'airport_select';
   const canFestival = isMyTurn && turnPhase === 'festival_select';
   const isPayingDebt = isMyTurn && turnPhase === 'pay_debt';
@@ -50,17 +50,12 @@ export default function DiceRoller() {
       send('rollDice'); 
     }
   };
-  const handleSkip = () => send('skipBuy');
 
   // Jail options
   const canPayBail = isMyTurn && turnPhase === 'wait_roll' && me?.isInJail;
   const canStartAirport = isMyTurn && turnPhase === 'wait_roll' && me?.position === 24;
 
-  const getMaxHouses = (passCount: number, currentHouses: number) => {
-    if (passCount === 0) return 2;
-    if (currentHouses < 3) return 3;
-    return 4;
-  };
+
   console.log('[DiceRoller] isMyTurn:', isMyTurn, 'turnPhase:', turnPhase, 'position:', me?.position, 'canStartAirport:', canStartAirport);
 
   return (
@@ -81,9 +76,10 @@ export default function DiceRoller() {
         {canRoll && (
           <>
             {devMode && (
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                <input type="text" placeholder="d1" value={devD1} onChange={e => setDevD1(e.target.value)} style={{ width: '40px', textAlign: 'center' }} />
-                <input type="text" placeholder="d2" value={devD2} onChange={e => setDevD2(e.target.value)} style={{ width: '40px', textAlign: 'center' }} />
+              <div className="dev-dice-inputs" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', background: 'rgba(255, 255, 255, 0.05)', padding: '6px 10px', borderRadius: '6px', border: '1px dashed #ef4444' }}>
+                <span style={{ fontSize: '12px', color: '#fca5a5', fontWeight: 'bold' }}>Mock 🎲:</span>
+                <input type="number" min="1" max="6" placeholder="d1" value={devD1} onChange={e => setDevD1(e.target.value)} style={{ width: '45px', textAlign: 'center', background: '#1e293b', border: '1px solid #475569', borderRadius: '4px', color: '#fff', padding: '2px 0' }} />
+                <input type="number" min="1" max="6" placeholder="d2" value={devD2} onChange={e => setDevD2(e.target.value)} style={{ width: '45px', textAlign: 'center', background: '#1e293b', border: '1px solid #475569', borderRadius: '4px', color: '#fff', padding: '2px 0' }} />
               </div>
             )}
             <button id="btn-roll" className="btn-roll" onClick={handleRoll}>
@@ -93,90 +89,20 @@ export default function DiceRoller() {
         )}
         {canStartAirport && (
           <button className="btn-bail" onClick={() => send('startAirportSelect')} style={{ background: '#4CAF50' }}>
-            ✈️ Mua vé bay (50đ)
+            ✈️ Mua vé bay (50K)
           </button>
         )}
         {canPayBail && (
           <>
             <button id="btn-bail" className="btn-bail" onClick={() => send('payBail')}>
-              💸 Trả nóng 200đ
+              💸 Trả nóng 200K
             </button>
             <button className="btn-bail" disabled style={{ background: '#ccc', cursor: 'not-allowed', opacity: 0.7 }}>
               🎟 Dùng thẻ ra tù (Chưa có)
             </button>
           </>
         )}
-        {canBuy && (
-          <div className="buy-decision">
-            <p className="buy-prompt">Mua {board.get(me?.position || 0)?.name}?</p>
-            {(() => {
-              const tile = board.get(me?.position || 0);
-              if (!tile || !me) return null;
-              if (tile.tileType === 'port') {
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                    {me.money >= tile.price && (
-                      <button className="btn-buy" onClick={() => send('buyProperty', { houses: 0 })}>✅ Mua Cảng ({tile.price.toLocaleString()}đ)</button>
-                    )}
-                    <button className="btn-skip" onClick={handleSkip}>❌ Bỏ qua</button>
-                  </div>
-                );
-              }
-              const maxHouses = getMaxHouses(me.passCount || 0, 0);
-              const options = [];
-              for (let h = 0; h <= maxHouses; h++) {
-                const cost = tile.price + h * tile.buildCost;
-                if (me.money >= cost) {
-                  const label = h === 0 ? 'Chỉ mua đất' : `Đất + ${h} nhà`;
-                  options.push(
-                    <button key={h} className="btn-buy" onClick={() => send('buyProperty', { houses: h })}>
-                      ✅ {label} ({cost.toLocaleString()}đ)
-                    </button>
-                  );
-                }
-              }
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                  {options}
-                  <button className="btn-skip" onClick={handleSkip}>❌ Bỏ qua</button>
-                </div>
-              );
-            })()}
-          </div>
-        )}
-        {isMyTurn && turnPhase === 'upgrade_decision' && (
-          <div className="buy-decision">
-            <p className="buy-prompt">Nâng cấp {board.get(me?.position || 0)?.name}?</p>
-            {(() => {
-              const tile = board.get(me?.position || 0);
-              if (!tile || !me) return null;
-              
-              const maxHouses = getMaxHouses(me.passCount || 0, tile.houseCount);
-              const options = [];
-              for (let target = tile.houseCount + 1; target <= maxHouses; target++) {
-                let cost = 0;
-                for (let i = tile.houseCount + 1; i <= target; i++) {
-                  cost += (i === 4 ? tile.hotelCost : tile.buildCost);
-                }
-                if (me.money >= cost) {
-                  const label = target === 4 ? 'Khách sạn' : `Nhà ${target}`;
-                  options.push(
-                    <button key={target} className="btn-buy" style={{ background: '#FF9800' }} onClick={() => send('upgradeProperty', { targetHouses: target })}>
-                      🔨 Lên {label} ({cost.toLocaleString()}đ)
-                    </button>
-                  );
-                }
-              }
-              
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                  {options}
-                  <button className="btn-skip" onClick={() => send('skipUpgrade')}>❌ Bỏ qua</button>
-                </div>
-              );
-            })()}
-          </div>
-        )}
+
         {isMyTurn && turnPhase === 'buyout_decision' && (
           <div className="buy-decision buyout-decision">
             {(() => {
@@ -187,7 +113,7 @@ export default function DiceRoller() {
               return (
                 <>
                   <p className="buy-prompt">Cướp {tile.name}?</p>
-                  <p style={{fontSize: '12px', margin: '4px 0', color: '#ffc107', textAlign: 'center'}}>Giá: {buyoutPrice.toLocaleString()}đ (x2 gốc)</p>
+                  <p style={{fontSize: '12px', margin: '4px 0', color: '#ffc107', textAlign: 'center'}}>Giá: {formatMoney(buyoutPrice)} (x2 gốc)</p>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button className="btn-buy" style={{background: '#e11d48'}} onClick={() => send('acceptBuyout')}>⚔️ Cướp Đất</button>
                     <button className="btn-skip" onClick={() => send('skipBuyout')}>❌ Bỏ qua</button>
@@ -202,7 +128,7 @@ export default function DiceRoller() {
         )}
         {canFestival && (
           <div className="buy-decision">
-            <p className="action-hint">🎉 Click vào đất của bạn để tổ chức sự kiện (phí: 50đ)</p>
+            <p className="action-hint">🎉 Click vào đất của bạn để tổ chức sự kiện (phí: 50K)</p>
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
               <button className="btn-skip" onClick={() => send('skipFestival')}>❌ Bỏ qua</button>
             </div>
@@ -211,7 +137,7 @@ export default function DiceRoller() {
         {isPayingDebt && (
           <div className="buy-decision">
             <p className="buy-prompt" style={{color: '#ef4444'}}>CẢNH BÁO NỢ NẦN</p>
-            <p style={{fontSize: '14px', margin: '4px 0', textAlign: 'center'}}>Bạn đang nợ <strong>{me?.debtAmount?.toLocaleString()}đ</strong></p>
+            <p style={{fontSize: '14px', margin: '4px 0', textAlign: 'center'}}>Bạn đang nợ <strong>{formatMoney(me?.debtAmount || 0)}</strong></p>
             <p className="action-hint">⚠️ Click vào đất của bạn để bán trả nợ (giá 50%)</p>
           </div>
         )}
