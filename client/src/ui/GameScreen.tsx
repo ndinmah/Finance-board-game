@@ -6,7 +6,6 @@ import DiceRoller from './DiceRoller';
 import PropertyModal from './PropertyModal';
 import BuyUpgradeModal from './BuyUpgradeModal';
 import EventLog from './EventLog';
-import ChatBox from './ChatBox';
 import WinnerModal from './WinnerModal';
 import './GameScreen.css';
 
@@ -67,7 +66,6 @@ export default function GameScreen() {
         <GameHUD />
         <DiceRoller />
         <EventLog />
-        <ChatBox />
       </div>
 
       {/* Modals */}
@@ -78,7 +76,7 @@ export default function GameScreen() {
       {gamePhase === 'ended' && winnerId && <WinnerModal />}
 
       {/* Editor Controls (Uncomment when you need to recalibrate coordinates) */}
-      <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: '8px' }}>
+      <div className="map-editor-controls" style={{ position: 'absolute', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: '8px' }}>
         <button
           onClick={() => boardRef.current?.toggleEditMode()}
           style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}

@@ -2,7 +2,7 @@
 .game-screen {
   position: fixed; inset: 0; display: flex; overflow: hidden;
   background-image: url('../assets/broad.png');
-  background-size: contain;
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-color: #1a2744;
@@ -11,3 +11,16 @@
 .board-canvas { display: block; width: 100%; height: 100%; }
 .game-ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; }
 .game-ui-layer > * { pointer-events: auto; }
+
+/* Mobile optimization */
+@media (max-width: 900px) {
+  .event-log {
+    display: none !important;
+  }
+  .map-editor-controls {
+    display: none !important;
+  }
+  .game-ui-layer {
+    padding: 8px;
+  }
+}

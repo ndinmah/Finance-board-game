@@ -55,13 +55,13 @@ export class IsoBoard {
     this.boardContainer.position.set(cx, cy);
     this.tokenContainer.position.set(cx, cy);
 
-    // Tính toán scale khớp với CSS background-size: contain
+    // Tính toán scale khớp với CSS background-size: cover
     // Kích thước gốc của background image là 1525x704
     // User đã map toạ độ ở màn hình xấp xỉ 1536x666 -> mappedBgScale ~ 0.946
     const IMG_W = 1525;
     const IMG_H = 704;
 
-    const currentBgScale = Math.min(this.app.screen.width / IMG_W, this.app.screen.height / IMG_H);
+    const currentBgScale = Math.max(this.app.screen.width / IMG_W, this.app.screen.height / IMG_H);
     const mappedBgScale = Math.min(1536 / IMG_W, 666 / IMG_H);
 
     const scale = currentBgScale / mappedBgScale;
@@ -232,14 +232,11 @@ export class IsoBoard {
       if (tile.isTouristSpot) {
         // Xác định tâm cạnh và góc xoay (đồng nhất với text labels)
         let tcx = 0, tcy = 0;
-        let flagRot = 0;
 
         if ((id > 0 && id < 8) || (id > 16 && id < 24)) {
           tcx = 0; tcy = -hh * 0.90; // Cạnh CY: cạnh trái-dưới & phải-trên
-          flagRot = 0;
         } else if ((id > 8 && id < 16) || (id > 24 && id < 32)) {
           tcx = -hw * 0.90; tcy = 0; // Cạnh CX: cạnh trái-trên & phải-dưới
-          flagRot = -Math.PI / 2;
         }
 
         const tScreenX = (tcx * cos - tcy * sin);
@@ -998,7 +995,7 @@ export class IsoBoard {
     return { x: base.x + off.dx, y: base.y + off.dy };
   }
 
-  highlightTile(tileId: number | null, prevId: number | null) {
+  highlightTile(_tileId: number | null, prevId: number | null) {
     if (prevId !== null) {
       const prev = this.tiles.get(prevId);
       if (prev) {
