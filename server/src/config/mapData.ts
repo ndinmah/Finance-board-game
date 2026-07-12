@@ -37,7 +37,7 @@ export const MAP_TILES: TileDef[] = [
   // Color group: ORANGE (tiles 5,6,7)
   { id: 5,  type: 'property', name: 'Long An',  colorGroup: 'orange', price: 100, rent: [6, 33, 65, 98, 188], buildCost: 50, hotelCost: 150},
   { id: 6,  type: 'property', name: 'Vĩnh Long',  colorGroup: 'orange', price: 100, rent: [6, 35, 75, 105, 210], buildCost: 50, hotelCost: 150},
-  { id: 7,  type: 'property', name: 'Tiền Giang',    colorGroup: 'orange', price: 120, rent: [8, 38, 75, 113, 225], buildCost: 50, hotelCost: 150},
+  { id: 7,  type: 'property', name: 'Mỹ Tho',    colorGroup: 'orange', price: 120, rent: [8, 38, 75, 113, 225], buildCost: 50, hotelCost: 150},
 
   // ─── CORNER 8: JAIL ───
   { id: 8,  type: 'jail',     name: 'Nhà Tù',     rent: [] },
@@ -53,7 +53,7 @@ export const MAP_TILES: TileDef[] = [
 
   // Color group: GREEN (tiles 13,15)
   { id: 13, type: 'property', name: 'Điện Biên', colorGroup: 'green',  price: 180, rent: [14, 85, 170, 255, 468], buildCost: 100, hotelCost: 250  },
-  { id: 15, type: 'property', name: 'Sơn La', colorGroup: 'green',  price: 200, rent: [16, 90, 180, 270, 495], buildCost: 100, hotelCost: 250  },
+  { id: 15, type: 'property', name: 'Mộc Châu', colorGroup: 'green',  price: 200, rent: [16, 90, 180, 270, 495], buildCost: 100, hotelCost: 250  },
 
   // port (id 14)
   { id: 14, type: 'port',     name: 'Cảng Tây',   rent: [] ,  price:200},
@@ -74,7 +74,7 @@ export const MAP_TILES: TileDef[] = [
 
   // Color group: PURPLE (tiles 21,22,23)
   { id: 21, type: 'property', name: 'Ninh Bình',     colorGroup: 'purple', price: 260, rent: [22, 128, 255, 383, 701], buildCost: 150, hotelCost: 375  },
-  { id: 22, type: 'property', name: 'Quảng Ninh',    colorGroup: 'purple', price: 260, rent: [22, 135, 270, 405, 743], buildCost: 150, hotelCost: 375  },
+  { id: 22, type: 'property', name: 'Hạ Long',    colorGroup: 'purple', price: 260, rent: [22, 135, 270, 405, 743], buildCost: 150, hotelCost: 375  },
   { id: 23, type: 'property', name: 'Hà Nội',    colorGroup: 'purple', price: 280, rent: [24, 143, 285, 428, 784], buildCost: 150, hotelCost: 375  },
 
   // ─── CORNER 24: AIRPORT ───
@@ -85,7 +85,7 @@ export const MAP_TILES: TileDef[] = [
   { id: 25, type: 'port',     name: 'Cảng Đông',  rent: [] , price:200},
 
   // Color group: PINK (tiles 26,27)
-  { id: 26, type: 'property', name: 'Bình Dương',    colorGroup: 'pink',   price: 300, rent: [26, 170, 340, 510, 935], buildCost: 200, hotelCost: 500 },
+  { id: 26, type: 'property', name: 'Đồng Nai',    colorGroup: 'pink',   price: 300, rent: [26, 170, 340, 510, 935], buildCost: 200, hotelCost: 500 },
   { id: 27, type: 'property', name: 'HCM',     colorGroup: 'pink',   price: 320, rent: [28, 180, 360, 540, 990], buildCost: 200, hotelCost: 500 },
 
   // chance (id 28)
@@ -95,7 +95,7 @@ export const MAP_TILES: TileDef[] = [
   { id: 29, type: 'property', name: 'Thanh Hóa',   colorGroup: 'cyan',   price: 360, rent: [36, 195, 390, 585, 1060], buildCost: 200, hotelCost: 500  },
   { id: 31, type: 'property', name: 'Đà Lạt',  colorGroup: 'cyan',   price: 400, rent: [50, 200, 400, 600, 1100], buildCost: 200, hotelCost: 500  },
 
-  { id: 30, type: 'tax',  name: 'Thuế Thu Nhập',   rent: [] },
+  { id: 30, type: 'tax',  name: 'Thuế',   rent: [] },
 ];
 
 // Color groups lookup

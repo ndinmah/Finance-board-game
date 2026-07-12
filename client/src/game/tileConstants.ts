@@ -15,16 +15,62 @@ export const TILE_COUNT = 32;
 
 export const TILE_NAMES: Record<number, string> = {
   0: 'Xuất Phát', 8: 'Nhà Tù', 16: 'Lễ Hội', 24: 'Sân Bay',
-  1: 'Hà Nội', 2: 'Hải Phòng', 3: 'Nam Định',
-  4: 'Cảng Bắc',
-  5: 'Ninh Bình', 6: 'Thanh Hoá', 7: 'Nghệ An',
+  1: 'Cà Mau', 2: 'Bến Tre', 3: 'Cần Thơ',
+  4: 'Cảng Nam',
+  5: 'Long An', 6: 'Vĩnh Long', 7: 'Mỹ Tho',
   9: 'Đà Nẵng', 10: 'Hội An', 11: 'Huế',
-  12: 'Cảng Tây',
-  13: 'Quy Nhơn', 14: 'Nha Trang', 15: 'Phan Thiết',
-  17: 'Vũng Tàu', 18: 'Cần Thơ', 19: 'Phú Quốc',
-  20: 'Cảng Bắc 2',
-  21: 'Đà Lạt', 22: 'Buôn Mê', 23: 'Kon Tum',
-  25: 'Sa Pa', 26: 'Hạ Long', 27: 'Cát Bà',
-  28: 'Cảng Đông',
-  29: 'Mộc Châu', 30: 'Mai Châu', 31: 'Điện Biên',
+  12: 'Cơ hội',
+  13: 'Điện Biên', 14: 'Cảng Tây', 15: 'Mộc Châu',
+  17: 'Nha Trang', 18: 'Cảng Bắc', 19: 'Phú Quốc',
+  20: 'Cơ hội',
+  21: 'Ninh Bình', 22: 'Hạ Long', 23: 'Hà Nội',
+  25: 'Cảng Đông', 26: 'Đồng Nai', 27: 'HCM',
+  28: 'Cơ hội',
+  29: 'Thanh Hóa', 30: 'Thuế', 31: 'Đà Lạt',
 };
+
+export interface TileDataDef {
+  id: number;
+  type: string;
+  name: string;
+  colorGroup?: string;
+  price?: number;
+  rent: number[];
+  buildCost?: number;
+  hotelCost?: number;
+}
+
+export const MAP_TILES_DATA: TileDataDef[] = [
+  { id: 0,  type: 'go',       name: 'Xuất Phát',  rent: [] },
+  { id: 1,  type: 'property', name: 'Cà Mau',    colorGroup: 'red',    price: 60,  rent: [2,  25, 50, 75, 150],  buildCost: 50,  hotelCost: 150 },
+  { id: 2,  type: 'property', name: 'Bến Tre',    colorGroup: 'red',    price: 60,  rent: [2, 28, 55, 83, 165],  buildCost: 50,  hotelCost: 150 },
+  { id: 3,  type: 'property', name: 'Cần Thơ',    colorGroup: 'red',    price: 60,  rent: [4, 30, 60, 90, 180],  buildCost: 50,  hotelCost: 150 },
+  { id: 4,  type: 'port',     name: 'Cảng Nam',   rent: [] , price: 200 },
+  { id: 5,  type: 'property', name: 'Long An',  colorGroup: 'orange', price: 100, rent: [6, 33, 65, 98, 188], buildCost: 50, hotelCost: 150 },
+  { id: 6,  type: 'property', name: 'Vĩnh Long',  colorGroup: 'orange', price: 100, rent: [6, 35, 75, 105, 210], buildCost: 50, hotelCost: 150 },
+  { id: 7,  type: 'property', name: 'Mỹ Tho',    colorGroup: 'orange', price: 120, rent: [8, 38, 75, 113, 225], buildCost: 50, hotelCost: 150 },
+  { id: 8,  type: 'jail',     name: 'Nhà Tù',     rent: [] },
+  { id: 9,  type: 'property', name: 'Đà Nẵng',    colorGroup: 'yellow', price: 140, rent: [10, 70, 140, 210, 385], buildCost: 100, hotelCost: 250 },
+  { id: 10, type: 'property', name: 'Hội An',     colorGroup: 'yellow', price: 140, rent: [10, 75, 150, 225, 413], buildCost: 100, hotelCost: 250 },
+  { id: 11, type: 'property', name: 'Huế',         colorGroup: 'yellow', price: 160, rent: [12, 80, 160, 240, 440], buildCost: 100, hotelCost: 250 },
+  { id: 12, type: 'chance',  name: 'Cơ hội',   rent: [] },
+  { id: 13, type: 'property', name: 'Điện Biên', colorGroup: 'green',  price: 180, rent: [14, 85, 170, 255, 468], buildCost: 100, hotelCost: 250 },
+  { id: 14, type: 'port',     name: 'Cảng Tây',   rent: [] ,  price: 200 },
+  { id: 15, type: 'property', name: 'Mộc Châu', colorGroup: 'green',  price: 200, rent: [16, 90, 180, 270, 495], buildCost: 100, hotelCost: 250 },
+  { id: 16, type: 'festival', name: 'Lễ Hội',     rent: [] },
+  { id: 17, type: 'property', name: 'Nha Trang',   colorGroup: 'blue',   price: 220, rent: [18, 108, 220, 333, 614], buildCost: 150, hotelCost: 375 },
+  { id: 18, type: 'port',     name: 'Cảng Bắc', rent: [] , price: 200 },
+  { id: 19, type: 'property', name: 'Phú Quốc',   colorGroup: 'blue',   price: 240, rent: [20, 120, 240, 360, 660], buildCost: 150, hotelCost: 375 },
+  { id: 20, type: 'chance',  name: 'Cơ hội',   rent: [] },
+  { id: 21, type: 'property', name: 'Ninh Bình',     colorGroup: 'purple', price: 260, rent: [22, 128, 255, 383, 701], buildCost: 150, hotelCost: 375 },
+  { id: 22, type: 'property', name: 'Hạ Long',    colorGroup: 'purple', price: 260, rent: [22, 135, 270, 405, 743], buildCost: 150, hotelCost: 375 },
+  { id: 23, type: 'property', name: 'Hà Nội',    colorGroup: 'purple', price: 280, rent: [24, 143, 285, 428, 784], buildCost: 150, hotelCost: 375 },
+  { id: 24, type: 'airport',  name: 'Sân Bay',    rent: [] },
+  { id: 25, type: 'port',     name: 'Cảng Đông',  rent: [] , price: 200 },
+  { id: 26, type: 'property', name: 'Đồng Nai',    colorGroup: 'pink',   price: 300, rent: [26, 170, 340, 510, 935], buildCost: 200, hotelCost: 500 },
+  { id: 27, type: 'property', name: 'HCM',     colorGroup: 'pink',   price: 320, rent: [28, 180, 360, 540, 990], buildCost: 200, hotelCost: 500 },
+  { id: 28, type: 'chance',  name: 'Cơ hội',   rent: [] },
+  { id: 29, type: 'property', name: 'Thanh Hóa',   colorGroup: 'cyan',   price: 360, rent: [36, 195, 390, 585, 1060], buildCost: 200, hotelCost: 500 },
+  { id: 30, type: 'tax',  name: 'Thuế',   rent: [] },
+  { id: 31, type: 'property', name: 'Đà Lạt',  colorGroup: 'cyan',   price: 400, rent: [50, 200, 400, 600, 1100], buildCost: 200, hotelCost: 500 },
+];

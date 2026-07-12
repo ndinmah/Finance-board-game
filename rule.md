@@ -18,12 +18,12 @@ Bản đồ gồm 32 ô:
     -> Ô 24: Sân Bay (Airport)
 - 24 ô đất (8 nhóm màu):
     -> Đỏ: Cà Mau, Bến Tre, Cần Thơ (60đ)
-    -> Cam: Long An, Vĩnh Long, Tiền Giang (100–120đ)
+    -> Cam: Long An, Vĩnh Long, Mỹ Tho (100–120đ)
     -> Vàng: Đà Nẵng, Hội An, Huế (140–160đ)
-    -> Xanh lá: Điện Biên, Sơn La (180–200đ)
+    -> Xanh lá: Điện Biên, Mộc Châu (180–200đ)
     -> Xanh dương: Nha Trang, Phú Quốc (220–240đ)
-    -> Tím: Ninh Bình, Quảng Ninh, Hà Nội (260–280đ)
-    -> Hồng: Bình Dương, HCM (300–320đ)
+    -> Tím: Ninh Bình, Hạ Long, Hà Nội (260–280đ)
+    -> Hồng: Đồng Nai, HCM (300–320đ)
     -> Lục lam: Thanh Hóa, Đà Lạt (360–400đ)
 - 4 ô Cảng (Port):
     -> Giá mua: 200đ.
@@ -36,14 +36,14 @@ Bản đồ gồm 32 ô:
 Khi tới lượt của người chơi:
     - Tung 2 viên xúc xắc.
     - Di chuyển số bước = Tổng 2 viên xúc xắc.
-    
+
     Nếu 2 viên xúc xắc giống nhau (Double):
         - Nếu số lần Double liên tiếp == 3:
             -> Bị đưa vào Nhà Tù (Jail).
             -> Kết thúc lượt.
         - Nếu số lần Double liên tiếp < 3:
             -> Được tung xúc xắc thêm 1 lần nữa sau khi hoàn thành các hành động của ô hiện tại.
-    
+
     Khi người chơi đi qua ô Bắt đầu (nhưng không dừng lại):
         -> Nhận ngay 300đ.
 
@@ -123,13 +123,13 @@ Khi phải trả tiền (thuế, tiền tô) nhưng không đủ tiền mặt:
     - Trạng thái nợ nần được kích hoạt.
     - Giá trị bán lại của đất = 50% * (Chi phí gốc của đất + Tổng chi phí xây nhà).
     - Tính (Tổng giá trị bán lại của tất cả tài sản).
-    
+
     Nếu (Tổng giá trị bán lại >= Số tiền đang nợ):
         -> Bắt buộc chọn bán đất để trả nợ cho đến khi đủ tiền.
         -> Đất bị bán sẽ bị dỡ sạch nhà và trở thành đất vô chủ.
         -> Nếu hết giờ không thao tác:
             -> Hệ thống tự động bán các mảnh đất rẻ nhất để trừ nợ.
-            
+
     Nếu (Tổng giá trị bán lại < Số tiền đang nợ):
         -> Người chơi bị Phá sản.
         -> Hệ thống tự động thanh lý toàn bộ đất cho Ngân Hàng (trả về trạng thái vô chủ).
