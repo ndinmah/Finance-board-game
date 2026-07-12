@@ -152,8 +152,8 @@ export const useGameStore = create<GameStore>((set) => ({
 
   loadDevState: () => {
     const players = new Map<string, PlayerState>();
-    players.set('dev1', { id: 'dev1', name: 'Dev Player 1', position: 0, money: 2000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: false, color: '#FF6B6B', avatarIndex: '0', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 0 });
-    players.set('dev2', { id: 'dev2', name: 'Dev Player 2', position: 5, money: 2000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: true, color: '#4D96FF', avatarIndex: '1', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 0 });
+    players.set('dev1', { id: 'dev1', name: 'Dev Player 1', position: 0, money: 20000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: false, color: '#FF6B6B', avatarIndex: '0', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 1 });
+    players.set('dev2', { id: 'dev2', name: 'Dev Player 2', position: 5, money: 2000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: true, color: '#4D96FF', avatarIndex: '1', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 1 });
 
     const board = new Map<number, TileState>();
     MAP_TILES_DATA.forEach(t => {
