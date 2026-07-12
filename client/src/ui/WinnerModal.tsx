@@ -1,6 +1,7 @@
 
 import { useGameStore } from '../store/gameStore';
 import { leaveRoom } from '../net/colyseusClient';
+import { formatMoney } from '../utils/format';
 import './WinnerModal.css';
 
 export default function WinnerModal() {
@@ -18,7 +19,7 @@ export default function WinnerModal() {
         </p>
         {winner && (
           <div className="winner-stats">
-            <div className="stat"><span>💰 Tiền còn</span><strong>{winner.money.toLocaleString()}đ</strong></div>
+            <div className="stat"><span>💰 Tiền còn</span><strong>{formatMoney(winner.money)}</strong></div>
           </div>
         )}
         <button id="btn-return-lobby" className="btn-return" onClick={leaveRoom}>

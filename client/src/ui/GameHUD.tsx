@@ -1,4 +1,5 @@
 import { useGameStore } from '../store/gameStore';
+import { formatMoney } from '../utils/format';
 import './GameHUD.css';
 
 export default function GameHUD() {
@@ -35,7 +36,7 @@ export default function GameHUD() {
               </div>
               <div className="hud-info">
                 <span className="hud-name">{p.name}{isMe ? ' ★' : ''}</span>
-                <span className="hud-money">💰 {p.money.toLocaleString()}đ</span>
+                <span className="hud-money">💰 {formatMoney(p.money)}</span>
               </div>
               {isActive && <div className="active-indicator" />}
             </div>

@@ -2,6 +2,7 @@
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { MAP_TILE_COLORS } from '../game/tileConstants';
+import { formatMoney } from '../utils/format';
 import './PropertyModal.css';
 
 interface Props { tileId: number; onClose: () => void; }
@@ -88,7 +89,7 @@ export default function PropertyModal({ tileId, onClose }: Props) {
                   return (
                     <tr key={i} className={tile.currentRent === actualVal ? 'current-row' : ''}>
                       <td>{displayLabel}</td>
-                      <td>{actualVal.toLocaleString()}đ</td>
+                      <td>{formatMoney(actualVal)}</td>
                     </tr>
                   );
                 })}
@@ -98,17 +99,17 @@ export default function PropertyModal({ tileId, onClose }: Props) {
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', lineHeight: '1.4' }}>
               <p style={{ margin: '0 0 8px 0', color: '#38bdf8', fontWeight: 'bold' }}>Phí qua cảng:</p>
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                <li>1 Cảng: 25đ</li>
-                <li>2 Cảng: 50đ</li>
-                <li>3 Cảng: 75đ</li>
+                <li>1 Cảng: 25K</li>
+                <li>2 Cảng: 50K</li>
+                <li>3 Cảng: 75K</li>
                 <li style={{ color: '#fbbf24' }}>4 Cảng: <strong>THẮNG NGAY LẬP TỨC!</strong></li>
               </ul>
             </div>
           )}
 
           <div className="property-meta">
-            <span>💰 Giá mua: <strong>{tile.price.toLocaleString()}đ</strong></span>
-            {tile.tileType === 'property' && <span>🔨 Xây nhà: <strong>{tile.buildCost.toLocaleString()}đ</strong></span>}
+            <span>💰 Giá mua: <strong>{formatMoney(tile.price)}</strong></span>
+            {tile.tileType === 'property' && <span>🔨 Xây nhà: <strong>{formatMoney(tile.buildCost)}</strong></span>}
           </div>
 
           {/* Remote upgrade actions */}
@@ -127,7 +128,7 @@ export default function PropertyModal({ tileId, onClose }: Props) {
                     options.push(
                       <button key={target} className="btn-upgrade" style={{ background: '#0ea5e9' }}
                         onClick={() => { send('remoteUpgradeProperty', { tileId, targetHouses: target }); onClose(); }}>
-                        ✨ Nâng cấp lên {label} ({cost.toLocaleString()}đ)
+                        ✨ Nâng cấp lên {label} ({formatMoney(cost)})
                       </button>
                     );
                   }
@@ -154,14 +155,14 @@ export default function PropertyModal({ tileId, onClose }: Props) {
           {/* Festival selection */}
           {turnPhase === 'festival_select' && currentPlayerId === myPlayerId && isOwner && (
             <button className="btn-festival-select" onClick={handleFestivalSelect}>
-              🎉 Tổ chức Lễ Hội (50đ)
+              🎉 Tổ chức Lễ Hội (50K)
             </button>
           )}
 
           {/* Sell for Debt */}
           {turnPhase === 'pay_debt' && currentPlayerId === myPlayerId && isOwner && (
             <button className="btn-mortgage" style={{background: '#ef4444', marginTop: '12px'}} onClick={handleSellForDebt}>
-              ⚠️ Bán trả nợ (nhận {sellValue.toLocaleString()}đ)
+              ⚠️ Bán trả nợ (nhận {formatMoney(sellValue)})
             </button>
           )}
         </div>
