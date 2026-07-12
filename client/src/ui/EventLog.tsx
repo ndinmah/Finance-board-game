@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import './EventLog.css';
 

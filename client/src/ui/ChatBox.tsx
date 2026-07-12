@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import './ChatBox.css';
