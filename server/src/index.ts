@@ -9,7 +9,7 @@ import { LobbyRoom } from './rooms/LobbyRoom';
 const PORT = Number(process.env.PORT) || 2567;
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 // Health check endpoint

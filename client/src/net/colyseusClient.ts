@@ -1,7 +1,8 @@
 import { Client, Room } from 'colyseus.js';
 import { useGameStore } from '../store/gameStore';
 
-const WS_URL = 'ws://localhost:2567';
+// Lấy IP/domain hiện tại của trình duyệt thay vì hardcode localhost
+const WS_URL = `ws://${window.location.hostname}:2567`;
 
 let client: Client | null = null;
 let room: Room | null = null;
