@@ -172,43 +172,32 @@ export class IsoBoard {
       const visualLayer = new PIXI.Container();
       visualLayer.label = 'visual';
 
-      // Vẽ cờ / viền chủ sở hữu
-      if (tile.ownerId && players.has(tile.ownerId)) {
-        const owner = players.get(tile.ownerId)!;
-        const ownerColor = parseInt(owner.color.replace('#', '0x'));
-
-        const ownerRing = new PIXI.Graphics();
-        ownerRing.poly(this._getIsoPolygon(id));
-        ownerRing.stroke({ color: ownerColor, width: 4, alpha: 0.8 });
-        visualLayer.addChild(ownerRing);
-      }
-
       // Tính toán lệch dịch chuyển về góc đỉnh-giữa (top-middle) của ô đất
       let houseScreenX = 0;
       let houseScreenY = 0;
 
       if (id > 0 && id < 8) {
         // Cạnh trái-dưới: dịch lên trên-phải (CY âm)
-        const houseCX = 0;
+        const houseCX = 10;
         const houseCY = -hh * 0.45;
         houseScreenX = houseCX * cos - houseCY * sin;
         houseScreenY = (houseCX * sin + houseCY * cos) * scaleY;
       } else if (id > 16 && id < 24) {
         // Cạnh phải-trên: dịch lên trên-phải (CY âm) để luôn nằm trên chữ
-        const houseCX = 0;
+        const houseCX = 10;
         const houseCY = -hh * 0.45;
         houseScreenX = houseCX * cos - houseCY * sin;
         houseScreenY = (houseCX * sin + houseCY * cos) * scaleY;
       } else if (id > 8 && id < 16) {
         // Cạnh trái-trên: dịch lên trên-trái (CX âm) để luôn nằm trên chữ
         const houseCX = -hw * 0.45;
-        const houseCY = 0;
+        const houseCY = 10;
         houseScreenX = houseCX * cos - houseCY * sin;
         houseScreenY = (houseCX * sin + houseCY * cos) * scaleY;
       } else if (id > 24 && id < 32) {
         // Cạnh phải-dưới: dịch lên trên-trái (CX âm)
         const houseCX = -hw * 0.45;
-        const houseCY = 0;
+        const houseCY = 10;
         houseScreenX = houseCX * cos - houseCY * sin;
         houseScreenY = (houseCX * sin + houseCY * cos) * scaleY;
       }
@@ -235,16 +224,67 @@ export class IsoBoard {
         }
         // Vẽ mô hình nhà nếu có
         if (tile.houseCount > 0) {
-          this._drawHouseIndicators(houseLayer, tile.houseCount, id);
+          this._drawHouseIndicators(houseLayer, tile.houseCount, id, ownerColor);
         }
       }
 
-      // Tourist spot indicator
+      // Tourist spot indicator - mô hình cờ cắm du lịch
       if (tile.isTouristSpot) {
-        const spot = new PIXI.Text({ text: '🏖️', style: { fontSize: 28 } });
-        spot.anchor.set(0.5);
-        spot.position.set(0, -50); // Ở phía trên nhà/biển báo
-        houseLayer.addChild(spot);
+        // Xác định tâm cạnh và góc xoay (đồng nhất với text labels)
+        let tcx = 0, tcy = 0;
+        let flagRot = 0;
+
+        if ((id > 0 && id < 8) || (id > 16 && id < 24)) {
+          tcx = 0; tcy = hh * 0.55; // Cạnh CY: cạnh trái-dưới & phải-trên
+          flagRot = 0;
+        } else if ((id > 8 && id < 16) || (id > 24 && id < 32)) {
+          tcx = hw * 0.55; tcy = 0; // Cạnh CX: cạnh trái-trên & phải-dưới
+          flagRot = -Math.PI / 2;
+        }
+
+        const tScreenX = (tcx * cos - tcy * sin);
+        const tScreenY = (tcx * sin + tcy * cos) * scaleY;
+
+        const flagParent = new PIXI.Container();
+        flagParent.position.set(tScreenX, tScreenY);
+
+        const g = new PIXI.Graphics();
+
+        // Đế cột cờ (hình elip nằm dẹt trên sàn để tạo chiều sâu)
+        g.ellipse(0, 0, 7, 3.5);
+        g.fill({ color: 0x9E9E9E });
+
+        // Thân cột cờ (luôn hướng thẳng đứng lên trên màn hình)
+        g.rect(-1.2, -50, 2.4, 50);
+        g.fill({ color: 0xDDDDDD });
+
+        // Đầu cột (viên bi vàng)
+        g.circle(0, -50, 2.8);
+        g.fill({ color: 0xFFCA28 });
+
+        const isLeftSide = id < 16;
+        if (isLeftSide) {
+          // Cờ hướng sang phải
+          g.poly([1.2, -49, 28, -42, 1.2, -35]);
+          g.fill({ color: 0xFF8F00 });
+          g.stroke({ color: 0xE65100, width: 0.8 });
+
+          // Vân sọc trang trí trên cờ
+          g.moveTo(4, -46).lineTo(22, -41.5).stroke({ color: 0xFFCC02, width: 0.9, alpha: 0.8 });
+          g.moveTo(4, -43).lineTo(20, -39.0).stroke({ color: 0xFFCC02, width: 0.9, alpha: 0.6 });
+        } else {
+          // Cờ hướng sang trái
+          g.poly([-1.2, -49, -28, -42, -1.2, -35]);
+          g.fill({ color: 0xFF8F00 });
+          g.stroke({ color: 0xE65100, width: 0.8 });
+
+          // Vân sọc trang trí trên cờ
+          g.moveTo(-4, -46).lineTo(-22, -41.5).stroke({ color: 0xFFCC02, width: 0.9, alpha: 0.8 });
+          g.moveTo(-4, -43).lineTo(-20, -39.0).stroke({ color: 0xFFCC02, width: 0.9, alpha: 0.6 });
+        }
+
+        flagParent.addChild(g);
+        visualLayer.addChild(flagParent);
       }
 
       // Hiện tên tỉnh và giá tiền tô trên ô đất
@@ -397,6 +437,13 @@ export class IsoBoard {
     });
   }
 
+  private _darkenColor(hex: number, factor: number): number {
+    const r = Math.floor(((hex >> 16) & 0xFF) * factor);
+    const g = Math.floor(((hex >> 8)  & 0xFF) * factor);
+    const b = Math.floor(( hex        & 0xFF) * factor);
+    return (r << 16) | (g << 8) | b;
+  }
+
   private _drawHouseIndicators(container: PIXI.Container, count: number, id: number, ownerColor?: number) {
     if (count < 0) return;
 
@@ -471,8 +518,8 @@ export class IsoBoard {
 
       const cRoofL = 0x5D5C58; // Mái xám khối trái
       const cRoofL_Inner = 0x4A4946;
-      const cRoofR = 0xBCA38D; // Mái cát ấm khối phải
-      const cRoofR_Inner = 0xA38C77;
+      const cRoofR = ownerColor !== undefined ? ownerColor : 0xBCA38D; // Mái cát ấm khối phải
+      const cRoofR_Inner = ownerColor !== undefined ? this._darkenColor(ownerColor, 0.75) : 0xA38C77;
 
       const cWin = 0x1A252C; // Kính tối màu hiện đại
       const cWinFrame = 0x34495E; // Khung xám xanh
@@ -596,8 +643,8 @@ export class IsoBoard {
       const cWallR_Front = 0xE8D8C8; // Tường đá ấm mặt tiền khối phải
       const cWallR_Side = 0xD7C4B7; // Tường đá hông khối phải
 
-      const cRoof = 0x7E7D78; // Mái phẳng xám
-      const cRoofBorder = 0x4A4946; // Gờ chắn mái sẫm màu
+      const cRoof = ownerColor !== undefined ? ownerColor : 0x7E7D78; // Mái phẳng xám
+      const cRoofBorder = ownerColor !== undefined ? this._darkenColor(ownerColor, 0.65) : 0x4A4946; // Gờ chắn mái sẫm màu
 
       const cWin = 0x1A252C; // Vách kính lớn đen xanh
       const cWinFrame = 0x34495E; // Khung cửa kính
@@ -709,7 +756,9 @@ export class IsoBoard {
       const pt = (ix: number, iy: number, iz: number) => isoPt(ix - totalW/2, iy - d1/2, iz);
 
       const cGrass = 0xAED581, cDriveway = 0x9E9E9E, cWall = 0xF5F5F5, cWallSide = 0xE0E0E0;
-      const cRoof = 0xD84315, cRoofSide = 0xBF360C, cGarageDoor = 0xFFCC80, cMainDoor = 0xD84315;
+      const cRoof = ownerColor !== undefined ? ownerColor : 0xD84315;
+      const cRoofSide = ownerColor !== undefined ? this._darkenColor(ownerColor, 0.7) : 0xBF360C;
+      const cGarageDoor = 0xFFCC80, cMainDoor = 0xD84315;
       const cWin = 0xB3E5FC, cTrunk = 0x5D4037, cLeavesL = 0x388E3C, cLeavesR = 0x2E7D32;
 
       drawPoly([pt(-4, -4, 0), pt(totalW+4, -4, 0), pt(totalW+4, d1+6, 0), pt(-4, d1+6, 0)], cGrass);
@@ -756,8 +805,8 @@ export class IsoBoard {
       const cBase = 0xD7CCC8; // Móng xám ấm
       const cWallR = 0xFDFBF7; // Tường mặt tiền trắng kem sáng (Facade)
       const cWallL = 0xBCAAA4; // Tường hông nâu gỗ nhạt (Side Wall)
-      const cRoof = 0x9E4733; // Mái ngói đỏ cam đất nung
-      const cRoofSide = 0x7E3524; // Viền đổ bóng mái ngói
+      const cRoof = ownerColor !== undefined ? ownerColor : 0x9E4733; // Mái ngói đỏ cam đất nung
+      const cRoofSide = ownerColor !== undefined ? this._darkenColor(ownerColor, 0.7) : 0x7E3524; // Viền đổ bóng mái ngói
       const cTrim = 0x5D4037; // Khung gỗ nâu đậm
       const cTrimSide = 0x4E342E; // Khung gỗ nâu đậm tối màu (mặt hông)
       const cDoor = 0x8D6E63; // Màu gỗ cánh cửa
@@ -997,283 +1046,304 @@ export class IsoBoard {
       y: offsetY + ix * 0.5 + iy * 0.5 - iz
     });
 
-    const drawPoly = (points: {x:number, y:number}[], fill: number, strokeColor: number = -1, strokeW: number = 1) => {
+    const drawPoly = (points: {x:number, y:number}[], fill: number, strokeColor: number = -1, strokeW: number = 1, alpha: number = 1) => {
       g.poly(points);
-      g.fill({ color: fill });
-      if (strokeColor !== -1) g.stroke({ color: strokeColor, width: strokeW, alpha: 0.9, alignment: 1 });
+      g.fill({ color: fill, alpha });
+      if (strokeColor !== -1) g.stroke({ color: strokeColor, width: strokeW, alpha: 0.9 * alpha, alignment: 1 });
     };
 
-    const w = 24, d = 20; 
+    const w = 24, d = 20;
     const pt = (ix: number, iy: number, iz: number) => isoPt(ix - w/2, iy - d/2, iz);
 
-    // Bảng màu chuẩn từ hình ảnh
-    const cSand = 0xEBDCB9; // Cát vàng nhạt kem
-    const cSandDark = 0xC1AC8A; // Mặt hông cát đổ bóng
-    const cWater = 0x51A8DD; // Nước biển xanh da trời nhạt
-    const cWaterDeep = 0x1E88E5; // Bóng nước biển sâu
-    const cWaterDark = 0x0D47A1; // Mặt hông nước biển sâu
-    const cFoam = 0xF0F8FF; // Bọt sóng trắng kem
-    const cWood = 0x7C5A43; // Sàn gỗ nâu vừa
-    const cWoodDark = 0x543B2A; // Sàn gỗ bóng tối
-    const cRoof = 0x8C3B30; // Đỏ gạch/đất nung mái vòm
-    const cRoofSide = 0x6D2B22; // Đỏ tối hông mái
-    const cGlass = 0xD0E8F2; // Mặt kính xanh ngọc nhạt
-    const cGlassFrame = 0x3E2723; // Khung cửa gỗ đậm
-    const cSofa = 0xFFFFFF; // Sofa trắng
-    const cSofaShadow = 0xE0E0E0; // Bóng sofa
-    
+    // Color definitions
+    const cSand = 0xEBDCB9;
+    const cSandDark = 0xC1AC8A;
+    const cWater = 0x4DD0E1; // Xanh ngọc bích sáng
+    const cWaterDeep = 0x00ACC1; // Xanh ngọc sâu
+    const cWaterDark = 0x006064; // Mặt hông nước sâu
+    const cFoam = 0xFFFFFF;
+
+    const cRockTop = 0x78909C; // Đá xám lam
+    const cRockSide = 0x455A64; // Đá hông tối
+    const cRockShadow = 0x37474F;
+
+    const cWood = 0x8D6E63; // Cầu tàu gỗ
+    const cWoodDark = 0x5D4037;
+    const cWoodPost = 0x3E2723;
+
     const flagColor = ownerColor !== undefined ? ownerColor : 0xD32F2F;
-    const boatColor = ownerColor !== undefined ? ownerColor : 0xD32F2F;
+    const boatColor = ownerColor !== undefined ? ownerColor : 0x00E5FF;
+    const cabinRoof = ownerColor !== undefined ? ownerColor : 0x8C3B30;
 
     // ------------------------------------------
-    // 1. NỀN 3D NỔI (3D DIORAMA BASE)
+    // 1. DIORAMA BASE (CÁT, NƯỚC, ĐẾ 3D)
     // ------------------------------------------
-    // Vẽ mặt phẳng cát (Sand top)
-    drawPoly([pt(-4, -4, 0), pt(12, -4, 0), pt(6, d+4, 0), pt(-4, d+4, 0)], cSand);
-    // Vẽ mặt phẳng nước (Water top)
-    drawPoly([pt(12, -4, 0), pt(w+4, -4, 0), pt(w+4, d+4, 0), pt(6, d+4, 0)], cWater);
+    // Mặt cát (Sand top)
+    drawPoly([pt(-4, -4, 0), pt(8, -4, 0), pt(2, d+4, 0), pt(-4, d+4, 0)], cSand);
+    // Mặt nước (Water top)
+    drawPoly([pt(8, -4, 0), pt(w+4, -4, 0), pt(w+4, d+4, 0), pt(2, d+4, 0)], cWater);
     // Bờ biển đổ bóng nước sâu
-    drawPoly([pt(12, -4, 0), pt(6, d+4, 0), pt(6.8, d+4, 0), pt(12.8, -4, 0)], cWaterDeep);
-    // Vẽ bọt sóng dọc bờ biển
-    drawPoly([pt(11.5, -4, 0), pt(12.5, -4, 0), pt(6.5, d+4, 0), pt(5.5, d+4, 0)], cFoam, -1);
+    drawPoly([pt(8, -4, 0), pt(2, d+4, 0), pt(2.8, d+4, 0), pt(8.8, -4, 0)], cWaterDeep);
+    // Bọt sóng dọc bờ biển
+    drawPoly([pt(7.5, -4, 0), pt(8.5, -4, 0), pt(2.5, d+4, 0), pt(1.5, d+4, 0)], cFoam, -1, 1, 0.8);
 
     // Chiều dày của đế 3D (Độ cao h = -3)
     // Mặt hông trái (X axis, iy = d+4) - split cát và nước
-    // Phần cát của hông trái: từ ix = -4 đến 6
-    drawPoly([pt(-4, d+4, 0), pt(6, d+4, 0), pt(6, d+4, -3), pt(-4, d+4, -3)], cSandDark);
-    // Phần nước của hông trái: từ ix = 6 đến w+4
-    drawPoly([pt(6, d+4, 0), pt(w+4, d+4, 0), pt(w+4, d+4, -3), pt(6, d+4, -3)], cWaterDark);
-    
-    // Mặt hông phải (Y axis, ix = w+4) - hoàn toàn là nước
+    drawPoly([pt(-4, d+4, 0), pt(2, d+4, 0), pt(2, d+4, -3), pt(-4, d+4, -3)], cSandDark);
+    drawPoly([pt(2, d+4, 0), pt(w+4, d+4, 0), pt(w+4, d+4, -3), pt(2, d+4, -3)], cWaterDark);
+    // Mặt hông phải (Y axis, ix = w+4) - nước sâu
     drawPoly([pt(w+4, -4, 0), pt(w+4, d+4, 0), pt(w+4, d+4, -3), pt(w+4, -4, -3)], cWaterDark);
 
     // ------------------------------------------
-    // 2. CÂY DỪA (TALL CURVED PALM TREES)
+    // 2. CẦU TÀU GỖ (WOODEN DOCK PIER)
     // ------------------------------------------
-    const drawPalmTree = (baseX: number, baseY: number, height: number, scale: number) => {
-      const cTrunk = 0x8D6E63;
-      const cTrunkRing = 0x5D4037;
-      const segs = 7;
-      let cx = baseX;
-      let cy = baseY;
-      let cz = 0;
-      
-      for (let i = 1; i <= segs; i++) {
-        const nextZ = (height / segs) * i;
-        // Cong nghiêng mạnh sang phải và phía trước
-        const nextX = baseX + Math.sin((i / segs) * (Math.PI / 2.5)) * 4 * scale;
-        const nextY = baseY + (i / segs) * 1.5 * scale;
-        
-        // Vẽ thân đốt dừa
-        drawPoly([
-          pt(cx - 0.4 * scale, cy - 0.4 * scale, cz),
-          pt(nextX - 0.4 * scale, nextY - 0.4 * scale, nextZ),
-          pt(nextX + 0.4 * scale, nextY + 0.4 * scale, nextZ),
-          pt(cx + 0.4 * scale, cy + 0.4 * scale, cz)
-        ], cTrunk);
-        
-        // Vẽ vòng thắt đốt dừa
-        g.moveTo(pt(nextX - 0.4 * scale, nextY - 0.4 * scale, nextZ).x, pt(nextX - 0.4 * scale, nextY - 0.4 * scale, nextZ).y)
-         .lineTo(pt(nextX + 0.4 * scale, nextY + 0.4 * scale, nextZ).x, pt(nextX + 0.4 * scale, nextY + 0.4 * scale, nextZ).y)
-         .stroke({ color: cTrunkRing, width: 0.8 });
+    // Vị trí: ix = 2 đến 12 (nhô từ cát ra nước), iy = 11 đến 14
+    // Cọc gỗ cắm xuống nước
+    const drawPost = (px: number, py: number) => {
+      drawPoly([pt(px-0.3, py-0.3, -2), pt(px+0.3, py-0.3, -2), pt(px+0.3, py+0.3, -2), pt(px-0.3, py+0.3, -2)], cWoodPost);
+      drawPoly([pt(px-0.3, py+0.3, -2), pt(px+0.3, py+0.3, -2), pt(px+0.3, py+0.3, 0.8), pt(px-0.3, py+0.3, 0.8)], cWoodPost);
+      drawPoly([pt(px+0.3, py-0.3, -2), pt(px+0.3, py+0.3, -2), pt(px+0.3, py+0.3, 0.8), pt(px+0.3, py-0.3, 0.8)], cWoodPost);
+    };
+    drawPost(6, 11);
+    drawPost(6, 14);
+    drawPost(10, 11);
+    drawPost(10, 14);
 
-        cx = nextX;
-        cy = nextY;
-        cz = nextZ;
+    // Mặt cầu tàu (Deck plank)
+    drawPoly([pt(2, 11, 0.8), pt(12, 11, 0.8), pt(12, 14, 0.8), pt(2, 14, 0.8)], cWood);
+    drawPoly([pt(12, 11, 0), pt(12, 14, 0), pt(12, 14, 0.8), pt(12, 11, 0.8)], cWoodDark);
+    drawPoly([pt(2, 14, 0), pt(12, 14, 0), pt(12, 14, 0.8), pt(2, 14, 0.8)], cWoodDark);
+
+    // Vân gỗ cầu tàu
+    for (let wx = 3; wx <= 11.5; wx += 1.2) {
+      g.moveTo(pt(wx, 11, 0.85).x, pt(wx, 11, 0.85).y)
+       .lineTo(pt(wx, 14, 0.85).x, pt(wx, 14, 0.85).y)
+       .stroke({ color: cWoodDark, width: 0.8 });
+    }
+
+    // ------------------------------------------
+    // 3. THUYỀN BUỒM NEO ĐẬU (YACHT / SAILBOAT)
+    // ------------------------------------------
+    const hullColor = 0xFFFFFF;
+    const stripeColor = boatColor;
+    // Đáy thuyền
+    drawPoly([
+      pt(9, 16.5, 0.1),
+      pt(15, 16.5, 0.15),
+      pt(15, 18.5, 0.15),
+      pt(10, 18.5, 0.1)
+    ], 0xCFD8DC);
+    // Be thuyền mặt trước
+    drawPoly([
+      pt(9, 16.5, 0.1),
+      pt(15, 16.5, 0.15),
+      pt(15, 16.5, 1.2),
+      pt(9, 16.5, 1.0)
+    ], hullColor);
+    drawPoly([
+      pt(15, 16.5, 0.15),
+      pt(15, 18.5, 0.15),
+      pt(15, 18.5, 1.2),
+      pt(15, 16.5, 1.2)
+    ], hullColor);
+    // Sọc trang trí màu Player
+    drawPoly([
+      pt(9.2, 16.5, 0.5),
+      pt(14.8, 16.5, 0.55),
+      pt(14.8, 16.5, 0.85),
+      pt(9.2, 16.5, 0.8)
+    ], stripeColor);
+    // boong
+    drawPoly([
+      pt(9.5, 16.6, 1.0),
+      pt(14.8, 16.6, 1.1),
+      pt(14.8, 18.4, 1.1),
+      pt(10.5, 18.4, 1.0)
+    ], 0xECEFF1);
+
+    // Cột buồm
+    drawPoly([pt(12.3, 17.3, 1.0), pt(12.7, 17.3, 1.0), pt(12.7, 17.7, 1.0), pt(12.3, 17.7, 1.0)], cWoodDark);
+    drawPoly([pt(12.3, 17.7, 1.0), pt(12.7, 17.7, 1.0), pt(12.7, 17.7, 9.0), pt(12.3, 17.7, 9.0)], cWoodDark);
+    drawPoly([pt(12.7, 17.3, 1.0), pt(12.7, 17.7, 1.0), pt(12.7, 17.7, 9.0), pt(12.7, 17.3, 9.0)], cWoodPost);
+
+    // Cánh buồm chính
+    drawPoly([
+      pt(12.5, 17.5, 2.5),
+      pt(9.5, 17.5, 2.0),
+      pt(12.5, 17.5, 8.5)
+    ], 0xFDFBF7, 0xCFD8DC, 0.8);
+    // Cánh buồm phụ
+    drawPoly([
+      pt(12.5, 17.5, 2.5),
+      pt(14.5, 17.5, 2.0),
+      pt(12.5, 17.5, 7.5)
+    ], stripeColor, -1, 0.8);
+
+    // Dây neo
+    g.moveTo(pt(11.5, 16.5, 1.0).x, pt(11.5, 16.5, 1.0).y)
+     .lineTo(pt(10.5, 14, 0.8).x, pt(10.5, 14, 0.8).y)
+     .stroke({ color: 0x455A64, width: 0.8, alpha: 0.6 });
+
+    // ------------------------------------------
+    // 4. GHỀNH ĐÁ XẾP TẦNG (ROCKY BASE)
+    // ------------------------------------------
+    drawPoly([pt(-3, -3, 0), pt(4.5, -3, 0), pt(4.5, 4.5, 0), pt(-3, 4.5, 0)], cRockTop);
+    drawPoly([pt(-3, 4.5, 0), pt(4.5, 4.5, 0), pt(4.5, 4.5, 1.8), pt(-3, 4.5, 1.8)], cRockSide);
+    drawPoly([pt(4.5, -3, 0), pt(4.5, 4.5, 0), pt(4.5, 4.5, 1.8), pt(4.5, -3, 1.8)], cRockShadow);
+
+    drawPoly([pt(-2, -2, 1.8), pt(3.5, -2, 1.8), pt(3.5, 3.5, 1.8), pt(-2, 3.5, 1.8)], cRockTop);
+    drawPoly([pt(-2, 3.5, 1.8), pt(3.5, 3.5, 1.8), pt(3.5, 3.5, 3.6), pt(-2, 3.5, 3.6)], cRockSide);
+    drawPoly([pt(3.5, -2, 1.8), pt(3.5, 3.5, 1.8), pt(3.5, 3.5, 3.6), pt(3.5, -2, 3.6)], cRockShadow);
+
+    drawPoly([pt(-1.2, -1.2, 3.6), pt(2.2, -1.2, 3.6), pt(2.2, 2.2, 3.6), pt(-1.2, 2.2, 3.6)], cRockTop);
+    drawPoly([pt(-1.2, 2.2, 3.6), pt(2.2, 2.2, 3.6), pt(2.2, 2.2, 5.0), pt(-1.2, 2.2, 5.0)], cRockSide);
+    drawPoly([pt(2.2, -1.2, 3.6), pt(2.2, 2.2, 3.6), pt(2.2, 2.2, 5.0), pt(2.2, -1.2, 5.0)], cRockShadow);
+
+    drawPoly([pt(-4, 5, 0), pt(-3, 5, 0.5), pt(-3, 6, 0.5), pt(-4, 6, 0)], cRockSide);
+    drawPoly([pt(-3, 5, 0.5), pt(-3, 6, 0.5), pt(-2.5, 5.5, 1.0)], cRockTop);
+
+    // ------------------------------------------
+    // 5. NHÀ KHO CẢNG (HARBOR CABIN / HOUSE)
+    // ------------------------------------------
+    const cWallL = 0xE0D8D0;
+    const cWallR = 0xF5EFEB;
+    const cDoor = 0x5D4037;
+    drawPoly([pt(-3, 6, 0), pt(0, 6, 0), pt(0, 6, 4.0), pt(-3, 6, 4.0)], cWallL);
+    drawPoly([pt(0, 6, 0), pt(0, 9.5, 0), pt(0, 9.5, 4.0), pt(0, 6, 4.0)], cWallR);
+    drawPoly([pt(0, 6, 4.0), pt(0, 9.5, 4.0), pt(0, 7.75, 5.5)], cWallR);
+    drawPoly([pt(0, 7.0, 0), pt(0, 8.5, 0), pt(0, 8.5, 3.0), pt(0, 7.0, 3.0)], cDoor, 0x3E2723, 0.8);
+
+    drawPoly([pt(-3.3, 5.7, 4.0), pt(0.3, 5.7, 4.0), pt(0.3, 7.75, 5.6), pt(-3.3, 7.75, 5.6)], this._darkenColor(cabinRoof, 0.8));
+    drawPoly([pt(-3.3, 9.8, 4.0), pt(0.3, 9.8, 4.0), pt(0.3, 7.75, 5.6), pt(-3.3, 7.75, 5.6)], cabinRoof);
+
+    // ------------------------------------------
+    // 6. THÁP HẢI ĐĂNG (LIGHTHOUSE TOWER)
+    // ------------------------------------------
+    const cx = 0.5, cy = 0.5;
+    const zBase = 5.0;
+    const zHeight = 16.0;
+    const bands = 4;
+    const bandH = zHeight / bands;
+
+    const sizeAtZ = (z: number) => {
+      const pct = (z - zBase) / zHeight;
+      return 1.9 - pct * 0.8;
+    };
+
+    for (let b = 0; b < bands; b++) {
+      const z1 = zBase + b * bandH;
+      const z2 = z1 + bandH;
+      const s1 = sizeAtZ(z1);
+      const s2 = sizeAtZ(z2);
+
+      const isPlayerColor = b % 2 === 1;
+      let leftColor: number;
+      let rightColor: number;
+
+      if (isPlayerColor) {
+        leftColor = this._darkenColor(flagColor, 0.75);
+        rightColor = flagColor;
+      } else {
+        leftColor = 0xD7CCC8;
+        rightColor = 0xFDFBF7;
       }
 
-      // Tán lá dừa sinh động
-      const cLeaves = 0x2E7D32;
-      const cLeavesLight = 0x4CAF50;
-      
-      // 5 cành lá chính cong rủ xuống
-      const leaves = [
-        { dx: -4.5, dy: -1.5, dz: -4 },
-        { dx: 4.5, dy: 1.5, dz: -4 },
-        { dx: -1.5, dy: 4.5, dz: -4 },
-        { dx: 1.5, dy: -4.5, dz: -4 },
-        { dx: -3.0, dy: -3.0, dz: -3.5 },
-        { dx: 3.0, dy: 3.0, dz: -3.5 }
-      ];
-
-      leaves.forEach(leaf => {
-        // Spine của lá
-        const endPt = pt(cx + leaf.dx * scale, cy + leaf.dy * scale, cz + leaf.dz * scale);
-        g.moveTo(pt(cx, cy, cz).x, pt(cx, cy, cz).y)
-         .quadraticCurveTo(
-            pt(cx + leaf.dx * 0.5 * scale, cy + leaf.dy * 0.5 * scale, cz + 1).x,
-            pt(cx + leaf.dx * 0.5 * scale, cy + leaf.dy * 0.5 * scale, cz + 1).y,
-            endPt.x, endPt.y
-         )
-         .stroke({ color: cLeavesLight, width: 1.5 });
-
-        // Vẽ các lá nhỏ (leaflets) chìa ra
-        for (let pct = 0.2; pct <= 1.0; pct += 0.2) {
-          const lx = cx + leaf.dx * pct * scale;
-          const ly = cy + leaf.dy * pct * scale;
-          const lz = cz + leaf.dz * pct * scale;
-          
-          // Vẽ 2 lá đối xứng rủ xuống
-          drawPoly([
-            pt(lx, ly, lz),
-            pt(lx - 0.4 * scale, ly - 0.4 * scale, lz - 1.2 * scale),
-            pt(lx - 0.1 * scale, ly - 0.1 * scale, lz - 0.5 * scale)
-          ], cLeaves);
-          drawPoly([
-            pt(lx, ly, lz),
-            pt(lx + 0.4 * scale, ly + 0.4 * scale, lz - 1.2 * scale),
-            pt(lx + 0.1 * scale, ly + 0.1 * scale, lz - 0.5 * scale)
-          ], cLeaves);
-        }
-      });
-    };
-
-    // Vẽ 2 cây dừa đan nhau nghiêng bóng
-    drawPalmTree(0, 2, 16, 1.1); // Cây dừa cao
-    drawPalmTree(2, 0, 11, 0.85); // Cây dừa thấp hơn
-
-    // ------------------------------------------
-    // 3. NHÀ VÒM MÁI NHỌN GOTHIC (GOTHIC VAULT CABIN)
-    // ------------------------------------------
-    // Sàn gỗ nâng cao (Deck Platform)
-    drawPoly([pt(3, 3, 0), pt(11, 3, 0), pt(11, 11, 0), pt(3, 11, 0)], cWoodDark);
-    drawPoly([pt(3, 3, 1), pt(11, 3, 1), pt(11, 11, 1), pt(3, 11, 1)], cWood);
-    drawPoly([pt(11, 3, 0), pt(11, 11, 0), pt(11, 11, 1), pt(11, 3, 1)], cWoodDark);
-    drawPoly([pt(3, 11, 0), pt(11, 11, 0), pt(11, 11, 1), pt(3, 11, 1)], cWood);
-
-    // Kẻ vân sàn gỗ
-    for (let iy = 4.0; iy <= 10.5; iy += 1.5) {
-      g.moveTo(pt(3, iy, 1).x, pt(3, iy, 1).y).lineTo(pt(11, iy, 1).x, pt(11, iy, 1).y).stroke({ color: cWoodDark, width: 0.8 });
-    }
-
-    // Tường bên hông gỗ tối (ix = 3)
-    drawPoly([pt(3, 3, 1), pt(3, 11, 1), pt(3, 11, 7), pt(3, 3, 7)], cWoodDark);
-    drawPoly([pt(3, 4.5, 2.2), pt(3, 6.5, 2.2), pt(3, 6.5, 5.5), pt(3, 4.5, 5.5)], cGlass, cGlassFrame, 1);
-    drawPoly([pt(3, 7.5, 2.2), pt(3, 9.5, 2.2), pt(3, 9.5, 5.5), pt(3, 7.5, 5.5)], cGlass, cGlassFrame, 1);
-
-    // Mặt kính trước hình vòm nhọn Gothic (Gothic Arch Front Facade - iy = 11)
-    // Vẽ vách mặt tiền gỗ
-    drawPoly([
-      pt(3, 11, 1), pt(11, 11, 1), pt(11, 11, 7),
-      pt(10, 11, 10.5), pt(7, 11, 15), pt(4, 11, 10.5), pt(3, 11, 7)
-    ], cWood);
-
-    // Vách kính vòm nhọn lớn ở trung tâm
-    drawPoly([
-      pt(4, 11, 1.8), pt(10, 11, 1.8), pt(10, 11, 8.5),
-      pt(7, 11, 13.5), pt(4, 11, 8.5)
-    ], cGlass);
-
-    // Khung chia cửa kính Gothic
-    g.moveTo(pt(7, 11, 1.8).x, pt(7, 11, 1.8).y).lineTo(pt(7, 11, 13.5).x, pt(7, 11, 13.5).y).stroke({ color: cGlassFrame, width: 1.2 });
-    g.moveTo(pt(4, 11, 5).x, pt(4, 11, 5).y).lineTo(pt(10, 11, 5).x, pt(10, 11, 5).y).stroke({ color: cGlassFrame, width: 1 });
-    g.moveTo(pt(5.5, 11, 1.8).x, pt(5.5, 11, 1.8).y).lineTo(pt(5.5, 11, 9.5).x, pt(5.5, 11, 9.5).y).stroke({ color: cGlassFrame, width: 0.8 });
-    g.moveTo(pt(8.5, 11, 1.8).x, pt(8.5, 11, 1.8).y).lineTo(pt(8.5, 11, 9.5).x, pt(8.5, 11, 9.5).y).stroke({ color: cGlassFrame, width: 0.8 });
-
-    // Khung gỗ bo ngoài hình vòm Gothic
-    g.moveTo(pt(3, 11, 1).x, pt(3, 11, 1).y)
-     .lineTo(pt(3, 11, 7).x, pt(3, 11, 7).y)
-     .lineTo(pt(4, 11, 10.5).x, pt(4, 11, 10.5).y)
-     .lineTo(pt(7, 11, 15).x, pt(7, 11, 15).y)
-     .lineTo(pt(10, 11, 10.5).x, pt(10, 11, 10.5).y)
-     .lineTo(pt(11, 11, 7).x, pt(11, 11, 7).y)
-     .lineTo(pt(11, 11, 1).x, pt(11, 11, 1).y)
-     .stroke({ color: cGlassFrame, width: 1.8 });
-
-    // MÁI NHỌN GOTHIC CONG RA NGOÀI (GOTHIC ROOF VAULT)
-    const roofSteps = [
-      { x1: 3, z1: 7, x2: 4, z2: 10.5 },
-      { x1: 4, z1: 10.5, x2: 5.2, z2: 13 },
-      { x1: 5.2, z1: 13, x2: 7, z2: 15 },
-      { x1: 7, z1: 15, x2: 8.8, z2: 13 },
-      { x1: 8.8, z1: 13, x2: 10, z2: 10.5 },
-      { x1: 10, z1: 10.5, x2: 11, z2: 7 }
-    ];
-
-    roofSteps.forEach((step, idx) => {
-      const col = idx <= 2 ? cRoofSide : cRoof;
       drawPoly([
-        pt(step.x1, 3, step.z1),
-        pt(step.x2, 3, step.z2),
-        pt(step.x2, 11.2, step.z2),
-        pt(step.x1, 11.2, step.z1)
-      ], col);
-    });
+        pt(cx - s1, cy - s1, z1),
+        pt(cx - s1, cy + s1, z1),
+        pt(cx - s2, cy + s2, z2),
+        pt(cx - s2, cy - s2, z2)
+      ], leftColor);
 
-    g.moveTo(pt(3, 11.2, 7).x, pt(3, 11.2, 7).y)
-     .lineTo(pt(4, 11.2, 10.5).x, pt(4, 11.2, 10.5).y)
-     .lineTo(pt(7, 11.2, 15).x, pt(7, 11.2, 15).y)
-     .lineTo(pt(10, 11.2, 10.5).x, pt(10, 11.2, 10.5).y)
-     .lineTo(pt(11, 11.2, 7).x, pt(11, 11.2, 7).y)
-     .stroke({ color: 0xFFFFFF, width: 1.5, alpha: 0.95 });
-
-    // Lá cờ sở hữu trên chóp mái nhọn
-    if (ownerColor !== undefined) {
-      drawPoly([pt(7, 6, 15), pt(7, 6, 19), pt(7.3, 6, 19), pt(7.3, 6, 15)], 0xDDDDDD);
-      drawPoly([pt(7.2, 6, 19), pt(9.5, 6, 19), pt(9.0, 6, 17.5), pt(9.5, 6, 16), pt(7.2, 6, 16)], flagColor);
+      drawPoly([
+        pt(cx - s1, cy + s1, z1),
+        pt(cx + s1, cy + s1, z1),
+        pt(cx + s2, cy + s2, z2),
+        pt(cx - s2, cy + s2, z2)
+      ], rightColor);
     }
 
     // ------------------------------------------
-    // 4. SOFA TRẮNG TRÊN BAN CÔNG (WHITE SOFA DECK)
+    // 7. BAN CÔNG & BUỒNG KÍNH (GALLERY & LANTERN)
     // ------------------------------------------
-    drawPoly([pt(4.5, 9.5, 1), pt(7.5, 9.5, 1), pt(7.5, 10.5, 1), pt(4.5, 10.5, 1)], cSofaShadow);
-    drawPoly([pt(4.5, 9.5, 1.8), pt(7.5, 9.5, 1.8), pt(7.5, 10.5, 1.8), pt(4.5, 10.5, 1.8)], cSofa);
-    drawPoly([pt(7.5, 9.5, 1), pt(7.5, 10.5, 1), pt(7.5, 10.5, 1.8), pt(7.5, 9.5, 1.8)], cSofaShadow);
-    drawPoly([pt(4.5, 10.5, 1), pt(7.5, 10.5, 1), pt(7.5, 10.5, 1.8), pt(4.5, 10.5, 1.8)], cSofa);
-
-    drawPoly([pt(4.5, 9.2, 1.8), pt(7.5, 9.2, 1.8), pt(7.5, 9.5, 1.8), pt(4.5, 9.5, 1.8)], cSofaShadow);
-    drawPoly([pt(4.5, 9.2, 3.2), pt(7.5, 9.2, 3.2), pt(7.5, 9.5, 3.2), pt(4.5, 9.5, 3.2)], cSofa);
-    drawPoly([pt(4.5, 9.5, 1.8), pt(7.5, 9.5, 1.8), pt(7.5, 9.5, 3.2), pt(4.5, 9.5, 3.2)], cSofa);
-    drawPoly([pt(7.5, 9.2, 1.8), pt(7.5, 9.5, 1.8), pt(7.5, 9.5, 3.2), pt(7.5, 9.2, 3.2)], cSofaShadow);
-
-    // ------------------------------------------
-    // 5. CẦU TÀU GỖ (WOODEN DOCK RAMP)
-    // ------------------------------------------
-    drawPoly([pt(8.5, 11, 1), pt(10, 11, 1), pt(13, 16.5, 0.2), pt(11.5, 16.5, 0.2)], cWood);
-    for (let step = 11.5; step <= 16.0; step += 0.8) {
-      const pct = (step - 11) / 5;
-      const xLeft = 8.5 + (11.5 - 8.5) * pct;
-      const xRight = 10 + (13 - 10) * pct;
-      const zInterp = 1 - 0.8 * pct;
-      g.moveTo(pt(xLeft, step, zInterp).x, pt(xLeft, step, zInterp).y)
-       .lineTo(pt(xRight, step, zInterp).x, pt(xRight, step, zInterp).y)
-       .stroke({ color: cWoodDark, width: 1.0 });
-    }
-
-    // ------------------------------------------
-    // 6. CA NÔ CAO TỐC (SPEEDBOAT / JET SKI)
-    // ------------------------------------------
+    const sBalcony = 1.35;
     drawPoly([
-      pt(12.5, 13, 0.1),
-      pt(16.0, 16.5, 0.15),
-      pt(17.0, 15.5, 0.15),
-      pt(13.5, 12, 0.1)
-    ], 0xFFFFFF);
-    
+      pt(cx - sBalcony, cy - sBalcony, 21.0),
+      pt(cx + sBalcony, cy - sBalcony, 21.0),
+      pt(cx + sBalcony, cy + sBalcony, 21.0),
+      pt(cx - sBalcony, cy + sBalcony, 21.0)
+    ], 0x263238);
     drawPoly([
-      pt(13.2, 13.3, 0.65),
-      pt(15.7, 15.8, 0.7),
-      pt(16.3, 15.2, 0.7),
-      pt(13.8, 12.7, 0.65)
-    ], boatColor);
+      pt(cx - sBalcony, cy + sBalcony, 21.0),
+      pt(cx + sBalcony, cy + sBalcony, 21.0),
+      pt(cx + sBalcony, cy + sBalcony, 21.6),
+      pt(cx - sBalcony, cy + sBalcony, 21.6)
+    ], 0x37474F);
+
+    const sLantern1 = 0.85;
+    const sLantern2 = 0.85;
+    const cGlass = 0xE0F7FA;
+    const cGlassFrame = 0x263238;
 
     drawPoly([
-      pt(13.8, 13.9, 0.65),
-      pt(14.8, 14.9, 0.7),
-      pt(15.2, 14.5, 0.7),
-      pt(14.2, 13.5, 0.65)
-    ], 0xB3E5FC);
+      pt(cx - sLantern1, cy - sLantern1, 21.6),
+      pt(cx - sLantern1, cy + sLantern1, 21.6),
+      pt(cx - sLantern2, cy - sLantern2, 24.2),
+      pt(cx - sLantern2, cy + sLantern2, 24.2)
+    ], cGlass, cGlassFrame, 0.8);
+
+    drawPoly([
+      pt(cx - sLantern1, cy + sLantern1, 21.6),
+      pt(cx + sLantern1, cy + sLantern1, 21.6),
+      pt(cx + sLantern2, cy + sLantern2, 24.2),
+      pt(cx - sLantern2, cy + sLantern2, 24.2)
+    ], cGlass, cGlassFrame, 0.8);
+
+    drawPoly([
+      pt(cx - 0.3, cy - 0.3, 22.2),
+      pt(cx + 0.3, cy - 0.3, 22.2),
+      pt(cx + 0.3, cy + 0.3, 22.2),
+      pt(cx - 0.3, cy + 0.3, 22.2)
+    ], 0xFFEB3B);
+    drawPoly([
+      pt(cx - 0.3, cy + 0.3, 22.2),
+      pt(cx + 0.3, cy + 0.3, 22.2),
+      pt(cx, cy, 23.5)
+    ], 0xFFEE58);
+
+    drawPoly([
+      pt(cx - sLantern2 - 0.1, cy - sLantern2 - 0.1, 24.2),
+      pt(cx + sLantern2 + 0.1, cy - sLantern2 - 0.1, 24.2),
+      pt(cx + sLantern2 + 0.1, cy + sLantern2 + 0.1, 24.2),
+      pt(cx - sLantern2 - 0.1, cy + sLantern2 + 0.1, 24.2)
+    ], 0x1C2833);
+
+    drawPoly([
+      pt(cx - sLantern2 - 0.1, cy - sLantern2 - 0.1, 24.2),
+      pt(cx + sLantern2 + 0.1, cy - sLantern2 - 0.1, 24.2),
+      pt(cx, cy, 26.2)
+    ], 0x1C2833);
+    drawPoly([
+      pt(cx - sLantern2 - 0.1, cy + sLantern2 + 0.1, 24.2),
+      pt(cx + sLantern2 + 0.1, cy + sLantern2 + 0.1, 24.2),
+      pt(cx, cy, 26.2)
+    ], 0x2D3E50);
+
+    drawPoly([pt(cx-0.08, cy-0.08, 26.2), pt(cx+0.08, cy-0.08, 26.2), pt(cx+0.08, cy-0.08, 29.2), pt(cx-0.08, cy-0.08, 29.2)], 0xB0BEC5);
+    drawPoly([pt(cx, cy, 29.2), pt(cx + 2.0, cy, 29.2), pt(cx + 1.6, cy, 28.2), pt(cx, cy, 27.2)], flagColor);
 
     // ------------------------------------------
-    // 7. ĐÁ CUỘI TRANG TRÍ (DECORATIVE BOULDERS)
+    // 8. LUỒNG ÁNH SÁNG HẢI ĐĂNG (LIGHT BEAM)
     // ------------------------------------------
-    const drawStone = (sx: number, sy: number) => {
-      drawPoly([pt(sx, sy, 0), pt(sx+1.2, sy, 0.6), pt(sx+0.6, sy+1.2, 0.6), pt(sx, sy+0.6, 0)], 0xCFD8DC);
-      drawPoly([pt(sx+1.2, sy, 0.6), pt(sx+0.6, sy+1.2, 0.6), pt(sx+0.6, sy+0.6, 1.2)], 0xB0BEC5);
-      drawPoly([pt(sx, sy+0.6, 0), pt(sx+0.6, sy+1.2, 0.6), pt(sx+0.6, sy+0.6, 1.2)], 0x90A4AE);
-    };
-    drawStone(1, 10);
-    drawStone(7, 2);
+    const beamAngleX1 = 12.0;
+    const beamAngleY1 = 10.0;
+    const beamAngleX2 = 24.0;
+    const beamAngleY2 = 22.0;
+    drawPoly([
+      pt(cx, cy, 22.8),
+      pt(beamAngleX1, beamAngleY1, 2.0),
+      pt(beamAngleX2, beamAngleY2, 2.0)
+    ], 0xFFF9C4, -1, 1, 0.35);
 
     container.addChild(g);
   }
