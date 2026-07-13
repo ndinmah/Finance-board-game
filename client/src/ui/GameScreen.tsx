@@ -69,7 +69,7 @@ export default function GameScreen() {
       {/* HUD overlay */}
       <div className="game-ui-layer">
         <GameHUD />
-        <DiceRoller />
+        {/* <DiceRoller /> */}
         <EventLog />
       </div>
 
@@ -96,7 +96,7 @@ export default function GameScreen() {
           return <ChanceModal onClose={() => setSelectedTileFn(null)} />;
         }
         // Fallback for go if we just want to close them instantly
-        // or we can just leave them as not rendering a modal. 
+        // or we can just leave them as not rendering a modal.
         // If users click on them, they shouldn't trigger an error, just no modal.
         return null;
       })()}
