@@ -1,5 +1,45 @@
 /* App-level styles — component-specific CSS lives in src/ui/*.css */
 
+/* ── Rotate prompt overlay ── */
+.rotate-prompt {
+  display: none;
+}
+@media (max-width: 900px) and (orientation: portrait) {
+  .rotate-prompt {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: #0d1b3e;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    color: #e8f0ff;
+    font-family: 'Inter', sans-serif;
+  }
+  .rotate-prompt__icon {
+    font-size: 64px;
+    animation: rotateHint 2s ease-in-out infinite;
+  }
+  @keyframes rotateHint {
+    0%   { transform: rotate(0deg); }
+    40%  { transform: rotate(90deg); }
+    60%  { transform: rotate(90deg); }
+    100% { transform: rotate(0deg); }
+  }
+  .rotate-prompt__text {
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    opacity: 0.9;
+  }
+  .rotate-prompt__sub {
+    font-size: 13px;
+    opacity: 0.5;
+    text-align: center;
+  }
+}
 
 .hero {
   position: relative;

@@ -17,14 +17,21 @@ export default function App() {
   }, []);
 
   const isDev = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev');
-  if (isDev) return <GameScreen />;
 
-  // Not joined any room yet
-  if (!myPlayerId) return <LobbyScreen />;
+  const screen = isDev ? <GameScreen /> :
+    !myPlayerId ? <LobbyScreen /> :
+    gamePhase === 'waiting' ? <WaitingRoom /> :
+    <GameScreen />;
 
-  // In a room but game not started
-  if (gamePhase === 'waiting') return <WaitingRoom />;
-
-  // Game in progress or ended
-  return <GameScreen />;
+  return (
+    <>
+      {/* Overlay nhắc xoay máy khi portrait trên mobile */}
+      <div className="rotate-prompt">
+        <div className="rotate-prompt__icon">📱</div>
+        <div className="rotate-prompt__text">Xoay ngang để chơi</div>
+        <div className="rotate-prompt__sub">Webopoly được tối ưu cho chế độ nằm ngang</div>
+      </div>
+      {screen}
+    </>
+  );
 }
