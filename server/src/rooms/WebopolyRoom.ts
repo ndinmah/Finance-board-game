@@ -605,7 +605,10 @@ export class WebopolyRoom extends Room<GameState> {
       state.board.forEach(t => {
         if (t.tileType === 'port' && t.ownerId === tile.ownerId) portCount++;
       });
-      return 25 * portCount;
+      if (portCount === 1) return 25;
+      if (portCount === 2) return 50;
+      if (portCount === 3) return 100;
+      return 0; // 4 ports is a win anyway
     }
     
     let rent = 0;
