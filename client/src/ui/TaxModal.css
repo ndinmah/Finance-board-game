@@ -100,22 +100,3 @@
   margin-top: 4px;
 }
 
-@media (max-width: 900px) {
-  .tax-modal-backdrop { align-items: flex-end; padding: 0; }
-  .tax-modal-wrapper {
-    max-width: 100%;
-    animation: taxModalSlideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  }
-  @keyframes taxModalSlideUp {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
-  }
-  .tax-modal {
-    border-radius: 24px 24px 0 0;
-  }
-  .tax-modal-wrapper::before,
-  .tax-modal-wrapper::after {
-    border-radius: 24px 24px 0 0;
-    bottom: -20px;
-  }
-}

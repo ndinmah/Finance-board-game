@@ -1,0 +1,196 @@
+/* FestivalModal.css */
+
+.festival-body {
+  padding: 16px 20px !important;
+}
+
+/* Two-column layout for horizontal view efficiency */
+.festival-layout {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  max-width: 650px;
+}
+
+.festival-left-col {
+  flex: 0 0 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.festival-right-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.festival-illustration svg {
+  max-width: 100%;
+  height: auto;
+  transform: scale(0.85);
+  transform-origin: center;
+}
+
+/* Festival Ticket Card style */
+.festival-ticket {
+  background: #faf5ff;
+  border: 1px dashed #d8b4fe;
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  box-sizing: border-box;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(126, 34, 206, 0.02);
+}
+
+.festival-ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed #d8b4fe;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.festival-ticket-title {
+  font-weight: 800;
+  color: #7e22ce;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.festival-ticket-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #c026d3;
+  background: #fdf4ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.festival-ticket-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.festival-info-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.festival-host-title {
+  font-weight: 900;
+  font-size: 15px;
+  color: #1e1b4b;
+}
+
+.festival-host-sub {
+  font-size: 10px;
+  color: #6b21a8;
+  margin-top: 1px;
+}
+
+.festival-price-box {
+  text-align: right;
+}
+
+.festival-price-label {
+  font-size: 9px;
+  color: #7e22ce;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.festival-price-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1e1b4b;
+}
+
+/* Feature list */
+.festival-rules-section {
+  width: 100%;
+  text-align: left;
+}
+
+.festival-rules-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.festival-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.festival-rule-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.festival-rule-item:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.festival-rule-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #faf5ff;
+  color: #7e22ce;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.festival-rule-text {
+  flex: 1;
+  font-size: 11.5px;
+  color: #334155;
+  line-height: 1.35;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .festival-body {
+    padding: 12px !important;
+  }
+  .festival-layout {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .festival-left-col {
+    flex: 0 0 auto;
+  }
+  .festival-illustration svg {
+    max-height: 80px;
+  }
+}

@@ -431,6 +431,17 @@
   font-weight: bold;
 }
 
+/* Zebra striping for odd rows */
+.port-rent-table tr:nth-child(odd):not(.highlighted) {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Vertical faint lines between columns */
+.port-rent-table th:not(:last-child),
+.port-rent-table td:not(:last-child) {
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
 .port-rent-table td.rent-label {
   text-align: left;
   font-weight: 600;
@@ -500,90 +511,132 @@
   font-weight: 600;
 }
 
-/* Mobile responsive overrides */
-@media (max-width: 900px) {
-  /* Common Modal Container Adjustments */
-  .bu-modal-container, .port-modal-container {
-    width: 95% !important;
-    max-height: 90vh;
-    overflow-y: auto;
-    border-radius: 16px;
-    padding-bottom: 16px;
-  }
-  
-  .bu-modal-container::after, .port-modal-container::after {
-    display: none !important; /* Hide double shadow card stack to save space */
-  }
+/* Mobile landscape optimization (màn hình nằm ngang) */
+@media (max-width: 900px) and (orientation: landscape) {
 
-  .bu-modal-header, .port-modal-header {
-    width: 100% !important;
-    left: 0 !important;
-    top: 0 !important;
-    border-radius: 12px 12px 0 0;
-    position: relative !important;
-    box-shadow: none;
-    margin-bottom: 12px;
-  }
-  
-  .bu-modal-header::before, .bu-modal-header::after,
-  .port-modal-header::before, .port-modal-header::after {
-    display: none !important; /* Hide side ribbon folds */
-  }
-  
-  .bu-modal-header h2, .port-modal-header h2 {
-    font-size: 18px !important;
-  }
-  
-  .bu-modal-body {
-    padding: 12px 16px !important;
-  }
-
-  /* Cards (Upgrade options) stacking */
+  /* Cards giữ layout ngang, nhưng compact hơn */
   .bu-cards-container {
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 16px;
+    gap: 8px;
+    margin-bottom: 10px;
   }
-  
   .bu-card {
-    flex-direction: row !important;
-    justify-content: flex-start;
-    padding: 10px 16px !important;
-    gap: 16px;
-    align-items: center;
-    border-radius: 10px;
+    padding: 8px 6px !important;
+    min-width: 0;
   }
-  
   .bu-card-iso {
     width: 50px !important;
     height: 40px !important;
-    margin-bottom: 0 !important;
+    margin-bottom: 8px !important;
   }
-  
   .bu-card-tile {
     width: 40px !important;
     height: 40px !important;
-    top: 5px !important;
+    top: 4px !important;
   }
-  
   .bu-card-icon {
-    font-size: 24px !important;
+    font-size: 22px !important;
+  }
+  .bu-card-label {
+    font-size: 12px !important;
+    margin-bottom: 18px !important;
+  }
+  .bu-card-badge {
+    font-size: 8px !important;
+    padding: 2px 4px !important;
+    left: -2% !important;
+    width: 104% !important;
+  }
+
+  /* Info section compact */
+  .bu-info-section {
+    gap: 6px;
+  }
+  .bu-rent-info {
+    font-size: 14px !important;
+    margin-bottom: 8px;
+  }
+  .bu-rent-info strong {
+    font-size: 16px !important;
+  }
+  .bu-buy-btn {
+    font-size: 15px !important;
+    padding: 10px 24px !important;
+    box-shadow: 0 4px 0 #0284c7;
+    margin-bottom: 10px;
+  }
+  .bu-buyout-info {
+    font-size: 11px;
+    text-align: center;
+  }
+
+  /* Port: giữ layout 2 cột nhưng ảnh nhỏ hơn */
+  .port-image-box {
+    max-height: 100px;
+  }
+  .port-description {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .port-rent-table {
+    font-size: 12px;
+  }
+  .port-rent-preview {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .port-buy-button {
+    font-size: 15px !important;
+    padding: 10px 20px !important;
+    box-shadow: 0 4px 0 #0037a3;
+  }
+  .port-footer-note {
+    font-size: 11px;
+    margin-top: 8px;
+    text-align: center;
+  }
+}
+
+/* Màn hình rất nhỏ (portrait phone fallback) */
+@media (max-width: 480px) and (orientation: portrait) {
+  .bu-cards-container {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .bu-card {
+    flex-direction: row !important;
+    padding: 10px 14px !important;
+    gap: 12px;
+    align-items: center;
+    min-height: 52px;
+  }
+  .bu-card-iso {
+    width: 40px !important;
+    height: 32px !important;
+    flex-shrink: 0;
+    margin-bottom: 0 !important;
+  }
+  .bu-card-tile {
+    width: 32px !important;
+    height: 32px !important;
+    top: 4px !important;
+  }
+  .bu-card-icon {
+    font-size: 20px !important;
     bottom: 2px !important;
   }
-  
   .bu-card-label {
-    margin-bottom: 0 !important;
-    font-size: 14px !important;
     flex: 1;
+    font-size: 13px !important;
+    margin-bottom: 0 !important;
     text-align: left;
   }
-  
   .bu-checkbox {
     position: relative !important;
     bottom: auto !important;
     right: auto !important;
+    flex-shrink: 0;
   }
-
   .bu-card-badge {
     position: relative !important;
     top: auto !important;
@@ -591,37 +644,25 @@
     width: auto !important;
     transform: none !important;
     font-size: 9px !important;
-    margin-bottom: 4px;
     padding: 2px 6px !important;
   }
-
-  /* Port specific layout column stack */
-  .port-layout-columns {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .port-image-box {
-    max-height: 120px;
-  }
-
-  .port-modal-body {
-    padding: 16px !important;
-  }
-  
-  .port-buy-button, .bu-buy-btn {
-    font-size: 16px !important;
-    padding: 12px 30px !important;
-    width: 100% !important;
+  .bu-buy-btn {
+    font-size: 14px !important;
+    padding: 10px 16px !important;
+    width: 100%;
     justify-content: center;
   }
-  
-  .bu-rent-info {
-    font-size: 15px !important;
+  .bu-rent-info { font-size: 14px !important; }
+  .bu-rent-info strong { font-size: 16px !important; }
+  .bu-buyout-info { font-size: 11px; text-align: center; margin-top: 6px; }
+
+  .port-layout-columns {
+    flex-direction: column;
+    gap: 10px;
   }
-  
-  .bu-rent-info strong {
-    font-size: 18px !important;
-  }
+  .port-column-left, .port-column-right { flex: unset !important; width: 100%; }
+  .port-image-box { max-height: 90px; }
+  .port-rent-table { font-size: 12px; }
+  .port-buy-button { width: 100% !important; justify-content: center; }
 }
 

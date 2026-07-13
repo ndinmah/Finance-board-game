@@ -1,0 +1,196 @@
+/* AirportModal.css */
+
+.airport-body {
+  padding: 16px 20px !important;
+}
+
+/* Two-column layout for horizontal view efficiency */
+.airport-layout {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  max-width: 650px;
+}
+
+.airport-left-col {
+  flex: 0 0 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.airport-right-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.airport-illustration svg {
+  max-width: 100%;
+  height: auto;
+  transform: scale(0.85);
+  transform-origin: center;
+}
+
+/* Boarding pass ticket design */
+.airport-ticket {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  box-sizing: border-box;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+}
+
+.airport-ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.airport-ticket-title {
+  font-weight: 800;
+  color: #0284c7;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.airport-ticket-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.airport-ticket-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.airport-dest-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.airport-dest-code {
+  font-weight: 900;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.airport-arrow {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.airport-price-box {
+  text-align: right;
+}
+
+.airport-price-label {
+  font-size: 9px;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.airport-price-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Feature list */
+.airport-rules-section {
+  width: 100%;
+  text-align: left;
+}
+
+.airport-rules-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.airport-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.airport-rule-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.airport-rule-item:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.airport-rule-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f0f9ff;
+  color: #0369a1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.airport-rule-text {
+  flex: 1;
+  font-size: 11.5px;
+  color: #334155;
+  line-height: 1.35;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .airport-body {
+    padding: 12px !important;
+  }
+  .airport-layout {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .airport-left-col {
+    flex: 0 0 auto;
+  }
+  .airport-illustration svg {
+    max-height: 80px;
+  }
+}

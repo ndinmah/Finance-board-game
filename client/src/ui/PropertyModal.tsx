@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { MAP_TILE_COLORS } from '../game/tileConstants';
 import { formatMoneyFull } from '../utils/format';
+import './CardModal.css';
 import './PropertyModal.css';
 
 interface Props { tileId: number; onClose: () => void; }
@@ -77,17 +78,17 @@ export default function PropertyModal({ tileId, onClose }: Props) {
     : LEVEL_EMOJI[Math.min(tile.houseCount, 4)];
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="property-modal-wrapper">
+    <div className="card-modal-backdrop" onClick={onClose} style={{ zIndex: 1000 }}>
+      <div className="card-modal-wrapper" style={{ maxWidth: '460px' }}>
         <div
-          className="property-modal"
+          className="card-modal"
           onClick={e => e.stopPropagation()}
           style={{ '--accent': accentColor } as any}
         >
           {/* ── Header band ── */}
-        <div className="property-header" style={{ background: headerColor }}>
-          <h3>{tile.name}</h3>
-          <button className="modal-close" onClick={onClose}>✕</button>
+        <div className="card-header" style={{ background: headerColor, padding: '16px 24px' }}>
+          <h3 style={{ textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>{tile.name}</h3>
+          <button className="card-modal-close" onClick={onClose}>✕</button>
         </div>
 
         {/* ── Body ── */}
@@ -138,15 +139,32 @@ export default function PropertyModal({ tileId, onClose }: Props) {
                   </tbody>
                 </table>
               ) : (
-                <div className="port-info">
-                  <div className="port-info-title">Phí qua cảng:</div>
-                  <ul>
-                    <li>1 Cảng: 25K</li>
-                    <li>2 Cảng: 50K</li>
-                    <li>3 Cảng: 75K</li>
-                    <li className="port-win">4 Cảng: <strong>THẮNG NGAY!</strong></li>
-                  </ul>
-                </div>
+                <table className="upgrade-table">
+                  <thead>
+                    <tr>
+                      <th>Sở hữu</th>
+                      <th>Phí qua cảng</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>1 Cảng</td>
+                      <td>{formatMoneyFull(25)} <span className="coin-icon">$</span></td>
+                    </tr>
+                    <tr>
+                      <td>2 Cảng</td>
+                      <td>{formatMoneyFull(50)} <span className="coin-icon">$</span></td>
+                    </tr>
+                    <tr>
+                      <td>3 Cảng</td>
+                      <td>{formatMoneyFull(100)} <span className="coin-icon">$</span></td>
+                    </tr>
+                    <tr>
+                      <td>4 Cảng</td>
+                      <td style={{ color: '#e67e22', fontWeight: 900 }}>THẮNG NGAY! 🏆</td>
+                    </tr>
+                  </tbody>
+                </table>
               )}
             </div>
           </div>

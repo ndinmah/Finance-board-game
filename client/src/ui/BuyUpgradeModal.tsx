@@ -63,7 +63,8 @@ export default function BuyUpgradeModal() {
     const nextPortCount = Math.min(4, ownedPorts + 1);
     const portPrice = tile.price || 200;
     const canAfford = me.money >= portPrice;
-    const expectedRent = 25 * nextPortCount;
+    const rentMap: Record<number, number> = { 1: 25, 2: 50, 3: 100, 4: 0 };
+    const expectedRent = rentMap[nextPortCount] || 0;
 
     return (
       <div className="card-modal-backdrop" style={{ zIndex: 1000 }}>
@@ -88,15 +89,15 @@ export default function BuyUpgradeModal() {
                   <tbody>
                     <tr className={nextPortCount === 1 ? 'highlighted' : ''}>
                       <td className="rent-label">1 cảng</td>
-                      <td className="rent-value">25K $</td>
+                      <td className="rent-value">{formatMoneyFull(25)} <span className="coin-icon">$</span></td>
                     </tr>
                     <tr className={nextPortCount === 2 ? 'highlighted' : ''}>
                       <td className="rent-label">2 cảng</td>
-                      <td className="rent-value">50K $</td>
+                      <td className="rent-value">{formatMoneyFull(50)} <span className="coin-icon">$</span></td>
                     </tr>
                     <tr className={nextPortCount === 3 ? 'highlighted' : ''}>
                       <td className="rent-label">3 cảng</td>
-                      <td className="rent-value">75K $</td>
+                      <td className="rent-value">{formatMoneyFull(100)} <span className="coin-icon">$</span></td>
                     </tr>
                     <tr className={nextPortCount === 4 ? 'highlighted' : ''}>
                       <td className="rent-label">4 cảng</td>
