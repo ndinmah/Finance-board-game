@@ -87,39 +87,163 @@
   flex-direction: column;
   align-items: center;
 }
+
+/* ── Ticket Photo Zone ── */
+.bu-ticket-photo {
+  position: relative;
+  width: 100%;
+  height: 160px; /* Default height for mobile */
+  overflow: hidden;
+  flex-shrink: 0;
+  border-radius: 16px 16px 0 0; /* match card-modal top corners */
+}
+.bu-ticket-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: brightness(1.04) contrast(1.08) saturate(1.28);
+}
+.bu-ticket-fade {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, #ffffff);
+  pointer-events: none;
+}
+
+/* ── Ticket Header Overlay (floats on top of image) ── */
+.bu-ticket-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%);
+  z-index: 3;
+}
+.bu-ticket-title {
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.7);
+  text-align: center;
+  margin: 0;
+}
+.bu-ticket-close-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.5);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s, transform 0.1s;
+  line-height: 1;
+  z-index: 100;
+  pointer-events: auto;
+}
+.bu-ticket-close-btn:hover {
+  background: rgba(255,255,255,0.38);
+}
+.bu-ticket-close-btn:active {
+  transform: translateY(-50%) scale(0.9);
+}
+
+.bu-cards-wrapper {
+  position: relative;
+  z-index: 2;
+  padding: 0 20px;
+  overflow: visible;
+}
+
+.bu-hotel-banner {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-top: -44px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  gap: 16px;
+  border: 2px solid #fbbf24;
+}
+.bu-hotel-banner-img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+  flex-shrink: 0;
+}
+.bu-hotel-banner-text h4 {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  color: #b45309;
+}
+.bu-hotel-banner-text p {
+  margin: 0;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+.bu-card-body {
+  padding: 4px 20px 12px !important;
+  position: relative;
+  z-index: 1;
+}
+
 .bu-cards-container {
   display: flex;
   justify-content: space-between;
-  gap: 15px;
+  gap: 12px;
   width: 100%;
-  margin-bottom: 20px;
+  margin-top: -44px; /* Restored deep overlap */
+  margin-bottom: 12px; /* Reduced from 20px */
+  position: relative;
+  z-index: 2;
 }
 .bu-card {
   flex: 1;
-  background: white;
-  border: 2px solid #eaeaea;
-  border-radius: 8px;
-  padding: 15px 10px;
+  background: rgba(255,255,255,0.92);
+  border: 2px solid rgba(163,230,53,0.4);
+  border-radius: 14px;
+  padding: 14px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
   cursor: pointer;
   transition: all 0.2s;
-  background-color: #faf9f6;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.08);
+  backdrop-filter: blur(4px);
 }
 .bu-card:not(.disabled):hover {
-  border-color: #a3e635; /* light green */
-  transform: translateY(-2px);
+  border-color: #a3e635;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.12);
 }
 .bu-card.active {
-  border-color: #84cc16; /* green */
-  background-color: #f7fee7;
+  background: rgba(247,254,231,0.95);
+  border-color: #84cc16;
+  box-shadow: 0 8px 28px rgba(132,204,22,0.3), 0 2px 4px rgba(0,0,0,0.08);
 }
 .bu-card.disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  background-color: #f1f1f1;
+  background: rgba(241,241,241,0.9);
 }
 .bu-card-iso {
   width: 80px;
@@ -146,11 +270,20 @@
   bottom: 5px;
   filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
 }
+.bu-card-icon-img {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  z-index: 2;
+  bottom: 12px;
+  filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+}
 .bu-card-label {
   font-size: 16px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 25px; /* space for checkbox */
+  margin-bottom: 12px; /* Reduced from 25px (space for absolute checkbox is still sufficient) */
 }
 .bu-checkbox {
   position: absolute;
@@ -198,7 +331,7 @@
 .bu-rent-info {
   font-size: 18px;
   color: #333;
-  margin-bottom: 15px;
+  margin-bottom: 10px; /* Reduced from 15px */
 }
 .bu-rent-info strong {
   font-size: 22px;
@@ -217,7 +350,7 @@
   gap: 8px;
   box-shadow: 0 6px 0 #0284c7;
   transition: all 0.1s;
-  margin-bottom: 20px;
+  margin-bottom: 5px; /* Reduced from 20px */
   text-transform: uppercase;
 }
 .bu-buy-btn:active:not(.disabled) {
@@ -229,14 +362,7 @@
   box-shadow: 0 6px 0 #64748b;
   cursor: not-allowed;
 }
-.bu-buyout-info {
-  font-size: 14px;
-  color: #555;
-}
-.bu-buyout-info strong {
-  font-size: 16px;
-  color: #333;
-}
+
 .money-icon {
   font-style: normal;
   color: #2e7d32;
@@ -531,6 +657,11 @@
   .bu-card-icon {
     font-size: 22px !important;
   }
+  .bu-card-icon-img {
+    width: 32px !important;
+    height: 32px !important;
+    bottom: 8px !important;
+  }
   .bu-card-label {
     font-size: 12px !important;
     margin-bottom: 18px !important;
@@ -591,12 +722,29 @@
   }
 }
 
-/* Màn hình rất nhỏ (portrait phone fallback) */
-@media (max-width: 480px) and (orientation: portrait) {
+/* Màn hình điện thoại (Mobile portrait/compact fallback) */
+@media (max-width: 600px) {
+  .bu-ticket-photo { height: 160px; }
+  .bu-ticket-header { padding: 12px 16px; }
+  .bu-ticket-title  { font-size: 15px; }
   .bu-cards-container {
     flex-direction: column;
+    margin-top: -36px; /* Restored deep overlap on mobile */
     gap: 8px;
     margin-bottom: 12px;
+  }
+  .bu-hotel-banner {
+    margin-top: -36px;
+    padding: 12px 16px;
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  .bu-hotel-banner-text h4 {
+    font-size: 16px;
+  }
+  .bu-hotel-banner-text p {
+    font-size: 13px;
   }
   .bu-card {
     flex-direction: row !important;
@@ -619,6 +767,11 @@
   .bu-card-icon {
     font-size: 20px !important;
     bottom: 2px !important;
+  }
+  .bu-card-icon-img {
+    width: 30px !important;
+    height: 30px !important;
+    bottom: 4px !important;
   }
   .bu-card-label {
     flex: 1;
@@ -649,7 +802,7 @@
   }
   .bu-rent-info { font-size: 14px !important; }
   .bu-rent-info strong { font-size: 16px !important; }
-  .bu-buyout-info { font-size: 11px; text-align: center; margin-top: 6px; }
+
 
   .port-layout-columns {
     flex-direction: column;
@@ -660,4 +813,89 @@
   .port-rent-table { font-size: 12px; }
   .port-buy-button { width: 100% !important; justify-content: center; }
 }
+
+/* Màn hình máy tính bảng hoặc màn hình trung bình */
+@media (min-width: 601px) and (max-width: 900px) {
+  .bu-ticket-photo {
+    height: 220px !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .bu-ticket-photo { height: 320px; } /* Increased from 260px for desktop */
+  .bu-ticket-fade  { height: 80px; }
+  .bu-cards-container {
+    margin-top: -56px; /* Restored deep overlap on desktop */
+    gap: 16px;
+  }
+  .bu-hotel-banner {
+    margin-top: -56px;
+    padding: 24px 30px;
+    gap: 20px;
+  }
+  .bu-hotel-banner-img {
+    width: 80px;
+    height: 80px;
+  }
+  .bu-hotel-banner-text h4 {
+    font-size: 22px;
+  }
+  .bu-hotel-banner-text p {
+    font-size: 16px;
+  }
+  .bu-card {
+    padding: 16px 12px !important; /* Reduced padding on desktop */
+  }
+  .bu-card-iso {
+    width: 110px !important;
+    height: 80px !important;
+    margin-bottom: 12px !important; /* Reduced from 20px */
+  }
+  .bu-card-tile {
+    width: 80px !important;
+    height: 80px !important;
+  }
+  .bu-card-icon {
+    font-size: 42px !important;
+  }
+  .bu-card-icon-img {
+    width: 64px !important;
+    height: 64px !important;
+    bottom: 16px !important;
+  }
+  .bu-card-label {
+    font-size: 19px !important;
+  }
+  .bu-rent-info {
+    font-size: 22px !important;
+  }
+  .bu-rent-info strong {
+    font-size: 26px !important;
+  }
+  .bu-buy-btn {
+    font-size: 22px !important;
+    padding: 12px 40px !important; /* Reduced padding on desktop */
+  }
+
+  .port-description {
+    font-size: 16px !important;
+  }
+  .port-rent-table {
+    font-size: 16px !important;
+  }
+  .port-rent-preview {
+    font-size: 22px !important;
+  }
+  .port-buy-button {
+    font-size: 22px !important;
+    padding: 15px 45px !important;
+  }
+  .port-footer-note {
+    font-size: 14px !important;
+  }
+  .bu-card-body {
+    padding: 8px 32px 16px !important;
+  }
+}
+
 

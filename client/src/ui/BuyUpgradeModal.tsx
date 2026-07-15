@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { MAP_TILE_COLORS } from '../game/tileConstants';
+import { TILE_IMAGE } from '../game/tileImages';
 import { formatMoneyFull } from '../utils/format';
 import './CardModal.css';
 import './BuyUpgradeModal.css';
@@ -149,8 +150,6 @@ export default function BuyUpgradeModal() {
   else if (selectedLevel === 4) rentAtLevel = tile.rentHotel;
   if (tile.hasMonopoly && selectedLevel === 0) rentAtLevel *= 2;
   if (tile.isTouristSpot) rentAtLevel *= 2;
-  const totalValueAtLevel = tile.price + (selectedLevel === 4 ? 3 * tile.buildCost + tile.hotelCost : selectedLevel * tile.buildCost);
-  const buyoutPrice = totalValueAtLevel * 2;
   const canAfford = me.money >= totalCost;
   const handleConfirm = () => {
     if (!canAfford) return;
@@ -161,67 +160,85 @@ export default function BuyUpgradeModal() {
     }
   };
   const cards = [
-    { level: 0, label: 'Đất', icon: '🚩', maxAllowed: 0 },
-    { level: 1, label: 'Nhà 1', icon: '🏠', maxAllowed: 1 },
-    { level: 2, label: 'Nhà 2', icon: '🏘️', maxAllowed: 2 },
-    { level: 3, label: 'Nhà 3', icon: '🏢', maxAllowed: 3 },
+    { level: 0, label: 'Đất', image: '/images/house-0.png', maxAllowed: 0 },
+    { level: 1, label: 'Nhà 1', image: '/images/house-1.png', maxAllowed: 1 },
+    { level: 2, label: 'Nhà 2', image: '/images/house-2.png', maxAllowed: 2 },
+    { level: 3, label: 'Nhà 3', image: '/images/house-3.png', maxAllowed: 3 },
   ];
   return (
     <div className="card-modal-backdrop" style={{ zIndex: 1000 }}>
       <div className="card-modal-wrapper">
         <div className="card-modal">
-          <div className="card-header" style={{ backgroundColor: headerColor }}>
-            <h3>{tile.name.toUpperCase()}</h3>
-            <button className="card-modal-close" onClick={handleSkip}>✕</button>
+          {/* ── Ticket Photo: covers full header + photo zone ── */}
+          <div className="bu-ticket-photo" style={{ borderTop: `5px solid ${headerColor}` }}>
+            <img src={TILE_IMAGE[tile.id] ?? '/images/go.webp'} alt={tile.name} className="bu-ticket-img" />
+            {/* Header overlaid on top of image */}
+            <div className="bu-ticket-header">
+              <h3 className="bu-ticket-title">{tile.name.toUpperCase()}</h3>
+              <button className="bu-ticket-close-btn" onClick={(e) => { e.stopPropagation(); handleSkip(); }}>✕</button>
+            </div>
+            <div className="bu-ticket-fade" />
           </div>
-          <div className="card-body" style={{ padding: '20px' }}>
-          <div className="bu-cards-container">
-            {cards.map((card) => {
-              const isBuilt = card.level <= tile.houseCount && !isBuy;
-              const isAllowed = card.level <= maxAllowed;
-              const isSelected = selectedLevel >= card.level;
-              const isDisabled = isBuilt || !isAllowed;
-              return (
-                <div
-                  key={card.level}
-                  className={`bu-card ${isDisabled ? 'disabled' : ''} ${selectedLevel === card.level ? 'active' : ''}`}
-                  onClick={() => {
-                    if (!isDisabled) setSelectedLevel(card.level);
-                  }}
-                >
-                  <div className="bu-card-iso">
-                     <div className="bu-card-tile"></div>
-                     <span className="bu-card-icon">{card.icon}</span>
-                  </div>
-                  <div className="bu-card-label">{card.label}</div>
 
-                  {/* Checkbox */}
-                  <div className={`bu-checkbox ${isSelected ? 'checked' : ''}`}>
-                    {isSelected && '✔'}
-                  </div>
-                  {!isAllowed && (
-                     <div className="bu-card-badge">
-                       Không thực hiện được ở vòng đầu tiên
-                     </div>
-                  )}
+          {/* Wrapper for the cards that overlaps the image, outside of card-body */}
+          <div className="bu-cards-wrapper">
+            {tile.houseCount === 3 ? (
+              <div className="bu-hotel-banner">
+                <img src="/images/house-4.png" alt="Khách sạn" className="bu-hotel-banner-img" />
+                <div className="bu-hotel-banner-text">
+                  <h4>Nâng cấp lên Khách Sạn!</h4>
+                  <p>Bạn có muốn dùng <strong>{formatMoneyFull(tile.hotelCost)}</strong> <span className="money-icon">$</span> để xây khách sạn không?</p>
                 </div>
-              );
-            })}
+              </div>
+            ) : (
+            <div className="bu-cards-container">
+              {cards.map((card) => {
+                const isBuilt = card.level <= tile.houseCount && !isBuy;
+                const isAllowed = card.level <= maxAllowed;
+                const isSelected = selectedLevel >= card.level;
+                const isDisabled = isBuilt || !isAllowed;
+                return (
+                  <div
+                    key={card.level}
+                    className={`bu-card ${isDisabled ? 'disabled' : ''} ${selectedLevel === card.level ? 'active' : ''}`}
+                    onClick={() => {
+                      if (!isDisabled) setSelectedLevel(card.level);
+                    }}
+                  >
+                    <div className="bu-card-iso">
+                       <div className="bu-card-tile"></div>
+                       <img src={card.image} alt={card.label} className="bu-card-icon-img" />
+                    </div>
+                    <div className="bu-card-label">{card.label}</div>
+
+                    {/* Checkbox */}
+                    <div className={`bu-checkbox ${isSelected ? 'checked' : ''}`}>
+                      {isSelected && '✔'}
+                    </div>
+                    {!isAllowed && (
+                       <div className="bu-card-badge">
+                         Không thực hiện được ở vòng đầu tiên
+                       </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            )}
           </div>
-          <div className="bu-info-section">
-            <div className="bu-rent-info">
-              Giá thuê: <strong>{formatMoneyFull(rentAtLevel)}</strong> <span className="money-icon">$</span>
-            </div>
-            <button
-              className={`bu-buy-btn ${!canAfford ? 'disabled' : ''}`}
-              onClick={handleConfirm}
-              disabled={!canAfford}
-            >
-              {isBuy ? 'MUA VỚI GIÁ' : 'NÂNG CẤP VỚI GIÁ'} {formatMoneyFull(totalCost)} <span className="money-icon">$</span>
-            </button>
-            <div className="bu-buyout-info">
-              Những người chơi khác có thể sẽ mua lại bằng: <strong>{formatMoneyFull(buyoutPrice)}</strong> <span className="money-icon">$</span>
-            </div>
+
+          <div className="card-body bu-card-body">
+            <div className="bu-info-section">
+              <div className="bu-rent-info">
+                Giá thuê: <strong>{formatMoneyFull(rentAtLevel)}</strong> <span className="money-icon">$</span>
+              </div>
+              <button
+                className={`bu-buy-btn ${!canAfford ? 'disabled' : ''}`}
+                onClick={handleConfirm}
+                disabled={!canAfford}
+              >
+                {isBuy ? 'MUA VỚI GIÁ' : 'NÂNG CẤP VỚI GIÁ'} {formatMoneyFull(totalCost)} <span className="money-icon">$</span>
+              </button>
             </div>
           </div>
         </div>
