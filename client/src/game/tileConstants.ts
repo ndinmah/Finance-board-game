@@ -24,7 +24,7 @@ export const TILE_NAMES: Record<number, string> = {
   17: 'Nha Trang', 18: 'Cảng Bắc', 19: 'Phú Quốc',
   20: 'Cơ hội',
   21: 'Ninh Bình', 22: 'Hạ Long', 23: 'Hà Nội',
-  25: 'Cảng Đông', 26: 'Đồng Nai', 27: 'HCM',
+  25: 'Cảng Đông', 26: 'Vũng Tàu', 27: 'HCM',
   28: 'Cơ hội',
   29: 'Thanh Hóa', 30: 'Thuế', 31: 'Đà Lạt',
 };
@@ -67,7 +67,7 @@ export const MAP_TILES_DATA: TileDataDef[] = [
   { id: 23, type: 'property', name: 'Hà Nội',    colorGroup: 'purple', price: 280, rent: [24, 143, 285, 428, 784], buildCost: 150, hotelCost: 375 },
   { id: 24, type: 'airport',  name: 'Sân Bay',    rent: [] },
   { id: 25, type: 'port',     name: 'Cảng Đông',  rent: [] , price: 200 },
-  { id: 26, type: 'property', name: 'Đồng Nai',    colorGroup: 'pink',   price: 300, rent: [26, 170, 340, 510, 935], buildCost: 200, hotelCost: 500 },
+  { id: 26, type: 'property', name: 'Vũng Tàu',    colorGroup: 'pink',   price: 300, rent: [26, 170, 340, 510, 935], buildCost: 200, hotelCost: 500 },
   { id: 27, type: 'property', name: 'HCM',     colorGroup: 'pink',   price: 320, rent: [28, 180, 360, 540, 990], buildCost: 200, hotelCost: 500 },
   { id: 28, type: 'chance',  name: 'Cơ hội',   rent: [] },
   { id: 29, type: 'property', name: 'Thanh Hóa',   colorGroup: 'cyan',   price: 360, rent: [36, 195, 390, 585, 1060], buildCost: 200, hotelCost: 500 },

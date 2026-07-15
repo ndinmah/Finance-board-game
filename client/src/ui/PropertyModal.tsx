@@ -3,22 +3,11 @@ import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { MAP_TILE_COLORS } from '../game/tileConstants';
 import { formatMoneyFull } from '../utils/format';
+import { TILE_IMAGE } from '../game/tileImages';
 import './CardModal.css';
 import './PropertyModal.css';
 
 interface Props { tileId: number; onClose: () => void; }
-
-// Map colorGroup to illustration image
-const GROUP_IMAGE: Record<string, string> = {
-  red:    '/images/red.webp',
-  orange: '/images/orange.webp',
-  yellow: '/images/yellow.webp',
-  green:  '/images/green.webp',
-  blue:   '/images/blue.webp',
-  purple: '/images/purple.webp',
-  pink:   '/images/pink.webp',
-  cyan:   '/images/cyan.webp',
-};
 
 export default function PropertyModal({ tileId, onClose }: Props) {
   const { board, players, myPlayerId, turnPhase, currentPlayerId } = useGameStore();
@@ -81,14 +70,12 @@ export default function PropertyModal({ tileId, onClose }: Props) {
   const handleFestivalSelect = () => { send('selectFestival', { tileId }); onClose(); };
   const handleSellForDebt    = () => { send('sellForDebt',    { tileId }); onClose(); };
 
-  // Illustration image based on tileType / colorGroup
-  const illustrationSrc = tile.tileType === 'port'
-    ? '/images/port.webp'
-    : GROUP_IMAGE[tile.colorGroup ?? ''] ?? '/images/red.webp';
+  // Illustration image based on tileId
+  const illustrationSrc = TILE_IMAGE[tileId] ?? '/images/go.webp';
 
   return (
     <div className="card-modal-backdrop" onClick={onClose} style={{ zIndex: 1000 }}>
-      <div className="card-modal-wrapper" style={{ maxWidth: '520px' }}>
+      <div className="card-modal-wrapper property-modal-wrapper">
         <div
           className="card-modal"
           onClick={e => e.stopPropagation()}

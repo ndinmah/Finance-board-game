@@ -9,8 +9,32 @@
 
 .card-modal-wrapper {
   position: relative;
-  width: 100%; max-width: 700px;
+  width: 100%; max-width: 580px;
   animation: cardModalSlide 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (min-width: 901px) {
+  .card-modal-wrapper {
+    max-width: 820px;
+  }
+  .card-illustration {
+    width: 100%;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .card-illustration img {
+    height: 300px !important;
+  }
+  .card-text {
+    font-size: 18px !important;
+  }
+  .card-header h3 {
+    font-size: 22px !important;
+  }
+  .card-body {
+    padding: 50px 40px 60px !important;
+  }
 }
 @keyframes cardModalSlide {
   from { opacity: 0; transform: translateY(20px) scale(0.95); }

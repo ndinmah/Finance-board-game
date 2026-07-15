@@ -3,10 +3,45 @@
 
 
 /* ── Body ── */
+.property-modal-wrapper {
+  max-width: 520px;
+}
+
 .property-body {
   padding: 18px 16px 20px;
   display: flex; flex-direction: column; gap: 0;
   background: #f5f0e8;
+}
+
+@media (min-width: 901px) {
+  .property-modal-wrapper {
+    max-width: 780px;
+  }
+  .property-image-col {
+    flex: 0 0 300px !important;
+  }
+  .property-image {
+    height: 220px !important;
+  }
+  .upgrade-table {
+    font-size: 15px !important;
+  }
+  .upgrade-table thead tr th {
+    font-size: 13px !important;
+  }
+  .upgrade-table tbody tr td {
+    padding: 8px 10px !important;
+  }
+  .property-footer {
+    margin-top: 20px !important;
+    padding-top: 16px !important;
+  }
+  .footer-line {
+    font-size: 15px !important;
+  }
+  .footer-line strong {
+    font-size: 17px !important;
+  }
 }
 
 /* ── Two-column layout ── */
@@ -34,7 +69,7 @@
   object-fit: cover;
   border-radius: 10px;
   display: block;
-filter: contrast(1.15) saturate(1.1) drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+  filter: contrast(1.05) saturate(1.2) drop-shadow(0 4px 12px rgba(0,0,0,0.15));
 }
 
 /* Right: upgrade table */
