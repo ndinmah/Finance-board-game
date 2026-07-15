@@ -7,16 +7,7 @@ interface Props {
 }
 
 const JailIllustration = () => (
-  <img 
-    src="/images/jail.png" 
-    alt="Jail" 
-    style={{ 
-      width: '100%', 
-      height: 'auto', 
-      borderRadius: '12px', 
-      boxShadow: '0 8px 24px rgba(0,0,0,0.15)' 
-    }} 
-  />
+  <img src="/images/jail.webp" alt="Jail" />
 );
 
 export default function JailModal({ onClose }: Props) {

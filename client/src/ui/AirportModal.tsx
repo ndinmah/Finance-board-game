@@ -7,16 +7,7 @@ interface Props {
 }
 
 const AirportIllustration = () => (
-  <img 
-    src="/images/airport.png" 
-    alt="Airport" 
-    style={{ 
-      width: '100%', 
-      height: 'auto', 
-      borderRadius: '12px', 
-      boxShadow: '0 8px 24px rgba(0,0,0,0.15)' 
-    }} 
-  />
+  <img src="/images/airport.webp" alt="Airport" />
 );
 
 export default function AirportModal({ onClose }: Props) {

@@ -7,16 +7,7 @@ interface Props {
 }
 
 const FestivalIllustration = () => (
-  <img 
-    src="/images/festival.png" 
-    alt="Festival" 
-    style={{ 
-      width: '100%', 
-      height: 'auto', 
-      borderRadius: '12px', 
-      boxShadow: '0 8px 24px rgba(0,0,0,0.15)' 
-    }} 
-  />
+  <img src="/images/festival.webp" alt="Festival" />
 );
 
 export default function FestivalModal({ onClose }: Props) {
