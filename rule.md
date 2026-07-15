@@ -23,7 +23,7 @@ Bản đồ gồm 32 ô:
     -> Xanh lá: Điện Biên, Mộc Châu (180–200đ)
     -> Xanh dương: Nha Trang, Phú Quốc (220–240đ)
     -> Tím: Ninh Bình, Hạ Long, Hà Nội (260–280đ)
-    -> Hồng: Đồng Nai, HCM (300–320đ)
+    -> Hồng: Vũng Tàu, HCM (300–320đ)
     -> Lục lam: Thanh Hóa, Đà Lạt (360–400đ)
 - 4 ô Cảng (Port):
     -> Giá mua: 200đ.

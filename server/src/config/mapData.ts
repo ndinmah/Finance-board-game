@@ -85,7 +85,7 @@ export const MAP_TILES: TileDef[] = [
   { id: 25, type: 'port',     name: 'Cảng Đông',  rent: [] , price:200},
 
   // Color group: PINK (tiles 26,27)
-  { id: 26, type: 'property', name: 'Đồng Nai',    colorGroup: 'pink',   price: 300, rent: [26, 170, 340, 510, 935], buildCost: 200, hotelCost: 500 },
+  { id: 26, type: 'property', name: 'Vũng Tàu',    colorGroup: 'pink',   price: 300, rent: [26, 170, 340, 510, 935], buildCost: 200, hotelCost: 500 },
   { id: 27, type: 'property', name: 'HCM',     colorGroup: 'pink',   price: 320, rent: [28, 180, 360, 540, 990], buildCost: 200, hotelCost: 500 },
 
   // chance (id 28)
