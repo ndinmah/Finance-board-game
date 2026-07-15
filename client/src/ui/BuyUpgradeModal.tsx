@@ -3,7 +3,6 @@ import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { MAP_TILE_COLORS } from '../game/tileConstants';
 import { formatMoneyFull } from '../utils/format';
-import portResortImg from '../assets/port_resort.png';
 import './CardModal.css';
 import './BuyUpgradeModal.css';
 export default function BuyUpgradeModal() {
@@ -78,7 +77,7 @@ export default function BuyUpgradeModal() {
             <div className="port-layout-columns">
               <div className="port-column-left">
                 <div className="port-image-box">
-                  <img src={portResortImg} alt="Resort" />
+                  <img src="/images/port.webp" alt="Resort" className="card-illustration-img" style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px' }} />
                 </div>
               </div>
               <div className="port-column-right">
