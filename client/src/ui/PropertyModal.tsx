@@ -8,8 +8,17 @@ import './PropertyModal.css';
 
 interface Props { tileId: number; onClose: () => void; }
 
-// Emoji fallback representing each upgrade level
-const LEVEL_EMOJI = ['🏕️', '🏠', '🏡', '🏘️', '🏨'];
+// Map colorGroup to illustration image
+const GROUP_IMAGE: Record<string, string> = {
+  red:    '/images/red.webp',
+  orange: '/images/orange.webp',
+  yellow: '/images/yellow.webp',
+  green:  '/images/green.webp',
+  blue:   '/images/blue.webp',
+  purple: '/images/purple.webp',
+  pink:   '/images/pink.webp',
+  cyan:   '/images/cyan.webp',
+};
 
 export default function PropertyModal({ tileId, onClose }: Props) {
   const { board, players, myPlayerId, turnPhase, currentPlayerId } = useGameStore();
@@ -72,14 +81,14 @@ export default function PropertyModal({ tileId, onClose }: Props) {
   const handleFestivalSelect = () => { send('selectFestival', { tileId }); onClose(); };
   const handleSellForDebt    = () => { send('sellForDebt',    { tileId }); onClose(); };
 
-  // Illustration emoji based on current level
-  const currentLevelEmoji = tile.tileType === 'port'
-    ? '⚓'
-    : LEVEL_EMOJI[Math.min(tile.houseCount, 4)];
+  // Illustration image based on tileType / colorGroup
+  const illustrationSrc = tile.tileType === 'port'
+    ? '/images/port.webp'
+    : GROUP_IMAGE[tile.colorGroup ?? ''] ?? '/images/red.webp';
 
   return (
     <div className="card-modal-backdrop" onClick={onClose} style={{ zIndex: 1000 }}>
-      <div className="card-modal-wrapper" style={{ maxWidth: '460px' }}>
+      <div className="card-modal-wrapper" style={{ maxWidth: '520px' }}>
         <div
           className="card-modal"
           onClick={e => e.stopPropagation()}
@@ -97,7 +106,11 @@ export default function PropertyModal({ tileId, onClose }: Props) {
 
             {/* Left: property illustration */}
             <div className="property-image-col">
-              <span className="property-image-placeholder">{currentLevelEmoji}</span>
+              <img
+                src={illustrationSrc}
+                alt={tile.name}
+                className="property-image"
+              />
             </div>
 
             {/* Right: upgrade table or port info */}
