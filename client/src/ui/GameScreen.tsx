@@ -12,6 +12,7 @@ import ChanceModal from './ChanceModal';
 import BuyUpgradeModal from './BuyUpgradeModal';
 import EventLog from './EventLog';
 import WinnerModal from './WinnerModal';
+import GoModal from './GoModal';
 import './GameScreen.css';
 
 export default function GameScreen() {
@@ -69,7 +70,7 @@ export default function GameScreen() {
       {/* HUD overlay */}
       <div className="game-ui-layer">
         <GameHUD />
-        {/* <DiceRoller /> */}
+        <DiceRoller />
         <EventLog />
       </div>
 
@@ -94,6 +95,9 @@ export default function GameScreen() {
         }
         if (t.tileType === 'chance') {
           return <ChanceModal onClose={() => setSelectedTileFn(null)} />;
+        }
+        if (t.tileType === 'go') {
+          return <GoModal onClose={() => setSelectedTileFn(null)} />;
         }
         // Fallback for go if we just want to close them instantly
         // or we can just leave them as not rendering a modal.
