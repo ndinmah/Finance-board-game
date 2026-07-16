@@ -13,7 +13,7 @@ import BuyUpgradeModal from './BuyUpgradeModal';
 import EventLog from './EventLog';
 import WinnerModal from './WinnerModal';
 import GoModal from './GoModal';
-import './GameScreen.css';
+import boardBg from '../assets/broad.png';
 
 export default function GameScreen() {
   const canvasRef   = useRef<HTMLCanvasElement>(null);
@@ -61,14 +61,14 @@ export default function GameScreen() {
   }, []);
 
   return (
-    <div className="game-screen">
+    <div className="fixed inset-0 flex overflow-hidden bg-[#1a2744] bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${boardBg})` }}>
       {/* Board canvas */}
-      <div className="board-wrapper" ref={wrapperRef}>
-        <canvas ref={canvasRef} className="board-canvas" />
+      <div className="absolute inset-0" ref={wrapperRef}>
+        <canvas ref={canvasRef} className="block w-full h-full" />
       </div>
 
       {/* HUD overlay */}
-      <div className="game-ui-layer">
+      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 md:p-3 [&>*]:pointer-events-auto">
         <GameHUD />
         <DiceRoller />
         <EventLog />
@@ -108,16 +108,16 @@ export default function GameScreen() {
       {gamePhase === 'ended' && winnerId && <WinnerModal />}
 
       {/* Editor Controls (Uncomment when you need to recalibrate coordinates) */}
-      <div className="map-editor-controls" style={{ position: 'absolute', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: '8px' }}>
+      <div className="hidden md:flex absolute top-2.5 right-2.5 z-[9999] gap-2 pointer-events-auto">
         <button
           onClick={() => boardRef.current?.toggleEditMode()}
-          style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          className="bg-red-500 text-white border-none py-2 px-3 rounded cursor-pointer font-bold"
         >
           Toggle Map Editor
         </button>
         <button
           onClick={() => boardRef.current?.exportWaypoints()}
-          style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          className="bg-blue-500 text-white border-none py-2 px-3 rounded cursor-pointer font-bold"
         >
           Export Waypoints
         </button>
