@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { formatMoney } from '../utils/format';
-import './DiceRoller.css';
 
 const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
@@ -61,35 +60,39 @@ export default function DiceRoller() {
   const hasAction = canRoll || canStartAirport || canPayBail || (isMyTurn && turnPhase === 'buyout_decision');
   const isInteractive = canAirport || canFestival || isPayingDebt || (isMyTurn && turnPhase === 'go_remote_upgrade');
   
-  let stateClass = 'state-waiting';
+  let stateClass = 'hidden md:flex fixed bottom-5 left-1/2 -translate-x-1/2 bg-[rgba(13,27,62,0.75)] backdrop-blur-md border border-[rgba(255,255,255,0.08)] rounded-[30px] px-5 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.3)] z-[500]';
+  let isWaiting = true;
   if (canRoll || rolling) {
-    stateClass = 'state-roll';
+    stateClass = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent p-0 z-[1000] animate-float-bounce md:p-[32px_40px] border-none min-w-auto';
+    isWaiting = false;
   } else if (hasAction) {
-    stateClass = 'state-decision';
+    stateClass = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent p-0 z-[1000] animate-float-bounce md:p-[32px_40px] border-none min-w-auto';
+    isWaiting = false;
   } else if (isInteractive) {
-    stateClass = 'state-interactive';
+    stateClass = 'fixed bottom-6 left-1/2 -translate-x-1/2 md:bottom-6 md:top-auto bg-[rgba(13,27,62,0.92)] backdrop-blur-md border-[1.5px] border-[rgba(74,144,217,0.35)] rounded-[20px] px-6 py-4 min-w-[300px] max-w-[90%] shadow-[0_12px_36px_rgba(0,0,0,0.5)] z-[900] animate-slide-up-center md:border-none md:min-w-auto md:p-0';
+    isWaiting = false;
   }
 
   const showRollButton = canRoll && !rolling;
   const showDiceDisplay = rolling || (!canRoll && turnPhase !== 'wait_roll' && (dice.die1 > 1 || dice.die2 > 1));
 
   return (
-    <div className={`dice-panel ${stateClass} ${isMyTurn ? 'my-turn' : 'other-turn'}`}>
+    <div className={`flex flex-col items-center gap-4 transition-all duration-300 font-inter ${stateClass} ${isMyTurn ? 'my-turn' : 'other-turn'}`}>
       {/* Dice display */}
-      {showDiceDisplay && (
-        <div className={`dice-display ${rolling ? 'rolling' : ''} ${dice.isDouble && !rolling ? 'double' : ''}`}>
-          <span className={`die die-1 ${rolling ? 'spin' : ''}`}>
+      {showDiceDisplay && !isWaiting && (
+        <div className={`flex gap-5 items-center relative ${rolling ? 'rolling' : ''} ${dice.isDouble && !rolling ? 'double' : ''}`}>
+          <span className={`text-[48px] md:text-[56px] leading-none select-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-transform duration-150 text-white ${rolling ? 'animate-die-spin' : ''} ${dice.isDouble && !rolling ? 'animate-double-glow' : ''}`}>
             {DIE_FACES[(displayDice.d1 - 1)]}
           </span>
-          <span className={`die die-2 ${rolling ? 'spin' : ''}`} style={{ animationDelay: '0.05s' }}>
+          <span className={`text-[48px] md:text-[56px] leading-none select-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-transform duration-150 text-white ${rolling ? 'animate-die-spin' : ''} ${dice.isDouble && !rolling ? 'animate-double-glow' : ''}`} style={{ animationDelay: '0.05s' }}>
             {DIE_FACES[(displayDice.d2 - 1)]}
           </span>
-          {dice.isDouble && !rolling && <span className="double-badge">DOUBLE!</span>}
+          {dice.isDouble && !rolling && <span className="absolute -top-[22px] left-1/2 -translate-x-1/2 bg-gradient-to-br from-[#f5c518] to-[#e67e22] text-[#1a1a00] text-[11px] font-black px-2.5 py-[3px] rounded-[20px] whitespace-nowrap shadow-[0_4px_10px_rgba(245,197,24,0.4)] tracking-wide">DOUBLE!</span>}
         </div>
       )}
 
       {/* Actions */}
-      <div className="dice-actions">
+      <div className="flex flex-col gap-3 w-full items-center">
         {showRollButton && (
           <>
             {devMode && (
@@ -99,29 +102,29 @@ export default function DiceRoller() {
                 <input type="number" min="1" max="6" placeholder="d2" value={devD2} onChange={e => setDevD2(e.target.value)} style={{ width: '45px', textAlign: 'center', background: '#1e293b', border: '1px solid #475569', borderRadius: '4px', color: '#fff', padding: '2px 0' }} />
               </div>
             )}
-            <button id="btn-roll" className="btn-roll" onClick={handleRoll}>
+            <button id="btn-roll" className="btn-3d btn-3d-yellow animate-btn-pulse" onClick={handleRoll}>
               {me?.isInJail ? '🎲 Đổ xúc xắc đôi thoát tù' : '🎲 Tung Xúc Xắc'}
             </button>
           </>
         )}
         {canStartAirport && (
-          <button className="btn-bail" onClick={() => send('startAirportSelect')} style={{ background: '#4CAF50' }}>
+          <button className="btn-3d btn-3d-green" onClick={() => send('startAirportSelect')} style={{ width: '100%', marginTop: '10px' }}>
             ✈️ Mua vé bay (50K)
           </button>
         )}
         {canPayBail && (
           <>
-            <button id="btn-bail" className="btn-bail" onClick={() => send('payBail')}>
+            <button id="btn-bail" className="btn-3d btn-3d-red" onClick={() => send('payBail')} style={{ width: '100%' }}>
               💸 Trả nóng 200K
             </button>
-            <button className="btn-bail" disabled style={{ background: '#ccc', cursor: 'not-allowed', opacity: 0.7 }}>
+            <button className="btn-3d" disabled style={{ width: '100%' }}>
               🎟 Dùng thẻ ra tù (Chưa có)
             </button>
           </>
         )}
 
         {isMyTurn && turnPhase === 'buyout_decision' && (
-          <div className="buy-decision buyout-decision">
+          <div className="flex flex-col items-center gap-2.5 w-full">
             {(() => {
               const tile = board.get(me?.position || 0);
               if (!tile || !me) return null;
@@ -129,11 +132,11 @@ export default function DiceRoller() {
               const buyoutPrice = totalValue * 2;
               return (
                 <>
-                  <p className="buy-prompt">Cướp {tile.name}?</p>
-                  <p style={{fontSize: '12px', margin: '4px 0', color: '#ffc107', textAlign: 'center'}}>Giá: {formatMoney(buyoutPrice)} (x2 gốc)</p>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button className="btn-buy" style={{background: '#e11d48'}} onClick={() => send('acceptBuyout')}>⚔️ Cướp Đất</button>
-                    <button className="btn-skip" onClick={() => send('skipBuyout')}>❌ Bỏ qua</button>
+                  <p className="text-base font-extrabold text-gold text-center">Cướp {tile.name}?</p>
+                  <p className="text-[12px] my-1 text-gold text-center">Giá: {formatMoney(buyoutPrice)} (x2 gốc)</p>
+                  <div className="flex gap-1.5 w-full">
+                    <button className="btn-3d btn-3d-red flex-1" onClick={() => send('acceptBuyout')}>⚔️ Cướp Đất</button>
+                    <button className="btn-3d btn-secondary flex-1" onClick={() => send('skipBuyout')}>❌ Bỏ qua</button>
                   </div>
                 </>
               );
@@ -141,33 +144,33 @@ export default function DiceRoller() {
           </div>
         )}
         {canAirport && (
-          <p className="action-hint">✈️ Click vào ô trên bản đồ để chọn điểm đến</p>
+          <p className="text-[13px] text-accent2 italic text-center leading-[1.4]">✈️ Click vào ô trên bản đồ để chọn điểm đến</p>
         )}
         {canFestival && (
-          <div className="buy-decision">
-            <p className="action-hint">🎉 Click vào đất của bạn để tổ chức sự kiện (phí: 50K)</p>
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
-              <button className="btn-skip" onClick={() => send('skipFestival')}>❌ Bỏ qua</button>
+          <div className="flex flex-col items-center gap-2.5 w-full">
+            <p className="text-[13px] text-accent2 italic text-center leading-[1.4]">🎉 Click vào đất của bạn để tổ chức sự kiện (phí: 50K)</p>
+            <div className="flex justify-center mt-2.5 w-full">
+              <button className="btn-3d btn-secondary w-full" onClick={() => send('skipFestival')}>❌ Bỏ qua</button>
             </div>
           </div>
         )}
         {isPayingDebt && (
-          <div className="buy-decision">
-            <p className="buy-prompt" style={{color: '#ef4444'}}>CẢNH BÁO NỢ NẦN</p>
-            <p style={{fontSize: '14px', margin: '4px 0', textAlign: 'center'}}>Bạn đang nợ <strong>{formatMoney(me?.debtAmount || 0)}</strong></p>
-            <p className="action-hint">⚠️ Click vào đất của bạn để bán trả nợ (giá 50%)</p>
+          <div className="flex flex-col items-center gap-2.5 w-full">
+            <p className="text-base font-extrabold text-red-500 text-center">CẢNH BÁO NỢ NẦN</p>
+            <p className="text-[14px] my-1 text-center text-white">Bạn đang nợ <strong>{formatMoney(me?.debtAmount || 0)}</strong></p>
+            <p className="text-[13px] text-accent2 italic text-center leading-[1.4]">⚠️ Click vào đất của bạn để bán trả nợ (giá 50%)</p>
           </div>
         )}
         {isMyTurn && turnPhase === 'go_remote_upgrade' && (
-          <div className="buy-decision">
-            <p className="action-hint" style={{ color: '#0ea5e9' }}>✨ Click vào một ô đất của bạn trên bàn cờ để nâng cấp từ xa!</p>
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
-              <button className="btn-skip" onClick={() => send('skipRemoteUpgrade')}>❌ Bỏ qua</button>
+          <div className="flex flex-col items-center gap-2.5 w-full">
+            <p className="text-[13px] text-[#0ea5e9] italic text-center leading-[1.4]">✨ Click vào một ô đất của bạn trên bàn cờ để nâng cấp từ xa!</p>
+            <div className="flex justify-center mt-2.5 w-full">
+              <button className="btn-3d btn-secondary w-full" onClick={() => send('skipRemoteUpgrade')}>❌ Bỏ qua</button>
             </div>
           </div>
         )}
         {!isMyTurn && turnPhase !== 'game_over' && (
-          <p className="waiting-turn">
+          <p className="text-sm text-text2 font-medium flex items-center gap-1.5">
             ⏳ Lượt của {players.get(currentPlayerId)?.name || '...'}
           </p>
         )}
