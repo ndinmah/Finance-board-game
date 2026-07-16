@@ -1,52 +1,87 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { TILE_IMAGE } from '../game/tileImages';
 import { formatMoneyFull } from '../utils/format';
 
+const getMaxHouses = (passCount: number, currentHouses: number) => {
+  if (passCount === 0) return 2;
+  if (currentHouses < 3) return 3;
+  return 4;
+};
+
+const getBestLevel = (
+  tile: any,
+  me: any,
+  isBuy: boolean,
+  isUpgrade: boolean
+) => {
+  if (!tile || !me) return 0;
+  const maxAllowed = getMaxHouses(me.passCount || 0, tile.houseCount);
+  // Default select the max level they can afford and are allowed to buy
+  let bestLevel = tile.houseCount;
+  for (let h = tile.houseCount + (isBuy ? 0 : 1); h <= maxAllowed; h++) {
+    let cost = isBuy ? tile.price : 0;
+    if (isBuy) {
+       cost += h * tile.buildCost;
+    } else {
+       for (let i = tile.houseCount + 1; i <= h; i++) {
+         cost += (i === 4 ? tile.hotelCost : tile.buildCost);
+       }
+    }
+    if (me.money >= cost) {
+      bestLevel = h;
+    }
+  }
+  // if buying, and can't afford anything, default to 0. if upgrade, default to current + 1.
+  if (bestLevel === tile.houseCount && isUpgrade) {
+      bestLevel = tile.houseCount + 1; // might not afford, but just to show selection
+  }
+  if (isBuy && bestLevel === tile.houseCount) {
+      // Can afford at least land?
+      bestLevel = 0;
+  }
+  return Math.min(bestLevel, maxAllowed);
+};
+
 export default function BuyUpgradeModal() {
-  const { currentPlayerId, myPlayerId, turnPhase, board, players } = useGameStore();
-  const isMyTurn = currentPlayerId === myPlayerId;
+  const isMyTurn = useGameStore(s => s.currentPlayerId === s.myPlayerId);
+  const turnPhase = useGameStore(s => s.turnPhase);
+  const board = useGameStore(s => s.board);
+  const myPlayerId = useGameStore(s => s.myPlayerId);
+  const me = useGameStore(s => s.players.get(s.myPlayerId));
+  const tile = useGameStore(s => {
+    const myPos = s.players.get(s.myPlayerId)?.position ?? 0;
+    return s.board.get(myPos);
+  });
+
   const isBuy = isMyTurn && turnPhase === 'buy_decision';
   const isUpgrade = isMyTurn && turnPhase === 'upgrade_decision';
   const isActive = isBuy || isUpgrade;
-  const me = players.get(myPlayerId);
-  const tile = board.get(me?.position || 0);
+  
   const [selectedLevel, setSelectedLevel] = useState<number>(0);
-  const getMaxHouses = (passCount: number, currentHouses: number) => {
-    if (passCount === 0) return 2;
-    if (currentHouses < 3) return 3;
-    return 4;
-  };
-  useEffect(() => {
-    if (isActive && tile && me) {
-      const maxAllowed = getMaxHouses(me.passCount || 0, tile.houseCount);
-      // Default select the max level they can afford and are allowed to buy
-      let bestLevel = tile.houseCount;
-      for (let h = tile.houseCount + (isBuy ? 0 : 1); h <= maxAllowed; h++) {
-        let cost = isBuy ? tile.price : 0;
-        if (isBuy) {
-           cost += h * tile.buildCost;
-        } else {
-           for (let i = tile.houseCount + 1; i <= h; i++) {
-             cost += (i === 4 ? tile.hotelCost : tile.buildCost);
-           }
-        }
-        if (me.money >= cost) {
-          bestLevel = h;
-        }
-      }
-      // if buying, and can't afford anything, default to 0. if upgrade, default to current + 1.
-      if (bestLevel === tile.houseCount && isUpgrade) {
-          bestLevel = tile.houseCount + 1; // might not afford, but just to show selection
-      }
-      if (isBuy && bestLevel === tile.houseCount) {
-          // Can afford at least land?
-          bestLevel = 0;
-      }
-      setSelectedLevel(Math.min(bestLevel, maxAllowed));
+  const [prevInputs, setPrevInputs] = useState<{ tileId: number; money: number; passCount: number; isBuy: boolean } | null>(null);
+
+  // Sync state during render when key inputs change (avoiding useEffect and flickering)
+  if (isActive && tile && me) {
+    const currentInputs = {
+      tileId: tile.id,
+      money: me.money,
+      passCount: me.passCount || 0,
+      isBuy,
+    };
+
+    if (
+      !prevInputs ||
+      prevInputs.tileId !== currentInputs.tileId ||
+      prevInputs.money !== currentInputs.money ||
+      prevInputs.passCount !== currentInputs.passCount ||
+      prevInputs.isBuy !== currentInputs.isBuy
+    ) {
+      setPrevInputs(currentInputs);
+      setSelectedLevel(getBestLevel(tile, me, isBuy, isUpgrade));
     }
-  }, [isActive, tile?.id, me?.money, me?.passCount, turnPhase]);
+  }
   if (!isActive || !tile || !me) return null;
 
   const handleSkip = () => {

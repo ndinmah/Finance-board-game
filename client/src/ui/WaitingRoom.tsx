@@ -1,4 +1,4 @@
-
+import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { send, getCurrentRoom } from '../net/colyseusClient';
 
@@ -6,6 +6,15 @@ import { send, getCurrentRoom } from '../net/colyseusClient';
 export default function WaitingRoom() {
   const { players, myPlayerId } = useGameStore();
   const me = players.get(myPlayerId);
+
+  useEffect(() => {
+    // Prefetch GameScreen bundle (including PixiJS/GSAP) in the background
+    // while the user is inside the waiting room.
+    const preload = () => {
+      import('./GameScreen');
+    };
+    preload();
+  }, []);
 
   const handleReady = () => send('ready');
 

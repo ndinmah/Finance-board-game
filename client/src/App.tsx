@@ -1,27 +1,27 @@
+import { useEffect, lazy, Suspense } from 'react';
 import { useGameStore } from './store/gameStore';
 import LobbyScreen from './ui/LobbyScreen';
 import WaitingRoom from './ui/WaitingRoom';
-import GameScreen  from './ui/GameScreen';
 import './App.css';
 
-import { useEffect } from 'react';
+const GameScreen = lazy(() => import('./ui/GameScreen'));
+
+// Computed once at module load — never changes during session
+const IS_DEV = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev');
 
 export default function App() {
-  const { gamePhase, myPlayerId, loadDevState } = useGameStore();
+  const gamePhase = useGameStore(s => s.gamePhase);
+  const myPlayerId = useGameStore(s => s.myPlayerId);
+  const loadDevState = useGameStore(s => s.loadDevState);
 
   useEffect(() => {
-    const isDev = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev');
-    if (isDev) {
-      loadDevState();
-    }
+    if (IS_DEV) loadDevState();
   }, []);
 
-  const isDev = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev');
-
-  const screen = isDev ? <GameScreen /> :
+  const screen = IS_DEV ? <Suspense fallback={null}><GameScreen /></Suspense> :
     !myPlayerId ? <LobbyScreen /> :
     gamePhase === 'waiting' ? <WaitingRoom /> :
-    <GameScreen />;
+    <Suspense fallback={null}><GameScreen /></Suspense>;
 
   return (
     <>

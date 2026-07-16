@@ -5,21 +5,32 @@ import { formatMoney } from '../utils/format';
 
 const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
+// Computed once at module load — never changes during session
+const IS_DEV_MODE = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev');
+
 export default function DiceRoller() {
-  const { currentPlayerId, myPlayerId, turnPhase, dice, players, board } = useGameStore();
+  // Narrow selectors: component only re-renders when these specific fields change
+  const isMyTurn = useGameStore(s => s.currentPlayerId === s.myPlayerId);
+  const turnPhase = useGameStore(s => s.turnPhase);
+  const dice = useGameStore(s => s.dice);
+  const me = useGameStore(s => s.players.get(s.myPlayerId));
+  const currentPlayerName = useGameStore(s => s.players.get(s.currentPlayerId)?.name);
+  // Only subscribe to the tile at my current position (for buyout_decision)
+  const buyoutTile = useGameStore(s => {
+    const myPos = s.players.get(s.myPlayerId)?.position ?? 0;
+    return s.board.get(myPos);
+  });
+
   const [rolling, setRolling] = useState(false);
   const [displayDice, setDisplayDice] = useState({ d1: 1, d2: 1 });
-  const [devMode] = useState(() => window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev'));
   const [devD1, setDevD1] = useState('');
   const [devD2, setDevD2] = useState('');
   const rollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const isMyTurn   = currentPlayerId === myPlayerId;
   const canRoll    = isMyTurn && (turnPhase === 'wait_roll' || turnPhase === 'airport_select');
   const canAirport = isMyTurn && turnPhase === 'airport_select';
   const canFestival = isMyTurn && turnPhase === 'festival_select';
   const isPayingDebt = isMyTurn && turnPhase === 'pay_debt';
-  const me = players.get(myPlayerId);
 
   // When server updates dice, animate then settle
   useEffect(() => {
@@ -43,7 +54,7 @@ export default function DiceRoller() {
 
   const handleRoll = () => { 
     if (!canRoll || rolling) return; 
-    if (devMode) {
+    if (IS_DEV_MODE) {
       send('rollDice', { d1: parseInt(devD1) || 1, d2: parseInt(devD2) || 1 });
     } else {
       send('rollDice'); 
@@ -54,8 +65,6 @@ export default function DiceRoller() {
   const canPayBail = isMyTurn && turnPhase === 'wait_roll' && me?.isInJail;
   const canStartAirport = isMyTurn && turnPhase === 'wait_roll' && me?.position === 24;
 
-
-  console.log('[DiceRoller] isMyTurn:', isMyTurn, 'turnPhase:', turnPhase, 'position:', me?.position, 'canStartAirport:', canStartAirport);
 
   const hasAction = canRoll || canStartAirport || canPayBail || (isMyTurn && turnPhase === 'buyout_decision');
   const isInteractive = canAirport || canFestival || isPayingDebt || (isMyTurn && turnPhase === 'go_remote_upgrade');
@@ -95,7 +104,7 @@ export default function DiceRoller() {
       <div className="flex flex-col gap-3 w-full items-center">
         {showRollButton && (
           <>
-            {devMode && (
+            {IS_DEV_MODE && (
               <div className="dev-dice-inputs" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', background: 'rgba(255, 255, 255, 0.05)', padding: '6px 10px', borderRadius: '6px', border: '1px dashed #ef4444' }}>
                 <span style={{ fontSize: '12px', color: '#fca5a5', fontWeight: 'bold' }}>Mock 🎲:</span>
                 <input type="number" min="1" max="6" placeholder="d1" value={devD1} onChange={e => setDevD1(e.target.value)} style={{ width: '45px', textAlign: 'center', background: '#1e293b', border: '1px solid #475569', borderRadius: '4px', color: '#fff', padding: '2px 0' }} />
@@ -126,7 +135,7 @@ export default function DiceRoller() {
         {isMyTurn && turnPhase === 'buyout_decision' && (
           <div className="flex flex-col items-center gap-2.5 w-full">
             {(() => {
-              const tile = board.get(me?.position || 0);
+              const tile = buyoutTile;
               if (!tile || !me) return null;
               const totalValue = tile.price + (tile.houseCount * tile.buildCost);
               const buyoutPrice = totalValue * 2;
@@ -171,7 +180,7 @@ export default function DiceRoller() {
         )}
         {!isMyTurn && turnPhase !== 'game_over' && (
           <p className="text-sm text-text2 font-medium flex items-center gap-1.5">
-            ⏳ Lượt của {players.get(currentPlayerId)?.name || '...'}
+            ⏳ Lượt của {currentPlayerName || '...'}
           </p>
         )}
       </div>

@@ -1,12 +1,18 @@
+import { useMemo } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { formatMoney } from '../utils/format';
 
 export default function GameHUD() {
-  const { players, currentPlayerId, myPlayerId, turnNumber, turnOrder } = useGameStore();
+  const players = useGameStore(s => s.players);
+  const currentPlayerId = useGameStore(s => s.currentPlayerId);
+  const myPlayerId = useGameStore(s => s.myPlayerId);
+  const turnNumber = useGameStore(s => s.turnNumber);
+  const turnOrder = useGameStore(s => s.turnOrder);
 
-  const activePlayers = turnOrder
-    .map(id => players.get(id))
-    .filter(Boolean);
+  const activePlayers = useMemo(
+    () => turnOrder.map(id => players.get(id)).filter(Boolean),
+    [turnOrder, players]
+  );
 
   return (
     <div className="flex flex-row md:flex-row gap-2 md:gap-3 items-center md:items-start justify-between md:justify-start w-full md:w-auto pointer-events-none">

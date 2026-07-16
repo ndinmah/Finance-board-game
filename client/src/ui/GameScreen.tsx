@@ -20,17 +20,29 @@ export default function GameScreen() {
   const boardRef    = useRef<IsoBoard | null>(null);
   const wrapperRef  = useRef<HTMLDivElement>(null);
 
-  const { board, players, selectedTileId, winnerId, gamePhase } = useGameStore();
+  const board = useGameStore(s => s.board);
+  const players = useGameStore(s => s.players);
+  const selectedTileId = useGameStore(s => s.selectedTileId);
+  const winnerId = useGameStore(s => s.winnerId);
+  const gamePhase = useGameStore(s => s.gamePhase);
   const setSelectedTileFn = useGameStore(s => s.setSelectedTile);
   const [prevSelected, setPrevSelected] = useState<number | null>(null);
+
+  // Use a ref to store the latest selectedTileId to avoid stale closure in the initial useEffect callback
+  const selectedTileIdRef = useRef(selectedTileId);
+  useEffect(() => {
+    selectedTileIdRef.current = selectedTileId;
+  }, [selectedTileId]);
 
   // Init PixiJS board
   useEffect(() => {
     if (!canvasRef.current) return;
     const iso = new IsoBoard({
       onTileClick: (id) => {
-        setPrevSelected(selectedTileId);
-        setSelectedTileFn(selectedTileId === id ? null : id);
+        const currentSelected = selectedTileIdRef.current;
+        setPrevSelected(currentSelected);
+        // Luôn set thành id thay vì toggle để tránh lỗi click bị bắn 2 lần liên tiếp gây đóng modal lập tức
+        setSelectedTileFn(id);
       },
       onTileHover: () => {},
     });
@@ -75,35 +87,7 @@ export default function GameScreen() {
       </div>
 
       {/* Modals */}
-      {selectedTileId !== null && (() => {
-        const t = board.get(selectedTileId);
-        if (!t) return null;
-        if (t.tileType === 'property' || t.tileType === 'port') {
-          return <PropertyModal tileId={selectedTileId} onClose={() => setSelectedTileFn(null)} />;
-        }
-        if (t.tileType === 'tax') {
-          return <TaxModal onClose={() => setSelectedTileFn(null)} />;
-        }
-        if (t.tileType === 'airport') {
-          return <AirportModal onClose={() => setSelectedTileFn(null)} />;
-        }
-        if (t.tileType === 'festival') {
-          return <FestivalModal onClose={() => setSelectedTileFn(null)} />;
-        }
-        if (t.tileType === 'jail') {
-          return <JailModal onClose={() => setSelectedTileFn(null)} />;
-        }
-        if (t.tileType === 'chance') {
-          return <ChanceModal onClose={() => setSelectedTileFn(null)} />;
-        }
-        if (t.tileType === 'go') {
-          return <GoModal onClose={() => setSelectedTileFn(null)} />;
-        }
-        // Fallback for go if we just want to close them instantly
-        // or we can just leave them as not rendering a modal.
-        // If users click on them, they shouldn't trigger an error, just no modal.
-        return null;
-      })()}
+      <ModalRouter onClose={() => setSelectedTileFn(null)} />
       <BuyUpgradeModal />
       {gamePhase === 'ended' && winnerId && <WinnerModal />}
 
@@ -125,4 +109,35 @@ export default function GameScreen() {
 
     </div>
   );
+}
+
+interface ModalRouterProps {
+  onClose: () => void;
+}
+
+function ModalRouter({ onClose }: ModalRouterProps) {
+  const selectedTileId = useGameStore(s => s.selectedTileId);
+  const tile = useGameStore(s => selectedTileId !== null ? s.board.get(selectedTileId) : undefined);
+
+  if (selectedTileId === null || !tile) return null;
+
+  switch (tile.tileType) {
+    case 'property':
+    case 'port':
+      return <PropertyModal tileId={selectedTileId} onClose={onClose} />;
+    case 'tax':
+      return <TaxModal onClose={onClose} />;
+    case 'airport':
+      return <AirportModal onClose={onClose} />;
+    case 'festival':
+      return <FestivalModal onClose={onClose} />;
+    case 'jail':
+      return <JailModal onClose={onClose} />;
+    case 'chance':
+      return <ChanceModal onClose={onClose} />;
+    case 'go':
+      return <GoModal onClose={onClose} />;
+    default:
+      return null;
+  }
 }
