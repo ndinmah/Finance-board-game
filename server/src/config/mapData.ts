@@ -13,7 +13,6 @@ export interface TileDef {
   rent: number[];      // [base, house1, house2, house3, hotel]
   buildCost?: number;
   hotelCost?: number;
-  mortgageValue?: number;
   taxAmount?: number;
   icon?: string;
 }
@@ -119,8 +118,41 @@ export const AIRPORT_TILE = 24;
 
 export const GO_SALARY = 300;        // Collect when passing/landing on Go
 export const BAIL_COST = 200;         // Pay to get out of jail
-export const STARTING_MONEY = 2000;  // Starting cash per player
+export const STARTING_MONEY = 20000;  // Starting cash per player
 export const MAX_PLAYERS = 6;
 export const MIN_PLAYERS = 2;
 export const TURN_TIMEOUT_MS = 300000; // 5 minutes per turn
 export const BOT_TAKEOVER_TURNS = 3;  // Turns before disconnected player is eliminated
+export const TAX_TILE = 30;
+export const HOTEL_LEVEL = 4;
+export const BIRTHDAY_AMOUNT = 25;
+export const PENALTY_AMOUNT = 50;
+export const BLACKOUT_PASSES = 3;
+
+export type ChanceCardId =
+  | 'DISCOUNT_RENT'           // Giảm 50% tiền thuê tiếp theo
+  | 'DOUBLE_RENT'             // Trả gấp đôi tiền thuê tiếp theo
+  | 'SHIELD'                  // Bảo vệ 1 thành phố
+  | 'FORCE_SELL'              // Ép đối thủ bán 1 thành phố
+  | 'SABOTAGE'                // Hạ 1 cấp nhà đối thủ
+  | 'EARTHQUAKE'              // Phá hủy hoàn toàn 1 ô đất đối thủ
+  | 'BLACKOUT'                // Vô hiệu hóa thành phố đến khi qua Start 3 lần
+  | 'CHANCE_FESTIVAL'         // Tổ chức Festival tại 1 thành phố (từ tay)
+  | 'GIVE_CITY'               // Tặng 1 thành phố cho đối thủ
+  | 'GOTO_AIRPORT'            // Lửa chùa — đến ô Sân Bay
+  | 'GOTO_START'              // Bắt đầu — về ô Start, nhận lương
+  | 'GOTO_ACTIVE_FESTIVAL'    // Toang rồi ông giáo ạ — teleport đến ô đang có festival
+  | 'GOTO_FESTIVAL_CORNER'    // Ngon thí — đến ô góc Festival để tổ chức
+  | 'GOTO_TAX'                // I love tiktok — đến ô Thuế
+  | 'GOTO_JAIL'               // Nhà tù — vào tù thẳng
+  | 'BIRTHDAY'                // Chúc mừng sinh nhật — nhận 25K từ mỗi đối thủ
+  | 'PENALTY'                 // Phạt — mất 50K
+  | 'JAIL_CARD';              // Thẻ ra tù miễn phí
+
+export const CHANCE_CARDS: ChanceCardId[] = [
+  'DISCOUNT_RENT', 'DOUBLE_RENT', 'SHIELD',
+  'FORCE_SELL', 'SABOTAGE', 'EARTHQUAKE', 'BLACKOUT',
+  'CHANCE_FESTIVAL', 'GIVE_CITY',
+  'GOTO_AIRPORT', 'GOTO_START', 'GOTO_ACTIVE_FESTIVAL', 'GOTO_FESTIVAL_CORNER', 'GOTO_TAX', 'GOTO_JAIL',
+  'BIRTHDAY', 'PENALTY', 'JAIL_CARD',
+];

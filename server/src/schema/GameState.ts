@@ -19,6 +19,8 @@ export class MapTile extends Schema {
   @type('number') rentHotel: number = 0;
   @type('number') currentRent: number = 0;
   @type('boolean') isTouristSpot: boolean = false;
+  @type('boolean') isActive: boolean = true;
+  @type('boolean') isShielded: boolean = false;
 }
 
 // ─── Player Schema ────────────────────────────────────────────────────────────
@@ -44,6 +46,15 @@ export class Player extends Schema {
   // Debt: amount owed and to whom
   @type('number') debtAmount: number = 0;
   @type('string') debtTo: string = '';
+
+  // Chance: buff/debuff
+  @type('number') nextRentMultiplier: number = 1;
+
+  // Chance: blackout tracking - JSON string "[{\"tileId\":X,\"passesLeft\":3}]"
+  @type('string') blackoutTasksJson: string = '[]';
+
+  // Chance: inventory
+  @type('boolean') hasJailCard: boolean = false;
 }
 
 // ─── Dice Schema ──────────────────────────────────────────────────────────────
@@ -85,6 +96,11 @@ export type TurnPhase =
   | 'festival_select' // waiting for festival city select
   | 'go_remote_upgrade' // waiting for remote upgrade when landing on go
   | 'pay_debt'        // waiting for player to sell properties to pay debt
+  | 'chance_shield_select'
+  | 'chance_attack_select'
+  | 'chance_give_city_select'
+  | 'chance_give_city_target'
+  | 'chance_festival_city_select'
   | 'game_over';
 
 // ─── Root GameState Schema ────────────────────────────────────────────────────
@@ -98,6 +114,7 @@ export class GameState extends Schema {
   @type('string') winnerId: string = '';
 
   @type('number') activeFestivalTile: number = -1;
+  @type('string') pendingChanceEffect: string = '';
 
   @type({ map: Player })  players = new MapSchema<Player>();
   @type({ map: MapTile }) board   = new MapSchema<MapTile>();

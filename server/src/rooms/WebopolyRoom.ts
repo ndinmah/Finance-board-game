@@ -7,7 +7,9 @@ import {
   MAP_TILES, COLOR_GROUPS, TOTAL_TILES,
   GO_TILE, JAIL_TILE, FESTIVAL_TILE, AIRPORT_TILE,
   GO_SALARY, BAIL_COST, STARTING_MONEY,
-  MAX_PLAYERS, MIN_PLAYERS, TURN_TIMEOUT_MS, BOT_TAKEOVER_TURNS
+  MAX_PLAYERS, MIN_PLAYERS, TURN_TIMEOUT_MS, BOT_TAKEOVER_TURNS,
+  TAX_TILE, HOTEL_LEVEL, BIRTHDAY_AMOUNT, PENALTY_AMOUNT, BLACKOUT_PASSES,
+  ChanceCardId, CHANCE_CARDS
 } from '../config/mapData';
 
 const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
@@ -58,6 +60,12 @@ export class WebopolyRoom extends Room<GameState> {
     this.onMessage('sellForDebt',     (client, data) => this._handleSellForDebt(client, data));
     this.onMessage('animationDone',   (client) => this._handleAnimationDone(client));
     this.onMessage('chat',            (client, data) => this._handleChat(client, data));
+    this.onMessage('chanceShieldSelect',     (c, d) => this._handleChanceShieldSelect(c, d));
+    this.onMessage('chanceAttackSelect',     (c, d) => this._handleChanceAttackSelect(c, d));
+    this.onMessage('chanceGiveCitySelect',   (c, d) => this._handleChanceGiveCitySelect(c, d));
+    this.onMessage('chanceGiveCityTarget',   (c, d) => this._handleChanceGiveCityTarget(c, d));
+    this.onMessage('chanceFestivalSelect',   (c, d) => this._handleChanceFestivalSelect(c, d));
+    this.onMessage('useJailCard',            (c)    => this._handleUseJailCard(c));
 
     console.log(`[WebopolyRoom] Room ${this.roomId} created`);
   }
@@ -179,7 +187,7 @@ export class WebopolyRoom extends Room<GameState> {
 
     const botId = 'bot_' + Math.floor(Math.random() * 100000);
     const color = PLAYER_COLORS[state.players.size % PLAYER_COLORS.length] || '#888';
-    
+
     const p = new Player();
     p.id = botId;
     p.name = 'Bot ' + Math.floor(Math.random() * 100);
@@ -206,7 +214,7 @@ export class WebopolyRoom extends Room<GameState> {
     state.turnPhase = 'wait_roll';
 
     this._pushEvent('start', '', '', 0, -1, 'Game bắt đầu! Chúc vui vẻ!');
-    
+
     // Pick 3 random tourist spots
     const purchasableTiles: MapTile[] = [];
     state.board.forEach(t => {
@@ -218,10 +226,10 @@ export class WebopolyRoom extends Room<GameState> {
     }
 
     this._startTurnTimer();
-    
+
     // 1-hour time limit
     this.gameTimer = this.clock.setTimeout(() => this._handleGameTimeout(), 60 * 60 * 1000);
-    
+
     console.log('[WebopolyRoom] Game started. Turn order:', ids);
   }
 
@@ -258,7 +266,7 @@ export class WebopolyRoom extends Room<GameState> {
     this.turnTimer?.clear();
     const state = this.state;
     const curPlayer = state.players.get(state.currentPlayerId);
-    
+
     if (curPlayer?.isBot) {
       this._scheduleBotAction();
     }
@@ -283,8 +291,10 @@ export class WebopolyRoom extends Room<GameState> {
         this._advanceTurn();
       } else if (state.turnPhase === 'pay_debt') {
         this._autoSellDebt(state.currentPlayerId);
+      } else if (state.turnPhase.startsWith('chance_')) {
+        this._handleChanceTimeout(state.currentPlayerId);
       }
-    }, TURN_TIMEOUT_MS);
+    }, state.turnPhase.startsWith('chance_') ? 15000 : TURN_TIMEOUT_MS);
   }
 
   // ─── Roll Dice ───────────────────────────────────────────────────────────────
@@ -304,12 +314,12 @@ export class WebopolyRoom extends Room<GameState> {
     // Server-side RNG — client cannot influence this (except in dev mode)
     let die1 = Math.ceil(Math.random() * 6);
     let die2 = Math.ceil(Math.random() * 6);
-    
+
     if (devData && typeof devData.d1 === 'number' && typeof devData.d2 === 'number') {
       die1 = Math.max(1, Math.min(6, devData.d1));
       die2 = Math.max(1, Math.min(6, devData.d2));
     }
-    
+
     const isDouble = die1 === die2;
 
     state.dice.die1 = die1;
@@ -321,6 +331,7 @@ export class WebopolyRoom extends Room<GameState> {
       if (isDouble) {
         player.isInJail = false;
         player.jailTurns = 0;
+        state.doublesCount = 0; // BUG-02 Fix: Không cấp thêm lượt khi ra tù bằng đôi
         this._pushEvent('jail_exit', playerId, '', 0, JAIL_TILE, `${player.name} đổ được đôi, thoát tù!`);
       } else {
         player.jailTurns -= 1;
@@ -345,6 +356,7 @@ export class WebopolyRoom extends Room<GameState> {
     // Check if passing Go
     if (newPos < player.position || (player.position + steps >= TOTAL_TILES)) {
       player.passCount += 1;
+      this._tickBlackoutTasks(playerId);
       this._applyMoneyChange(playerId, GO_SALARY, 'go_salary');
       this._pushEvent('go_salary', playerId, '', GO_SALARY, GO_TILE, `${player.name} qua ô Xuất Phát, nhận ${formatMoney(GO_SALARY)} lương!`);
     }
@@ -473,6 +485,10 @@ export class WebopolyRoom extends Room<GameState> {
         this._processTax(playerId, tile);
         break;
 
+      case 'chance':
+        this._processChance(playerId);
+        break;
+
       default:
         this._advanceTurn();
     }
@@ -510,7 +526,14 @@ export class WebopolyRoom extends Room<GameState> {
       }
     } else {
       // Pay rent
-      const rent = tile.currentRent;
+      let rent = tile.currentRent;
+
+      // Apply chance buff/debuff
+      if (player.nextRentMultiplier !== 1) {
+        rent = Math.floor(rent * player.nextRentMultiplier);
+        player.nextRentMultiplier = 1;
+      }
+
       const owner = state.players.get(tile.ownerId);
       if (!owner || owner.isBankrupt) {
         this._advanceTurn();
@@ -542,11 +565,11 @@ export class WebopolyRoom extends Room<GameState> {
         }
       } else {
         this._applyMoneyChange(tile.ownerId, rent, 'rent_receive');
-        
+
         // Buyout check
         const totalValue = tile.price + (tile.houseCount === 4 ? (tile.buildCost * 3 + tile.hotelCost) : tile.houseCount * tile.buildCost);
         const buyoutPrice = totalValue * 2;
-        
+
         if (tile.tileType !== 'port' && tile.houseCount < 4 && player.money >= buyoutPrice) {
           state.turnPhase = 'buyout_decision';
           this._startTurnTimer();
@@ -598,6 +621,7 @@ export class WebopolyRoom extends Room<GameState> {
   }
 
   private _calculateRent(tile: MapTile): number {
+    if (!tile.isActive) return 0;
     if (!tile.ownerId) return tile.baseRent;
     const state = this.state;
     if (tile.tileType === 'port') {
@@ -608,9 +632,9 @@ export class WebopolyRoom extends Room<GameState> {
       if (portCount === 1) return 25;
       if (portCount === 2) return 50;
       if (portCount === 3) return 100;
-      return 0; // 4 ports is a win anyway
+      return 200; // 4 ports gives 200 rent (if game hasn't ended yet)
     }
-    
+
     let rent = 0;
     switch (tile.houseCount) {
       case 0: rent = tile.baseRent; break;
@@ -636,7 +660,7 @@ export class WebopolyRoom extends Room<GameState> {
   }
 
   private _getMaxHouses(player: Player, currentHouses: number): number {
-    if (player.passCount === 0) return 2;
+    if (player.passCount === 0) return Math.max(2, currentHouses);
     if (currentHouses < 3) return 3;
     return 4;
   }
@@ -657,7 +681,7 @@ export class WebopolyRoom extends Room<GameState> {
     if (!player) return;
     const tile = state.board.get(String(player.position));
     if (!tile || tile.ownerId || (tile.tileType !== 'property' && tile.tileType !== 'port')) return;
-    
+
     // Ensure houses does not exceed max allowed
     const maxHouses = tile.tileType === 'property' ? this._getMaxHouses(player, 0) : 0;
     const actualHouses = Math.min(houses, maxHouses);
@@ -673,11 +697,11 @@ export class WebopolyRoom extends Room<GameState> {
 
     const houseLabel = actualHouses > 0 ? ` + ${actualHouses} nhà` : '';
     this._pushEvent('buy', playerId, '', cost, tile.id, `${player.name} mua ${tile.name}${houseLabel} với giá ${formatMoney(cost)}!`);
-    
+
     if (this._checkPortWin(playerId)) return;
     if (this._checkLineWin(playerId)) return;
     if (this._checkTripleMonopolyWin(playerId)) return;
-    
+
     this._advanceTurn();
   }
 
@@ -719,17 +743,25 @@ export class WebopolyRoom extends Room<GameState> {
     // Pay money to old owner
     this._applyMoneyChange(client.sessionId, -buyoutPrice, 'buyout_pay');
     this._applyMoneyChange(oldOwnerId, buyoutPrice, 'buyout_receive');
-    
+
     tile.ownerId = client.sessionId;
     this._updateAllRents();
 
     this._pushEvent('buyout', client.sessionId, oldOwnerId, buyoutPrice, tile.id, `${player.name} đã CƯỚP ĐẤT ${tile.name} từ ${oldOwner?.name || 'người khác'} với giá ${formatMoney(buyoutPrice)}!`);
-    
+
     if (this._checkPortWin(client.sessionId)) return;
     if (this._checkLineWin(client.sessionId)) return;
     if (this._checkTripleMonopolyWin(client.sessionId)) return;
-    
-    this._advanceTurn();
+
+    // Check if player can immediately upgrade after buyout
+    const maxHouses = this._getMaxHouses(player, tile.houseCount);
+    if (tile.houseCount < maxHouses && player.money >= tile.buildCost) {
+      state.turnPhase = 'upgrade_decision';
+      this._startTurnTimer();
+      this._pushEvent('own_land', client.sessionId, '', 0, tile.id, `${player.name} vừa cướp đất thành công. Có thể nâng cấp ngay!`);
+    } else {
+      this._advanceTurn();
+    }
   }
 
   private _handleSkipBuyout(client: Client) {
@@ -753,13 +785,13 @@ export class WebopolyRoom extends Room<GameState> {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'upgrade_decision') return;
-    
+
     const player = state.players.get(client.sessionId);
     if (!player || player.isBankrupt) return;
 
     const tile = state.board.get(String(player.position));
     if (!tile || tile.ownerId !== client.sessionId || tile.tileType !== 'property') return;
-    
+
     const maxHouses = this._getMaxHouses(player, tile.houseCount);
     const targetHouses = Math.min(data.targetHouses, maxHouses);
     if (targetHouses <= tile.houseCount) {
@@ -776,7 +808,7 @@ export class WebopolyRoom extends Room<GameState> {
 
     this._applyMoneyChange(client.sessionId, -cost, 'build');
     tile.houseCount = targetHouses;
-    
+
     this._updateAllRents();
 
     const label = tile.houseCount === 4 ? 'Khách sạn' : `Nhà cấp ${tile.houseCount}`;
@@ -803,13 +835,13 @@ export class WebopolyRoom extends Room<GameState> {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'go_remote_upgrade') return;
-    
+
     const player = state.players.get(client.sessionId);
     if (!player || player.isBankrupt) return;
 
     const tile = state.board.get(String(data.tileId));
     if (!tile || tile.ownerId !== client.sessionId || tile.tileType !== 'property') return;
-    
+
     const maxHouses = this._getMaxHouses(player, tile.houseCount);
     const targetHouses = Math.min(data.targetHouses, maxHouses);
     if (targetHouses <= tile.houseCount) {
@@ -826,7 +858,7 @@ export class WebopolyRoom extends Room<GameState> {
 
     this._applyMoneyChange(client.sessionId, -cost, 'build');
     tile.houseCount = targetHouses;
-    
+
     this._updateAllRents();
 
     const label = tile.houseCount === 4 ? 'Khách sạn' : `Nhà cấp ${tile.houseCount}`;
@@ -870,12 +902,12 @@ export class WebopolyRoom extends Room<GameState> {
     if (state.turnPhase !== 'wait_roll') return;
     const player = state.players.get(client.sessionId);
     if (!player || player.position !== AIRPORT_TILE) return;
-    
+
     if (player.money < 50) {
       client.send('error', { message: 'Không đủ 50K để bay!' });
       return;
     }
-    
+
     state.turnPhase = 'airport_select';
     this._startTurnTimer();
     this._pushEvent('airport_wait', client.sessionId, '', 0, AIRPORT_TILE, `${player.name} đang chọn chuyến bay (50K)...`);
@@ -886,22 +918,27 @@ export class WebopolyRoom extends Room<GameState> {
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'airport_select') return;
     if (data.tileId < 0 || data.tileId >= TOTAL_TILES) return;
-    
+
     const tile = state.board.get(String(data.tileId));
     if (!tile) return;
-    
+
+    if (tile.tileType !== 'property' && tile.tileType !== 'port') {
+      client.send('error', { message: 'Chỉ được bay tới ô đất hoặc cảng!' });
+      return;
+    }
+
     if (tile.ownerId && tile.ownerId !== client.sessionId) {
       client.send('error', { message: 'Chỉ được bay tới ô trống hoặc ô của bạn!' });
       return;
     }
-    
+
     const player = state.players.get(client.sessionId);
     if (!player) return;
     if (player.money < 50) return;
 
     this._applyMoneyChange(client.sessionId, -50, 'airport_fee');
     this._pushEvent('airport_fly', client.sessionId, '', 50, data.tileId, `${player.name} đã trả 50K để bay đến ${tile.name}!`);
-    
+
     state.doublesCount = 0;
     this._movePlayerTo(client.sessionId, data.tileId, true);
   }
@@ -937,7 +974,7 @@ export class WebopolyRoom extends Room<GameState> {
 
     const tile = state.board.get(String(data.tileId));
     if (!tile || tile.ownerId !== client.sessionId) return;
-    
+
     const player = state.players.get(client.sessionId);
     if (!player || player.money < 50) return;
 
@@ -966,7 +1003,387 @@ export class WebopolyRoom extends Room<GameState> {
     this._advanceTurn();
   }
 
+  // ─── Chance Cards ────────────────────────────────────────────────────────────
+
+  private _processChance(playerId: string) {
+    const cards = CHANCE_CARDS;
+    const card = cards[Math.floor(Math.random() * cards.length)];
+    const player = this.state.players.get(playerId);
+    if (!player) return;
+
+    this._pushEvent('chance', playerId, '', 0, player.position, `${player.name} rút thẻ Cơ Hội: [${card}]`);
+    this._resolveChanceCard(playerId, card);
+  }
+
+  private _resolveChanceCard(playerId: string, card: ChanceCardId) {
+    const state = this.state;
+    const player = state.players.get(playerId);
+    if (!player) return;
+
+    let hasProperty = false;
+    state.board.forEach(t => { if (t.ownerId === playerId) hasProperty = true; });
+
+    switch (card) {
+      case 'DISCOUNT_RENT':
+        player.nextRentMultiplier = 0.5;
+        this._advanceTurn();
+        break;
+      case 'DOUBLE_RENT':
+        player.nextRentMultiplier = 2.0;
+        this._advanceTurn();
+        break;
+      case 'SHIELD':
+        if (!hasProperty) {
+          this._pushEvent('chance_skip', playerId, '', 0, player.position, `${player.name} không có đất để gắn khiên. Bỏ qua thẻ.`);
+          this._advanceTurn();
+        } else {
+          state.turnPhase = 'chance_shield_select';
+          this._startTurnTimer();
+        }
+        break;
+      case 'FORCE_SELL':
+      case 'SABOTAGE':
+      case 'EARTHQUAKE':
+      case 'BLACKOUT':
+        let hasValidTarget = false;
+        state.board.forEach(t => {
+          if (t.ownerId && t.ownerId !== playerId && t.houseCount < HOTEL_LEVEL) {
+            hasValidTarget = true;
+          }
+        });
+        if (!hasValidTarget) {
+          this._pushEvent('chance_skip', playerId, '', 0, player.position, `Không có mục tiêu hợp lệ để dùng thẻ. Bỏ qua thẻ.`);
+          this._advanceTurn();
+        } else {
+          state.turnPhase = 'chance_attack_select';
+          state.pendingChanceEffect = card;
+          this._startTurnTimer();
+        }
+        break;
+      case 'CHANCE_FESTIVAL':
+        let hasPropertyForFestival = false;
+        state.board.forEach(t => { if (t.ownerId === playerId && t.tileType === 'property') hasPropertyForFestival = true; });
+        if (!hasPropertyForFestival) {
+          this._pushEvent('chance_skip', playerId, '', 0, player.position, `${player.name} không có công trình để tổ chức Festival. Bỏ qua thẻ.`);
+          this._advanceTurn();
+        } else {
+          state.turnPhase = 'chance_festival_city_select';
+          this._startTurnTimer();
+        }
+        break;
+      case 'GIVE_CITY':
+        if (!hasProperty) {
+          this._pushEvent('chance_skip', playerId, '', 0, player.position, `${player.name} không có đất để tặng. Bỏ qua thẻ.`);
+          this._advanceTurn();
+        } else {
+          state.turnPhase = 'chance_give_city_select';
+          this._startTurnTimer();
+        }
+        break;
+      case 'GOTO_AIRPORT':
+        this._movePlayerTo(playerId, AIRPORT_TILE, false);
+        break;
+      case 'GOTO_START':
+        this._movePlayerTo(playerId, GO_TILE, true);
+        break;
+      case 'GOTO_ACTIVE_FESTIVAL':
+        if (state.activeFestivalTile === -1) {
+          this._pushEvent('chance_skip', playerId, '', 0, player.position, `Hiện không có Festival nào đang diễn ra. Bỏ qua thẻ.`);
+          this._advanceTurn();
+        } else {
+          this._movePlayerTo(playerId, state.activeFestivalTile, true);
+        }
+        break;
+      case 'GOTO_FESTIVAL_CORNER':
+        this._movePlayerTo(playerId, FESTIVAL_TILE, true);
+        break;
+      case 'GOTO_TAX':
+        this._movePlayerTo(playerId, TAX_TILE, true);
+        break;
+      case 'GOTO_JAIL':
+        this._sendToJail(playerId);
+        break;
+      case 'BIRTHDAY':
+        this._resolveBirthday(playerId);
+        break;
+      case 'PENALTY':
+        this._pushEvent('chance_penalty', playerId, '', PENALTY_AMOUNT, player.position, `${player.name} bị phạt ${formatMoney(PENALTY_AMOUNT)}.`);
+        const shortfall = this._applyMoneyChange(playerId, -PENALTY_AMOUNT, 'penalty');
+        if (shortfall > 0) {
+          let totalSellValue = 0;
+          state.board.forEach(t => { if (t.ownerId === playerId) totalSellValue += this._getTileSellValue(t); });
+          if (totalSellValue < shortfall) {
+            this._doBankrupt(playerId);
+          } else {
+            player.debtAmount = shortfall;
+            player.debtTo = 'bank';
+            state.turnPhase = 'pay_debt';
+            this._pushEvent('debt_start', playerId, 'bank', shortfall, player.position, `${player.name} không đủ tiền nộp phạt, cần bán tài sản để trả ${formatMoney(shortfall)}!`);
+            this._startTurnTimer();
+          }
+        } else {
+          this._advanceTurn();
+        }
+        break;
+      case 'JAIL_CARD':
+        if (!player.hasJailCard) {
+          player.hasJailCard = true;
+          this._pushEvent('chance_jail_card', playerId, '', 0, player.position, `${player.name} nhận được thẻ Ra Tù Miễn Phí!`);
+        } else {
+          this._pushEvent('chance_skip', playerId, '', 0, player.position, `${player.name} đã có thẻ Ra Tù, thẻ mới không có hiệu lực.`);
+        }
+        this._advanceTurn();
+        break;
+    }
+  }
+
+  private _handleChanceShieldSelect(client: Client, data: any) {
+    const state = this.state;
+    if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_shield_select') return;
+    const tile = state.board.get(String(data.tileId));
+    if (!tile || tile.ownerId !== client.sessionId) return;
+
+    tile.isShielded = true;
+    this._pushEvent('chance_shield_placed', client.sessionId, '', 0, tile.id, `${state.players.get(client.sessionId)?.name} gắn Khiên Bảo Vệ lên ${tile.name}!`);
+    this.turnTimer?.clear();
+    this._advanceTurn();
+  }
+
+  private _handleChanceAttackSelect(client: Client, data: any) {
+    const state = this.state;
+    if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_attack_select') return;
+    const tile = state.board.get(String(data.tileId));
+    if (!tile || !tile.ownerId || tile.ownerId === client.sessionId || tile.houseCount >= HOTEL_LEVEL) return;
+
+    const targetPlayer = state.players.get(tile.ownerId);
+    if (tile.isShielded) {
+      tile.isShielded = false;
+      this._pushEvent('shield_broken', client.sessionId, tile.ownerId, 0, tile.id, `Khiên Bảo Vệ trên ${tile.name} đã vỡ! Đòn tấn công thất bại.`);
+      this.turnTimer?.clear();
+      this._advanceTurn();
+      return;
+    }
+
+    const effect = state.pendingChanceEffect;
+    if (effect === 'FORCE_SELL') {
+      const value = this._getTileSellValue(tile);
+      this._applyMoneyChange(tile.ownerId, value, 'force_sell');
+      this._pushEvent('chance_force_sell', client.sessionId, tile.ownerId, value, tile.id, `${targetPlayer?.name} bị ép bán ${tile.name}, nhận lại ${formatMoney(value)}.`);
+      this._resetTileEffectsAndOwner(tile);
+    } else if (effect === 'SABOTAGE') {
+      if (tile.houseCount > 0) {
+        tile.houseCount -= 1;
+        this._pushEvent('chance_sabotage', client.sessionId, tile.ownerId, 0, tile.id, `${tile.name} bị hạ 1 cấp nhà!`);
+        tile.currentRent = this._calculateRent(tile);
+      } else {
+        this._pushEvent('chance_sabotage', client.sessionId, tile.ownerId, 0, tile.id, `${tile.name} bị hạ xuống thành đất vô chủ!`);
+        this._resetTileEffectsAndOwner(tile);
+      }
+    } else if (effect === 'EARTHQUAKE') {
+      this._pushEvent('chance_earthquake', client.sessionId, tile.ownerId, 0, tile.id, `${tile.name} bị Động Đất phá hủy hoàn toàn!`);
+      this._resetTileEffectsAndOwner(tile);
+    } else if (effect === 'BLACKOUT') {
+      tile.isActive = false;
+      this._pushEvent('chance_blackout', client.sessionId, tile.ownerId, 0, tile.id, `${tile.name} bị Cúp Điện trong 3 lượt (của ${targetPlayer?.name})!`);
+      if (targetPlayer) {
+        const tasks = JSON.parse(targetPlayer.blackoutTasksJson || '[]');
+        tasks.push({ tileId: tile.id, passesLeft: BLACKOUT_PASSES });
+        targetPlayer.blackoutTasksJson = JSON.stringify(tasks);
+      }
+    }
+
+    this.turnTimer?.clear();
+    state.pendingChanceEffect = '';
+    this._advanceTurn();
+  }
+
+  private _handleChanceGiveCitySelect(client: Client, data: any) {
+    const state = this.state;
+    if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_give_city_select') return;
+    const tile = state.board.get(String(data.tileId));
+    if (!tile || tile.ownerId !== client.sessionId) return;
+
+    state.pendingChanceEffect = String(tile.id);
+    state.turnPhase = 'chance_give_city_target';
+    this._startTurnTimer();
+  }
+
+  private _handleChanceGiveCityTarget(client: Client, data: any) {
+    const state = this.state;
+    if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_give_city_target') return;
+    const targetId = data.targetId;
+    const targetPlayer = state.players.get(targetId);
+    if (!targetPlayer || targetPlayer.isBankrupt || targetId === client.sessionId) return;
+
+    const tileId = state.pendingChanceEffect;
+    const tile = state.board.get(tileId);
+    if (!tile || tile.ownerId !== client.sessionId) return;
+
+    this._resetTileEffects(tile);
+    tile.ownerId = targetId;
+    this._updateAllRents();
+
+    this._pushEvent('chance_give_city', client.sessionId, targetId, 0, tile.id, `${state.players.get(client.sessionId)?.name} tặng ${tile.name} cho ${targetPlayer.name}!`);
+    this.turnTimer?.clear();
+    state.pendingChanceEffect = '';
+
+    if (this._checkWinCondition(targetId)) return;
+    this._advanceTurn();
+  }
+
+  private _handleChanceFestivalSelect(client: Client, data: any) {
+    const state = this.state;
+    if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_festival_city_select') return;
+    const tile = state.board.get(String(data.tileId));
+    if (!tile || tile.ownerId !== client.sessionId || tile.tileType !== 'property') return;
+
+    state.activeFestivalTile = tile.id;
+    this._updateAllRents();
+    this._pushEvent('chance_festival', client.sessionId, '', 0, tile.id, `${state.players.get(client.sessionId)?.name} mở Festival tại ${tile.name}! Tiền tô nhân đôi.`);
+
+    this.turnTimer?.clear();
+    this._advanceTurn();
+  }
+
+  private _handleUseJailCard(client: Client) {
+    const state = this.state;
+    const player = state.players.get(client.sessionId);
+    if (!player || !player.isInJail || !player.hasJailCard) return;
+
+    player.hasJailCard = false;
+    player.isInJail = false;
+    player.jailTurns = 0;
+    this._pushEvent('jail_card_used', client.sessionId, '', 0, JAIL_TILE, `${player.name} dùng thẻ ra tù miễn phí!`);
+  }
+
+  private _handleChanceTimeout(playerId: string) {
+    const state = this.state;
+    if (playerId !== state.currentPlayerId) return;
+
+    const c = { sessionId: playerId } as Client;
+
+    if (state.turnPhase === 'chance_shield_select') {
+      const validTiles: MapTile[] = [];
+      state.board.forEach(t => { if (t.ownerId === playerId) validTiles.push(t); });
+      if (validTiles.length > 0) {
+        this._handleChanceShieldSelect(c, { tileId: validTiles[Math.floor(Math.random() * validTiles.length)].id });
+      } else {
+        this._advanceTurn();
+      }
+    } else if (state.turnPhase === 'chance_attack_select') {
+      const validTiles: MapTile[] = [];
+      state.board.forEach(t => { if (t.ownerId && t.ownerId !== playerId && t.houseCount < HOTEL_LEVEL) validTiles.push(t); });
+      if (validTiles.length > 0) {
+        this._handleChanceAttackSelect(c, { tileId: validTiles[Math.floor(Math.random() * validTiles.length)].id });
+      } else {
+        this._advanceTurn();
+      }
+    } else if (state.turnPhase === 'chance_give_city_select') {
+      const validTiles: MapTile[] = [];
+      state.board.forEach(t => { if (t.ownerId === playerId) validTiles.push(t); });
+      if (validTiles.length > 0) {
+        this._handleChanceGiveCitySelect(c, { tileId: validTiles[Math.floor(Math.random() * validTiles.length)].id });
+      } else {
+        this._advanceTurn();
+      }
+    } else if (state.turnPhase === 'chance_give_city_target') {
+      const validPlayers: string[] = [];
+      state.players.forEach(p => { if (p.id !== playerId && !p.isBankrupt) validPlayers.push(p.id); });
+      if (validPlayers.length > 0) {
+        this._handleChanceGiveCityTarget(c, { targetId: validPlayers[Math.floor(Math.random() * validPlayers.length)] });
+      } else {
+        this._advanceTurn();
+      }
+    } else if (state.turnPhase === 'chance_festival_city_select') {
+      const validTiles: MapTile[] = [];
+      state.board.forEach(t => { if (t.ownerId === playerId && t.tileType === 'property') validTiles.push(t); });
+      if (validTiles.length > 0) {
+        this._handleChanceFestivalSelect(c, { tileId: validTiles[Math.floor(Math.random() * validTiles.length)].id });
+      } else {
+        this._advanceTurn();
+      }
+    }
+  }
+
+  private _resolveBirthday(playerId: string) {
+    const state = this.state;
+    const player = state.players.get(playerId);
+    if (!player) return;
+
+    let totalReceived = 0;
+
+    state.players.forEach(p => {
+      if (p.id === playerId || p.isBankrupt) return;
+      const shortfall = this._applyMoneyChange(p.id, -BIRTHDAY_AMOUNT, 'birthday_pay');
+      const paid = BIRTHDAY_AMOUNT - shortfall;
+      totalReceived += paid;
+
+      if (shortfall > 0) {
+        let totalSellValue = 0;
+        state.board.forEach(t => { if (t.ownerId === p.id) totalSellValue += this._getTileSellValue(t); });
+
+        if (totalSellValue < shortfall) {
+          this._doBankrupt(p.id);
+        } else {
+          p.debtAmount = shortfall;
+          p.debtTo = playerId;
+          this._pushEvent('debt_start', p.id, playerId, shortfall, p.position, `${p.name} bán tài sản tự động để trả ${formatMoney(shortfall)} mừng sinh nhật!`);
+          this._autoSellDebt(p.id);
+        }
+      }
+    });
+
+    this._applyMoneyChange(playerId, totalReceived, 'birthday_receive');
+    this._pushEvent('chance_birthday', playerId, '', totalReceived, player.position, `${player.name} nhận được ${formatMoney(totalReceived)} tiền mừng sinh nhật!`);
+    this._advanceTurn();
+  }
+
+  private _tickBlackoutTasks(playerId: string) {
+    const player = this.state.players.get(playerId);
+    if (!player) return;
+    const tasks: {tileId: number, passesLeft: number}[] = JSON.parse(player.blackoutTasksJson || '[]');
+    let changed = false;
+    const remaining = tasks.map(t => {
+      t.passesLeft -= 1;
+      return t;
+    }).filter(t => {
+      if (t.passesLeft <= 0) {
+        const tile = this.state.board.get(String(t.tileId));
+        if (tile) tile.isActive = true;
+        changed = true;
+        return false;
+      }
+      return true;
+    });
+    player.blackoutTasksJson = JSON.stringify(remaining);
+    if (changed) this._updateAllRents();
+  }
+
+  private _resetTileEffects(tile: MapTile) {
+    if (this.state.activeFestivalTile === tile.id) {
+      this.state.activeFestivalTile = -1;
+    }
+    tile.isActive = true;
+    tile.isShielded = false;
+  }
+
+  private _resetTileEffectsAndOwner(tile: MapTile) {
+    this._resetTileEffects(tile);
+    tile.ownerId = '';
+    tile.houseCount = 0;
+    const def = MAP_TILES.find(d => d.id === tile.id);
+    if (def) {
+      tile.baseRent  = def.rent[0] || 0;
+      tile.rent1     = def.rent[1] || 0;
+      tile.rent2     = def.rent[2] || 0;
+      tile.rent3     = def.rent[3] || 0;
+      tile.rentHotel = def.rent[4] || 0;
+    }
+    this._updateAllRents();
+  }
+
   // ─── Debt ────────────────────────────────────────────────────────────────────
+
 
   private _handleSellForDebt(client: Client, data: { tileId: number }) {
     const state = this.state;
@@ -980,24 +1397,14 @@ export class WebopolyRoom extends Room<GameState> {
     if (!tile || tile.ownerId !== client.sessionId) return;
 
     const sellValue = this._getTileSellValue(tile);
-
-    tile.ownerId = '';
-    tile.houseCount = 0;
-    const def = MAP_TILES.find(d => d.id === tile.id);
-    if (def) {
-      tile.baseRent  = def.rent[0] || 0;
-      tile.rent1     = def.rent[1] || 0;
-      tile.rent2     = def.rent[2] || 0;
-      tile.rent3     = def.rent[3] || 0;
-      tile.rentHotel = def.rent[4] || 0;
-    }
+    this._resetTileEffectsAndOwner(tile);
 
     this._pushEvent('sell_debt', client.sessionId, player.debtTo, sellValue, tile.id, `${player.name} bán ${tile.name} thu được ${formatMoney(sellValue)} để trả nợ.`);
 
     if (sellValue > player.debtAmount) {
       const surplus = sellValue - player.debtAmount;
       this._applyMoneyChange(player.debtTo, player.debtAmount, 'debt_receive');
-      player.money += surplus;
+      this._applyMoneyChange(client.sessionId, surplus, 'debt_surplus');
       player.debtAmount = 0;
     } else {
       this._applyMoneyChange(player.debtTo, sellValue, 'debt_receive');
@@ -1029,23 +1436,14 @@ export class WebopolyRoom extends Room<GameState> {
       if (player.debtAmount <= 0) break;
 
       const sellValue = this._getTileSellValue(t);
-      t.ownerId = '';
-      t.houseCount = 0;
-      const def = MAP_TILES.find(d => d.id === t.id);
-      if (def) {
-        t.baseRent  = def.rent[0] || 0;
-        t.rent1     = def.rent[1] || 0;
-        t.rent2     = def.rent[2] || 0;
-        t.rent3     = def.rent[3] || 0;
-        t.rentHotel = def.rent[4] || 0;
-      }
+      this._resetTileEffectsAndOwner(t);
 
       this._pushEvent('sell_debt_auto', playerId, player.debtTo, sellValue, t.id, `${player.name} tự động bán ${t.name} thu được ${formatMoney(sellValue)} để trả nợ.`);
 
       if (sellValue > player.debtAmount) {
         const surplus = sellValue - player.debtAmount;
         this._applyMoneyChange(player.debtTo, player.debtAmount, 'debt_receive');
-        player.money += surplus;
+        this._applyMoneyChange(playerId, surplus, 'debt_surplus');
         player.debtAmount = 0;
       } else {
         this._applyMoneyChange(player.debtTo, sellValue, 'debt_receive');
@@ -1059,7 +1457,9 @@ export class WebopolyRoom extends Room<GameState> {
       player.debtAmount = 0;
       player.debtTo = '';
       this._updateAllRents();
-      this._advanceTurn();
+      if (playerId === state.currentPlayerId) {
+        this._advanceTurn();
+      }
     }
   }
 
@@ -1096,8 +1496,7 @@ export class WebopolyRoom extends Room<GameState> {
     state.board.forEach((tile: MapTile) => {
       if (tile.ownerId === playerId) {
         totalLiquidation += this._getTileSellValue(tile);
-        tile.ownerId = '';
-        tile.houseCount = 0;
+        this._resetTileEffectsAndOwner(tile);
       }
     });
 
@@ -1138,6 +1537,7 @@ export class WebopolyRoom extends Room<GameState> {
   private _advanceTurn() {
     const state = this.state;
     this.turnTimer?.clear();
+    state.pendingChanceEffect = '';
 
     const curPlayer = state.players.get(state.currentPlayerId);
 
@@ -1174,6 +1574,10 @@ export class WebopolyRoom extends Room<GameState> {
   }
 
   // ─── Game Over ───────────────────────────────────────────────────────────────
+
+  private _checkWinCondition(playerId: string): boolean {
+    return this._checkPortWin(playerId) || this._checkLineWin(playerId) || this._checkTripleMonopolyWin(playerId);
+  }
 
   private _checkPortWin(playerId: string): boolean {
     let portCount = 0;
@@ -1272,7 +1676,7 @@ export class WebopolyRoom extends Room<GameState> {
 
     // Delay bot action to feel natural
     const delay = 1500 + Math.random() * 1500;
-    
+
     // Clear any existing timer for this bot so we don't queue multiple actions
     this._clearBotTimer(playerId);
 
@@ -1379,11 +1783,13 @@ export class WebopolyRoom extends Room<GameState> {
         } else {
           this._doSkipFestival(playerId);
         }
+      } else if (state.turnPhase.startsWith('chance_')) {
+        this._handleChanceTimeout(playerId);
       } else if (state.turnPhase === 'pay_debt') {
         this._autoSellDebt(playerId);
       }
     }, delay);
-    
+
     this.botTimers.set(playerId, timer);
   }
 
