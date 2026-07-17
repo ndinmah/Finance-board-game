@@ -16,6 +16,8 @@ export interface TileState {
   rent1: number; rent2: number; rent3: number; rentHotel: number;
   currentRent: number;
   isTouristSpot: boolean;
+  isActive: boolean;
+  isShielded: boolean;
 }
 
 export interface PlayerState {
@@ -35,6 +37,8 @@ export interface PlayerState {
   debtAmount: number;
   debtTo: string;
   passCount: number;
+  nextRentMultiplier: number;
+  hasJailCard: boolean;
 }
 
 export interface DiceState { die1: number; die2: number; isDouble: boolean; }
@@ -43,7 +47,7 @@ export interface ChatMsg { playerId: string; playerName: string; text: string; t
 export interface GameEvt  { type: string; playerId: string; targetId: string; amount: number; tileId: number; message: string; timestamp: number; }
 
 export type GamePhase = 'waiting' | 'playing' | 'ended';
-export type TurnPhase = 'wait_roll' | 'moving' | 'land_event' | 'buy_decision' | 'buyout_decision' | 'upgrade_decision' | 'go_remote_upgrade' | 'airport_select' | 'festival_select' | 'game_over' | 'pay_debt';
+export type TurnPhase = 'wait_roll' | 'moving' | 'land_event' | 'buy_decision' | 'buyout_decision' | 'upgrade_decision' | 'go_remote_upgrade' | 'airport_select' | 'festival_select' | 'game_over' | 'pay_debt' | 'chance_shield_select' | 'chance_attack_select' | 'chance_give_city_select' | 'chance_give_city_target' | 'chance_festival_city_select';
 
 interface GameStore {
   // My identity
@@ -107,6 +111,7 @@ export const useGameStore = create<GameStore>((set) => ({
         isConnected: p.isConnected, isBot: p.isBot, color: p.color,
         avatarIndex: p.avatarIndex, isReady: p.isReady, airportTarget: p.airportTarget,
         debtAmount: p.debtAmount, debtTo: p.debtTo, passCount: p.passCount,
+        nextRentMultiplier: p.nextRentMultiplier, hasJailCard: p.hasJailCard,
       });
     });
 
@@ -118,7 +123,7 @@ export const useGameStore = create<GameStore>((set) => ({
         price: t.price, buildCost: t.buildCost, hotelCost: t.hotelCost,
         ownerId: t.ownerId, houseCount: t.houseCount, hasMonopoly: t.hasMonopoly,
         baseRent: t.baseRent, rent1: t.rent1, rent2: t.rent2, rent3: t.rent3, rentHotel: t.rentHotel, currentRent: t.currentRent,
-        isTouristSpot: t.isTouristSpot,
+        isTouristSpot: t.isTouristSpot, isActive: t.isActive, isShielded: t.isShielded,
       });
     });
 
@@ -152,8 +157,8 @@ export const useGameStore = create<GameStore>((set) => ({
 
   loadDevState: () => {
     const players = new Map<string, PlayerState>();
-    players.set('dev1', { id: 'dev1', name: 'Dev Player 1', position: 0, money: 20000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: false, color: '#FF6B6B', avatarIndex: '0', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 1 });
-    players.set('dev2', { id: 'dev2', name: 'Dev Player 2', position: 5, money: 2000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: true, color: '#4D96FF', avatarIndex: '1', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 1 });
+    players.set('dev1', { id: 'dev1', name: 'Dev Player 1', position: 0, money: 20000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: false, color: '#FF6B6B', avatarIndex: '0', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 1, nextRentMultiplier: 1, hasJailCard: false });
+    players.set('dev2', { id: 'dev2', name: 'Dev Player 2', position: 5, money: 2000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: true, color: '#4D96FF', avatarIndex: '1', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 1, nextRentMultiplier: 1, hasJailCard: false });
 
     const board = new Map<number, TileState>();
     MAP_TILES_DATA.forEach(t => {
@@ -174,7 +179,9 @@ export const useGameStore = create<GameStore>((set) => ({
         rent3: t.rent[3] || 0,
         rentHotel: t.rent[4] || 0,
         currentRent: t.rent[0] || 0,
-        isTouristSpot: false
+        isTouristSpot: false,
+        isActive: true,
+        isShielded: false
       });
     });
 
@@ -214,6 +221,7 @@ export const useGameStore = create<GameStore>((set) => ({
 
           const tile = state.board.get(newPos);
           let nextPhase: TurnPhase = 'wait_roll';
+          const newEvents = [...state.events];
 
           if (tile) {
             if (tile.tileType === 'property' || tile.tileType === 'port') {
@@ -231,11 +239,22 @@ export const useGameStore = create<GameStore>((set) => ({
             } else if (tile.tileType === 'festival') {
               nextPhase = 'festival_select';
             } else if (tile.tileType === 'airport') {
-              nextPhase = 'airport_select';
+              nextPhase = 'wait_roll';
+            } else if (tile.tileType === 'jail') {
+              const pState = newPlayers.get('dev1')!;
+              pState.isInJail = true;
+              pState.jailTurns = 3;
+            } else if (tile.tileType === 'tax') {
+              const pState = newPlayers.get('dev1')!;
+              pState.money = Math.max(0, pState.money - Math.floor(pState.money * 0.1));
+            } else if (tile.tileType === 'chance') {
+              const CHANCE_CARDS = ['DISCOUNT_RENT', 'DOUBLE_RENT', 'SHIELD', 'FORCE_SELL', 'SABOTAGE', 'EARTHQUAKE', 'BLACKOUT', 'CHANCE_FESTIVAL', 'GIVE_CITY', 'GOTO_AIRPORT', 'GOTO_START', 'GOTO_ACTIVE_FESTIVAL', 'GOTO_FESTIVAL_CORNER', 'GOTO_TAX', 'GOTO_JAIL', 'BIRTHDAY', 'PENALTY', 'JAIL_CARD'];
+              const cardId = CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
+              newEvents.push({ type: 'chance', playerId: 'dev1', targetId: '', amount: 0, tileId: newPos, message: `Rút thẻ: ${cardId}`, timestamp: Date.now() });
             }
           }
 
-          return { players: newPlayers, turnPhase: nextPhase };
+          return { players: newPlayers, turnPhase: nextPhase, events: newEvents };
         });
       }, 800); // match animation speed
     }
@@ -307,11 +326,25 @@ export const useGameStore = create<GameStore>((set) => ({
     }
     else if (type === 'selectAirport') {
       useGameStore.setState(state => {
+        const tile = state.board.get(data.tileId);
+        if (!tile) return {};
+        if (tile.tileType !== 'property' && tile.tileType !== 'port') {
+          console.warn('Chỉ được bay tới ô đất hoặc cảng!');
+          return {};
+        }
+        if (tile.ownerId && tile.ownerId !== 'dev1') {
+          console.warn('Chỉ được bay tới ô trống hoặc ô của bạn!');
+          return {};
+        }
+        
         const newPlayers = new Map(state.players);
         const pState = { ...newPlayers.get('dev1')!, position: data.tileId };
         newPlayers.set('dev1', pState);
         return { players: newPlayers, turnPhase: 'wait_roll' };
       });
+    }
+    else if (type === 'startAirportSelect') {
+      set({ turnPhase: 'airport_select' });
     }
     else if (type === 'payBail') {
       useGameStore.setState(state => {

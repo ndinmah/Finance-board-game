@@ -23,15 +23,15 @@ export default function WaitingRoom() {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center p-3 md:p-6 bg-[radial-gradient(ellipse_at_center,_#1a2e5e_0%,_#0a1226_100%)]">
-      <div className="bg-[linear-gradient(160deg,_#1e2d5a,_#162040)] border-[1.5px] border-[rgba(74,144,217,0.3)] rounded-2xl md:rounded-[24px] p-6 md:p-10 w-full max-w-[480px] shadow-[0_24px_64px_rgba(0,0,0,0.6)] animate-slide-up">
-        <h2 className="font-nunito text-[22px] md:text-[28px] font-black text-center bg-[linear-gradient(135deg,_#7ec8e3,_#4a90d9)] bg-clip-text text-transparent mb-1">🎲 Phòng Chờ</h2>
+      <div className="bg-[linear-gradient(160deg,_#1e2d5a,_#162040)] border-[0.1rem] border-[rgba(74,144,217,0.3)] rounded-2xl md:rounded-[1.6rem] p-6 md:p-10 w-full max-w-[32rem] shadow-[0_1.6rem_4.2667rem_rgba(0,0,0,0.6)] animate-slide-up">
+        <h2 className="font-nunito text-[1.4667rem] md:text-[1.8667rem] font-black text-center bg-[linear-gradient(135deg,_#7ec8e3,_#4a90d9)] bg-clip-text text-transparent mb-1">🎲 Phòng Chờ</h2>
         <p className="text-center text-[#8faad4] text-sm mb-6">Chờ người chơi khác... ({playerList.length}/6)</p>
         <p className="text-center text-[#8faad4] text-sm mt-4" id="debug-room-id">Mã phòng: {getCurrentRoom()?.id || 'Unknown'}</p>
 
         <div className="flex flex-col gap-2.5 mb-6">
           {playerList.map(p => (
-            <div key={p.id} className={`flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 bg-[rgba(255,255,255,0.04)] rounded-xl border-[1.5px] transition-colors duration-200 ${p.id === myPlayerId ? 'border-[rgba(74,144,217,0.5)]' : 'border-[rgba(74,144,217,0.15)]'}`}>
-              <span className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-extrabold text-[15px] md:text-lg text-white shrink-0" style={{ background: p.color }}>
+            <div key={p.id} className={`flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 bg-[rgba(255,255,255,0.04)] rounded-xl border-[0.1rem] transition-colors duration-200 ${p.id === myPlayerId ? 'border-[rgba(74,144,217,0.5)]' : 'border-[rgba(74,144,217,0.15)]'}`}>
+              <span className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-extrabold text-[1rem] md:text-lg text-white shrink-0" style={{ background: p.color }}>
                 {p.name.charAt(0).toUpperCase()}
               </span>
               <span className="flex-1 font-semibold">{p.name}{p.id === myPlayerId ? ' (bạn)' : ''}</span>
@@ -42,8 +42,8 @@ export default function WaitingRoom() {
           ))}
 
           {Array.from({ length: Math.max(0, 2 - playerList.length) }).map((_, i) => (
-            <div key={`empty-${i}`} className="flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 bg-[rgba(255,255,255,0.04)] rounded-xl border-[1.5px] border-[rgba(74,144,217,0.15)] opacity-40">
-              <span className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-extrabold text-[15px] md:text-lg text-white shrink-0 bg-[rgba(255,255,255,0.1)]">?</span>
+            <div key={`empty-${i}`} className="flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 bg-[rgba(255,255,255,0.04)] rounded-xl border-[0.1rem] border-[rgba(74,144,217,0.15)] opacity-40">
+              <span className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-extrabold text-[1rem] md:text-lg text-white shrink-0 bg-[rgba(255,255,255,0.1)]">?</span>
               <span className="flex-1 font-semibold">Đang chờ...</span>
             </div>
           ))}

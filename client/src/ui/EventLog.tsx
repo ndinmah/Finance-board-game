@@ -9,7 +9,7 @@ export default function EventLog() {
 
   const getIcon = (type: string) => {
     const icons: Record<string, string> = {
-      rent: '💸', buy: '🏡', upgrade: '🔨', mortgage: '🔒',
+      rent: '💸', buy: '🏡', upgrade: '🔨',
       bankrupt: '💔', jail_enter: '⛓️', jail_exit: '🔓', jail_bail: '💰',
       go_salary: '💵', festival: '🎉', festival_done: '⭐', airport: '✈️',
       airport_select: '✈️', start: '🎮', game_over: '🏆', reconnect: '📡',
@@ -29,7 +29,7 @@ export default function EventLog() {
   };
 
   return (
-    <div className="hidden md:flex absolute right-3 top-[60px] w-[260px] max-h-[340px] bg-[rgba(13,27,62,0.82)] backdrop-blur-md border-[1.5px] border-[rgba(74,144,217,0.2)] rounded-[14px] flex-col overflow-hidden">
+    <div className="hidden md:flex absolute right-3 top-[4rem] w-[17.3333rem] max-h-[22.6667rem] bg-[rgba(13,27,62,0.82)] backdrop-blur-md border-[0.1rem] border-[rgba(74,144,217,0.2)] rounded-[0.9333rem] flex-col overflow-hidden">
       <div className="px-3.5 pt-2.5 pb-2 text-xs font-bold text-[#8faad4] uppercase tracking-wide border-b border-[rgba(74,144,217,0.15)] shrink-0">📋 Nhật ký</div>
       <div className="overflow-y-auto p-2 flex flex-col gap-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[rgba(74,144,217,0.3)] [&::-webkit-scrollbar-thumb]:rounded">
         {recent.map((ev, i) => (

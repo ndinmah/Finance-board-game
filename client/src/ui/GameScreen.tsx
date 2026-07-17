@@ -8,11 +8,13 @@ import TaxModal from './TaxModal';
 import AirportModal from './AirportModal';
 import FestivalModal from './FestivalModal';
 import JailModal from './JailModal';
+import ChanceCard from './ChanceCard';
 import ChanceModal from './ChanceModal';
 import BuyUpgradeModal from './BuyUpgradeModal';
 import EventLog from './EventLog';
 import WinnerModal from './WinnerModal';
 import GoModal from './GoModal';
+import PlayerPickerModal from './PlayerPickerModal';
 import boardBg from '../assets/broad.png';
 
 export default function GameScreen() {
@@ -25,8 +27,22 @@ export default function GameScreen() {
   const selectedTileId = useGameStore(s => s.selectedTileId);
   const winnerId = useGameStore(s => s.winnerId);
   const gamePhase = useGameStore(s => s.gamePhase);
+  const turnPhase = useGameStore(s => s.turnPhase);
+  const events = useGameStore(s => s.events);
   const setSelectedTileFn = useGameStore(s => s.setSelectedTile);
   const [prevSelected, setPrevSelected] = useState<number | null>(null);
+
+  // Chance Card Display logic
+  const [showChanceCard, setShowChanceCard] = useState(false);
+  const [lastChanceEventTime, setLastChanceEventTime] = useState(0);
+
+  useEffect(() => {
+    const chanceEvent = [...events].reverse().find(e => e.type === 'chance');
+    if (chanceEvent && chanceEvent.timestamp > lastChanceEventTime) {
+      setLastChanceEventTime(chanceEvent.timestamp);
+      setShowChanceCard(true);
+    }
+  }, [events, lastChanceEventTime]);
 
   // Use a ref to store the latest selectedTileId to avoid stale closure in the initial useEffect callback
   const selectedTileIdRef = useRef(selectedTileId);
@@ -62,6 +78,67 @@ export default function GameScreen() {
     boardRef.current?.highlightTile(selectedTileId, prevSelected);
   }, [selectedTileId]);
 
+  // Handle chance phase highlights
+  useEffect(() => {
+    if (!boardRef.current) return;
+    const iso = boardRef.current;
+
+    const validTiles = new Set<number>();
+
+    if (turnPhase === 'chance_shield_select' || turnPhase === 'chance_give_city_select') {
+      board.forEach((tile, id) => {
+        if (tile.ownerId === useGameStore.getState().myPlayerId && (tile.tileType === 'property' || tile.tileType === 'port')) {
+          validTiles.add(id);
+        }
+      });
+    } else if (turnPhase === 'chance_festival_city_select') {
+      board.forEach((tile, id) => {
+        if (tile.ownerId === useGameStore.getState().myPlayerId && tile.tileType === 'property') {
+          validTiles.add(id);
+        }
+      });
+    } else if (turnPhase === 'chance_attack_select') {
+      board.forEach((tile, id) => {
+        if (tile.ownerId && tile.ownerId !== useGameStore.getState().myPlayerId) {
+          validTiles.add(id);
+        }
+      });
+    } else if (turnPhase === 'airport_select') {
+      board.forEach((tile, id) => {
+        if ((tile.tileType === 'property' || tile.tileType === 'port') && (!tile.ownerId || tile.ownerId === useGameStore.getState().myPlayerId)) {
+          validTiles.add(id);
+        }
+      });
+    } else if (turnPhase === 'go_remote_upgrade') {
+      const state = useGameStore.getState();
+      const me = state.players.get(state.myPlayerId);
+      if (me) {
+        board.forEach((tile, id) => {
+          if (tile.ownerId === me.id && tile.tileType === 'property') {
+            const getMaxHouses = (passCount: number, currentHouses: number) => {
+              if (passCount === 0) return 2;
+              if (currentHouses < 3) return 3;
+              return 4;
+            };
+            const maxHouses = getMaxHouses(me.passCount, tile.houseCount);
+            if (tile.houseCount < maxHouses) {
+              const nextLevelCost = tile.houseCount === 3 ? tile.hotelCost : tile.buildCost;
+              if (me.money >= nextLevelCost) {
+                validTiles.add(id);
+              }
+            }
+          }
+        });
+      }
+    }
+
+    if (validTiles.size > 0) {
+      iso.highlightValidTiles(validTiles, turnPhase);
+    } else {
+      iso.clearHighlights();
+    }
+  }, [turnPhase, board]);
+
   // Handle resize
   useEffect(() => {
     const obs = new ResizeObserver(entries => {
@@ -89,10 +166,12 @@ export default function GameScreen() {
       {/* Modals */}
       <ModalRouter onClose={() => setSelectedTileFn(null)} />
       <BuyUpgradeModal />
+      <PlayerPickerModal />
+      {showChanceCard && <ChanceCard onClose={() => setShowChanceCard(false)} />}
       {gamePhase === 'ended' && winnerId && <WinnerModal />}
 
       {/* Editor Controls (Uncomment when you need to recalibrate coordinates) */}
-      <div className="hidden md:flex absolute top-2.5 right-2.5 z-[9999] gap-2 pointer-events-auto">
+      {/* <div className="hidden md:flex absolute top-2.5 right-2.5 z-[9999] gap-2 pointer-events-auto">
         <button
           onClick={() => boardRef.current?.toggleEditMode()}
           className="bg-red-500 text-white border-none py-2 px-3 rounded cursor-pointer font-bold"
@@ -105,7 +184,7 @@ export default function GameScreen() {
         >
           Export Waypoints
         </button>
-      </div>
+      </div> */}
 
     </div>
   );
@@ -117,9 +196,11 @@ interface ModalRouterProps {
 
 function ModalRouter({ onClose }: ModalRouterProps) {
   const selectedTileId = useGameStore(s => s.selectedTileId);
+  const turnPhase = useGameStore(s => s.turnPhase);
   const tile = useGameStore(s => selectedTileId !== null ? s.board.get(selectedTileId) : undefined);
 
   if (selectedTileId === null || !tile) return null;
+  if (turnPhase === 'go_remote_upgrade' && tile.tileType === 'property') return null;
 
   switch (tile.tileType) {
     case 'property':
@@ -133,10 +214,10 @@ function ModalRouter({ onClose }: ModalRouterProps) {
       return <FestivalModal onClose={onClose} />;
     case 'jail':
       return <JailModal onClose={onClose} />;
-    case 'chance':
-      return <ChanceModal onClose={onClose} />;
     case 'go':
       return <GoModal onClose={onClose} />;
+    case 'chance':
+      return <ChanceModal onClose={onClose} />;
     default:
       return null;
   }

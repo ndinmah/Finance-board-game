@@ -21,6 +21,11 @@ export class IsoBoard {
 
   private editMode: boolean = false;
   private editAnchors: PIXI.Graphics[] = [];
+  
+  // Highlight state
+  private activeHighlight: boolean = false;
+  private validTileIds: Set<number> = new Set();
+  private currentTurnPhase: string = '';
 
   constructor(callbacks: BoardCallbacks) {
     this.callbacks = callbacks;
@@ -145,6 +150,163 @@ export class IsoBoard {
 
   // ─── Update Visuals (Houses, Owners) ───────────────────────────────────────
 
+  highlightValidTiles(validTileIds: Set<number>, turnPhase: string) {
+    this.activeHighlight = true;
+    this.validTileIds = validTileIds;
+    this.currentTurnPhase = turnPhase;
+    const highlightColor = this._getHighlightColor(turnPhase);
+
+    // Re-apply highlight effects on all tiles
+    this.tiles.forEach((container, id) => {
+      const isValid = validTileIds.has(id);
+      if (isValid) {
+        // Keep original colors clear and rich, slightly larger
+        gsap.to(container, { alpha: 1, duration: 0.3 });
+        gsap.to(container.scale, { x: 1.05, y: 1.05, duration: 0.3, ease: 'back.out(1.5)' });
+        container.filters = [];
+
+        // Draw custom border highlight
+        this._drawHighlightBorder(container, id, highlightColor);
+      } else {
+        // Overlay a translucent grey mask on invalid/unselected tiles
+        gsap.to(container, { alpha: 1, duration: 0.3 });
+        gsap.to(container.scale, { x: 0.97, y: 0.97, duration: 0.3, ease: 'power2.out' });
+        container.filters = [];
+
+        // Remove custom border highlight if present
+        const customHighlight = container.children.find(c => c.label === 'custom_highlight');
+        if (customHighlight) {
+          customHighlight.children.forEach(c => {
+            gsap.killTweensOf(c);
+            gsap.killTweensOf(c.position);
+            gsap.killTweensOf(c.scale);
+          });
+          customHighlight.destroy();
+        }
+
+        // Draw the grey overlay mask
+        this._drawCustomOverlay(container, id);
+      }
+    });
+  }
+
+  clearHighlights() {
+    if (!this.activeHighlight) return;
+    this.activeHighlight = false;
+    this.validTileIds.clear();
+    this.currentTurnPhase = '';
+    
+    this.tiles.forEach((container) => {
+      gsap.to(container, { alpha: 1, duration: 0.3 });
+      gsap.to(container.scale, { x: 1, y: 1, duration: 0.3, ease: 'power2.out' });
+      container.filters = [];
+
+      // Clean up custom highlight
+      const customHighlight = container.children.find(c => c.label === 'custom_highlight');
+      if (customHighlight) {
+        customHighlight.children.forEach(c => {
+          gsap.killTweensOf(c);
+          gsap.killTweensOf(c.position);
+          gsap.killTweensOf(c.scale);
+        });
+        customHighlight.destroy();
+      }
+
+      // Clean up custom overlay
+      this._clearCustomOverlay(container);
+    });
+  }
+
+  private _getHighlightColor(turnPhase: string): number {
+    let highlightColor = 0x39ff14; // Default neon green
+    if (turnPhase === 'chance_shield_select' || 
+        turnPhase === 'chance_give_city_select' || 
+        turnPhase === 'chance_festival_city_select') {
+      highlightColor = 0xffd700; // Gold
+    } else if (turnPhase === 'chance_attack_select') {
+      highlightColor = 0xff3d00; // Red-orange
+    } else if (turnPhase === 'airport_select' || turnPhase === 'go_remote_upgrade') {
+      highlightColor = 0x00e5ff; // Cyan
+    }
+    return highlightColor;
+  }
+
+  private _drawHighlightBorder(container: PIXI.Container, tileId: number, color: number) {
+    this._clearCustomOverlay(container);
+    // Clean up existing custom highlight
+    const existing = container.children.find(c => c.label === 'custom_highlight');
+    if (existing) {
+      existing.children.forEach(c => {
+        gsap.killTweensOf(c);
+        gsap.killTweensOf(c.position);
+        gsap.killTweensOf(c.scale);
+      });
+      existing.destroy();
+    }
+
+    const highlightContainer = new PIXI.Container();
+    highlightContainer.label = 'custom_highlight';
+
+    const borderGfx = new PIXI.Graphics();
+    const poly = this._getIsoPolygon(tileId);
+
+    // Outer glow line
+    borderGfx.poly(poly);
+    borderGfx.stroke({ color: color, width: 8, alpha: 0.25 });
+
+    // Middle neon line
+    borderGfx.poly(poly);
+    borderGfx.stroke({ color: color, width: 4, alpha: 0.6 });
+
+    // Inner bright core
+    borderGfx.poly(poly);
+    borderGfx.stroke({ color: 0xffffff, width: 1.5, alpha: 0.9 });
+
+    highlightContainer.addChild(borderGfx);
+
+    // Animated ground target ring
+    const ringGfx = new PIXI.Graphics();
+    ringGfx.circle(0, 0, 16);
+    ringGfx.stroke({ color: color, width: 2, alpha: 0.8 });
+    ringGfx.scale.y = 0.572;
+    highlightContainer.addChild(ringGfx);
+
+    container.addChild(highlightContainer);
+
+    // Animate border breathing
+    gsap.fromTo(borderGfx,
+      { alpha: 0.4 },
+      { alpha: 1.0, duration: 0.8, yoyo: true, repeat: -1, ease: 'sine.inOut' }
+    );
+
+    // Animate ring expanding
+    gsap.fromTo(ringGfx.scale,
+      { x: 0.6, y: 0.6 * 0.572 },
+      { x: 1.4, y: 1.4 * 0.572, duration: 1.2, repeat: -1, ease: 'power1.out' }
+    );
+    gsap.fromTo(ringGfx,
+      { alpha: 1.0 },
+      { alpha: 0.0, duration: 1.2, repeat: -1, ease: 'power1.out' }
+    );
+  }
+
+  private _drawCustomOverlay(container: PIXI.Container, tileId: number) {
+    this._clearCustomOverlay(container);
+    const overlay = new PIXI.Graphics();
+    overlay.label = 'custom_overlay';
+    overlay.eventMode = 'none'; // Không chặn pointer events để hitbox bên dưới vẫn nhận click
+    overlay.poly(this._getIsoPolygon(tileId));
+    overlay.fill({ color: 0x121212, alpha: 0.35 });
+    container.addChild(overlay);
+  }
+
+  private _clearCustomOverlay(container: PIXI.Container) {
+    const existing = container.children.find(c => c.label === 'custom_overlay');
+    if (existing) {
+      existing.destroy();
+    }
+  }
+
   updateTiles(board: Map<number, TileState>, players: Map<string, PlayerState>) {
     board.forEach((tile, id) => {
       const container = this.tiles.get(id);
@@ -247,10 +409,6 @@ export class IsoBoard {
 
         const g = new PIXI.Graphics();
 
-        // // Đế cột cờ (hình elip nằm dẹt trên sàn để tạo chiều sâu)
-        // g.ellipse(0, 0, 7, 3.5);
-        // g.fill({ color: 0x9E9E9E });
-
         // Thân cột cờ (luôn hướng thẳng đứng lên trên màn hình)
         g.rect(-1.2, -50, 2.4, 50);
         g.fill({ color: 0xDDDDDD });
@@ -282,6 +440,68 @@ export class IsoBoard {
 
         flagParent.addChild(g);
         visualLayer.addChild(flagParent);
+      }
+
+      // Shield Indicator
+      if (tile.isShielded) {
+        let scx = 0, scy = 0;
+        if ((id > 0 && id < 8) || (id > 16 && id < 24)) { scx = 0; scy = hh * 0.90; } 
+        else { scx = hw * 0.90; scy = 0; }
+        
+        const sScreenX = (scx * cos - scy * sin);
+        const sScreenY = (scx * sin + scy * cos) * scaleY;
+
+        const shieldContainer = new PIXI.Container();
+        shieldContainer.position.set(sScreenX, sScreenY - 20); // Float slightly above ground
+
+        const sg = new PIXI.Graphics();
+        
+        // Draw a shield shape (kite-like)
+        sg.poly([0, -10, 8, -5, 6, 8, 0, 12, -6, 8, -8, -5]);
+        sg.fill({ color: 0x3498db });
+        sg.stroke({ color: 0x2980b9, width: 1.5 });
+        
+        // Inner detail
+        sg.moveTo(0, -7).lineTo(0, 9).stroke({ color: 0x85c1e9, width: 1, alpha: 0.5 });
+
+        shieldContainer.addChild(sg);
+        
+        // Add floating animation
+        gsap.to(shieldContainer.position, { y: sScreenY - 25, duration: 1.5, yoyo: true, repeat: -1, ease: "sine.inOut" });
+
+        visualLayer.addChild(shieldContainer);
+      }
+
+      // Blackout Indicator
+      if (!tile.isActive) {
+        // Place lightning bolt near center but high up
+        const bx = 0, by = 0;
+        const bScreenX = (bx * cos - by * sin);
+        const bScreenY = (bx * sin + by * cos) * scaleY;
+
+        const blackoutContainer = new PIXI.Container();
+        blackoutContainer.position.set(bScreenX, bScreenY - 40);
+
+        const bg = new PIXI.Graphics();
+        
+        // Draw lightning bolt
+        bg.poly([2, -15, -6, 0, -1, 0, -4, 15, 8, -2, 2, -2]);
+        bg.fill({ color: 0xf39c12 });
+        bg.stroke({ color: 0xe67e22, width: 1.5 });
+
+        // Add a dark overlay over the house layer to make it look "powered off"
+        if (houseLayer) {
+          const colorMatrix = new PIXI.ColorMatrixFilter();
+          colorMatrix.brightness(0.3, true);
+          houseLayer.filters = houseLayer.filters ? [...houseLayer.filters, colorMatrix] : [colorMatrix];
+        }
+
+        blackoutContainer.addChild(bg);
+        
+        // Add pulsating animation to the lightning bolt
+        gsap.to(blackoutContainer.scale, { x: 1.1, y: 1.1, duration: 0.5, yoyo: true, repeat: -1, ease: "power1.inOut" });
+
+        visualLayer.addChild(blackoutContainer);
       }
 
       // Hiện tên tỉnh và giá tiền tô trên ô đất
@@ -431,6 +651,49 @@ export class IsoBoard {
       }
 
       container.addChild(visualLayer);
+
+      // Re-apply highlight if active
+      if (this.activeHighlight) {
+        if (this.validTileIds.has(id)) {
+          container.alpha = 1;
+          container.scale.set(1.05);
+          container.filters = [];
+          this._drawHighlightBorder(container, id, this._getHighlightColor(this.currentTurnPhase));
+        } else {
+          // Overlay a translucent grey mask on invalid/unselected tiles
+          container.alpha = 1;
+          container.scale.set(0.97);
+          container.filters = [];
+          
+          const customHighlight = container.children.find(c => c.label === 'custom_highlight');
+          if (customHighlight) {
+            customHighlight.children.forEach(c => {
+              gsap.killTweensOf(c);
+              gsap.killTweensOf(c.position);
+              gsap.killTweensOf(c.scale);
+            });
+            customHighlight.destroy();
+          }
+
+          this._drawCustomOverlay(container, id);
+        }
+      } else {
+        container.alpha = 1;
+        container.scale.set(1);
+        container.filters = [];
+        
+        const customHighlight = container.children.find(c => c.label === 'custom_highlight');
+        if (customHighlight) {
+          customHighlight.children.forEach(c => {
+            gsap.killTweensOf(c);
+            gsap.killTweensOf(c.position);
+            gsap.killTweensOf(c.scale);
+          });
+          customHighlight.destroy();
+        }
+
+        this._clearCustomOverlay(container);
+      }
     });
   }
 

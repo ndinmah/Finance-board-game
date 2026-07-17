@@ -19,8 +19,8 @@
   --red:      #e74c3c;
   --text:     #e8f0ff;
   --text2:    #8faad4;
-  --radius:   12px;
-  --shadow:   0 8px 32px rgba(0,0,0,0.4);
+  --radius:   0.8rem;
+  --shadow:   0 0.5333rem 2.1333rem rgba(0,0,0,0.4);
 }
 
 html, body, #root {
@@ -28,7 +28,11 @@ html, body, #root {
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
-  font-size: 15px;
+  /* Kỹ thuật Root REM Scaling dựa trên iPhone 14 Pro Max (ngang 932px, dọc 430px). 
+     Ta dùng chuẩn font gốc là 15px.
+     15 / 932 * 100 = 1.609vw.
+     Dùng clamp để giới hạn: không quá nhỏ (10px) và không quá to trên PC (16px) */
+  font-size: clamp(10px, 1.609vw, 16px);
   line-height: 1.5;
 }
 
@@ -47,10 +51,10 @@ input {
   font-family: 'Inter', sans-serif;
   background: rgba(255,255,255,0.05);
   border: 1.5px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0.5333rem;
   color: var(--text);
-  padding: 10px 14px;
-  font-size: 15px;
+  padding: 0.6667rem 0.9333rem;
+  font-size: 1rem;
   outline: none;
   transition: border-color 0.15s;
 }
@@ -62,22 +66,22 @@ input::placeholder { color: var(--text2); }
   background-color: var(--btn-color, #0ea5e9);
   color: var(--btn-text, white);
   border: none;
-  border-radius: 30px;
-  padding: var(--btn-pad, 12px 28px);
-  font-size: var(--btn-size, 16px);
+  border-radius: 2rem;
+  padding: var(--btn-pad, 0.8rem 1.8667rem);
+  font-size: var(--btn-size, 1.0667rem);
   font-weight: 800;
   cursor: pointer;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 6px 0 var(--btn-shadow, #0284c7);
+  gap: 0.5333rem;
+  box-shadow: 0 0.4rem 0 var(--btn-shadow, #0284c7);
   transition: transform 0.1s, box-shadow 0.1s, filter 0.1s;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 .btn-3d:active:not(.disabled):not(:disabled) {
-  transform: translateY(6px);
+  transform: translateY(0.4rem);
   box-shadow: 0 0px 0 var(--btn-shadow, #0284c7);
 }
 .btn-3d:hover:not(.disabled):not(:disabled) {
@@ -85,7 +89,7 @@ input::placeholder { color: var(--text2); }
 }
 .btn-3d.disabled, .btn-3d:disabled {
   background-color: #94a3b8 !important;
-  box-shadow: 0 6px 0 #64748b !important;
+  box-shadow: 0 0.4rem 0 #64748b !important;
   cursor: not-allowed !important;
   transform: translateY(0) !important;
   filter: none !important;
@@ -94,8 +98,8 @@ input::placeholder { color: var(--text2); }
 
 /* Modifier for large buttons (like BuyUpgradeModal) */
 .btn-3d-lg {
-  --btn-pad: 15px 40px;
-  --btn-size: 20px;
+  --btn-pad: 1rem 2.6667rem;
+  --btn-size: 1.3333rem;
 }
 
 /* Variants */
@@ -121,22 +125,22 @@ input::placeholder { color: var(--text2); }
   background-color: #0ea5e9;
   color: white;
   border: none;
-  border-radius: 30px;
-  padding: 12px 28px;
-  font-size: 16px;
+  border-radius: 2rem;
+  padding: 0.8rem 1.8667rem;
+  font-size: 1.0667rem;
   font-weight: 800;
   cursor: pointer;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 6px 0 #0284c7;
+  gap: 0.5333rem;
+  box-shadow: 0 0.4rem 0 #0284c7;
   transition: transform 0.1s, box-shadow 0.1s, filter 0.1s;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 .btn-primary:active:not(:disabled) {
-  transform: translateY(6px);
+  transform: translateY(0.4rem);
   box-shadow: 0 0px 0 #0284c7;
 }
 .btn-primary:hover:not(:disabled) {
@@ -144,7 +148,7 @@ input::placeholder { color: var(--text2); }
 }
 .btn-primary:disabled {
   background-color: #94a3b8;
-  box-shadow: 0 6px 0 #64748b;
+  box-shadow: 0 0.4rem 0 #64748b;
   cursor: not-allowed;
   transform: translateY(0);
 }
@@ -152,23 +156,23 @@ input::placeholder { color: var(--text2); }
 .btn-secondary {
   background-color: transparent;
   color: #0ea5e9;
-  border: 2px solid #0ea5e9;
-  border-radius: 30px;
-  padding: 12px 28px;
-  font-size: 16px;
+  border: 0.1333rem solid #0ea5e9;
+  border-radius: 2rem;
+  padding: 0.8rem 1.8667rem;
+  font-size: 1.0667rem;
   font-weight: 800;
   cursor: pointer;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 0 #0284c7;
+  gap: 0.5333rem;
+  box-shadow: 0 0.2667rem 0 #0284c7;
   transition: transform 0.1s, box-shadow 0.1s, background-color 0.1s;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 .btn-secondary:active:not(:disabled) {
-  transform: translateY(4px);
+  transform: translateY(0.2667rem);
   box-shadow: 0 0px 0 #0284c7;
 }
 .btn-secondary:hover:not(:disabled) {
@@ -176,6 +180,15 @@ input::placeholder { color: var(--text2); }
 }
 
 .btn-ghost {
-  background: transparent; color: var(--text2); font-size: 14px; padding: 8px 16px;
+  background: transparent; color: var(--text2); font-size: 0.9333rem; padding: 0.5333rem 1.0667rem;
 }
 .btn-ghost:hover { color: var(--text); }
+
+/* Tối ưu hóa cho thiết bị di động chế độ màn hình ngang (landscape) */
+@media (max-height: 480px) {
+  html, body, #root {
+    /* Khi chiều cao màn hình nhỏ (như iPhone xoay ngang), ta scale font-size theo vh (viewport height)
+       để các modal thiết kế bằng rem không bị tràn dọc và che khuất nút bấm */
+    font-size: clamp(9px, 2.9vh, 12.5px);
+  }
+}

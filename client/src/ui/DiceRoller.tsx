@@ -69,16 +69,16 @@ export default function DiceRoller() {
   const hasAction = canRoll || canStartAirport || canPayBail || (isMyTurn && turnPhase === 'buyout_decision');
   const isInteractive = canAirport || canFestival || isPayingDebt || (isMyTurn && turnPhase === 'go_remote_upgrade');
   
-  let stateClass = 'hidden md:flex fixed bottom-5 left-1/2 -translate-x-1/2 bg-[rgba(13,27,62,0.75)] backdrop-blur-md border border-[rgba(255,255,255,0.08)] rounded-[30px] px-5 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.3)] z-[500]';
+  let stateClass = 'hidden md:flex fixed bottom-5 left-1/2 -translate-x-1/2 bg-[rgba(13,27,62,0.75)] backdrop-blur-md border border-[rgba(255,255,255,0.08)] rounded-[2rem] px-5 py-2 shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.3)] z-[500]';
   let isWaiting = true;
   if (canRoll || rolling) {
-    stateClass = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent p-0 z-[1000] animate-float-bounce md:p-[32px_40px] border-none min-w-auto';
+    stateClass = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent p-0 z-[1000] animate-float-bounce md:p-[2.1333rem_2.6667rem] border-none min-w-auto';
     isWaiting = false;
   } else if (hasAction) {
-    stateClass = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent p-0 z-[1000] animate-float-bounce md:p-[32px_40px] border-none min-w-auto';
+    stateClass = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent p-0 z-[1000] animate-float-bounce md:p-[2.1333rem_2.6667rem] border-none min-w-auto';
     isWaiting = false;
   } else if (isInteractive) {
-    stateClass = 'fixed bottom-6 left-1/2 -translate-x-1/2 md:bottom-6 md:top-auto bg-[rgba(13,27,62,0.92)] backdrop-blur-md border-[1.5px] border-[rgba(74,144,217,0.35)] rounded-[20px] px-6 py-4 min-w-[300px] max-w-[90%] shadow-[0_12px_36px_rgba(0,0,0,0.5)] z-[900] animate-slide-up-center md:border-none md:min-w-auto md:p-0';
+    stateClass = 'fixed bottom-6 left-1/2 -translate-x-1/2 md:bottom-6 md:top-auto bg-[rgba(13,27,62,0.92)] backdrop-blur-md border-[0.1rem] border-[rgba(74,144,217,0.35)] rounded-[1.3333rem] px-6 py-4 min-w-[20rem] max-w-[90%] shadow-[0_0.8rem_2.4rem_rgba(0,0,0,0.5)] z-[900] animate-slide-up-center md:border-none md:min-w-auto md:p-0';
     isWaiting = false;
   }
 
@@ -90,13 +90,13 @@ export default function DiceRoller() {
       {/* Dice display */}
       {showDiceDisplay && !isWaiting && (
         <div className={`flex gap-5 items-center relative ${rolling ? 'rolling' : ''} ${dice.isDouble && !rolling ? 'double' : ''}`}>
-          <span className={`text-[48px] md:text-[56px] leading-none select-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-transform duration-150 text-white ${rolling ? 'animate-die-spin' : ''} ${dice.isDouble && !rolling ? 'animate-double-glow' : ''}`}>
+          <span className={`text-[3.2rem] md:text-[3.7333rem] leading-none select-none drop-shadow-[0_0.2667rem_0.8rem_rgba(0,0,0,0.5)] transition-transform duration-150 text-white ${rolling ? 'animate-die-spin' : ''} ${dice.isDouble && !rolling ? 'animate-double-glow' : ''}`}>
             {DIE_FACES[(displayDice.d1 - 1)]}
           </span>
-          <span className={`text-[48px] md:text-[56px] leading-none select-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-transform duration-150 text-white ${rolling ? 'animate-die-spin' : ''} ${dice.isDouble && !rolling ? 'animate-double-glow' : ''}`} style={{ animationDelay: '0.05s' }}>
+          <span className={`text-[3.2rem] md:text-[3.7333rem] leading-none select-none drop-shadow-[0_0.2667rem_0.8rem_rgba(0,0,0,0.5)] transition-transform duration-150 text-white ${rolling ? 'animate-die-spin' : ''} ${dice.isDouble && !rolling ? 'animate-double-glow' : ''}`} style={{ animationDelay: '0.05s' }}>
             {DIE_FACES[(displayDice.d2 - 1)]}
           </span>
-          {dice.isDouble && !rolling && <span className="absolute -top-[22px] left-1/2 -translate-x-1/2 bg-gradient-to-br from-[#f5c518] to-[#e67e22] text-[#1a1a00] text-[11px] font-black px-2.5 py-[3px] rounded-[20px] whitespace-nowrap shadow-[0_4px_10px_rgba(245,197,24,0.4)] tracking-wide">DOUBLE!</span>}
+          {dice.isDouble && !rolling && <span className="absolute -top-[1.4667rem] left-1/2 -translate-x-1/2 bg-gradient-to-br from-[#f5c518] to-[#e67e22] text-[#1a1a00] text-[0.7333rem] font-black px-2.5 py-[0.2rem] rounded-[1.3333rem] whitespace-nowrap shadow-[0_0.2667rem_0.6667rem_rgba(245,197,24,0.4)] tracking-wide">DOUBLE!</span>}
         </div>
       )}
 
@@ -126,9 +126,15 @@ export default function DiceRoller() {
             <button id="btn-bail" className="btn-3d btn-3d-red" onClick={() => send('payBail')} style={{ width: '100%' }}>
               💸 Trả nóng 200K
             </button>
-            <button className="btn-3d" disabled style={{ width: '100%' }}>
-              🎟 Dùng thẻ ra tù (Chưa có)
-            </button>
+            {me?.hasJailCard ? (
+              <button className="btn-3d btn-3d-green" onClick={() => send('useJailCard')} style={{ width: '100%' }}>
+                🎟 Dùng thẻ ra tù
+              </button>
+            ) : (
+              <button className="btn-3d" disabled style={{ width: '100%' }}>
+                🎟 Dùng thẻ ra tù (Chưa có)
+              </button>
+            )}
           </>
         )}
 
@@ -142,7 +148,7 @@ export default function DiceRoller() {
               return (
                 <>
                   <p className="text-base font-extrabold text-gold text-center">Cướp {tile.name}?</p>
-                  <p className="text-[12px] my-1 text-gold text-center">Giá: {formatMoney(buyoutPrice)} (x2 gốc)</p>
+                  <p className="text-[0.8rem] my-1 text-gold text-center">Giá: {formatMoney(buyoutPrice)} (x2 gốc)</p>
                   <div className="flex gap-1.5 w-full">
                     <button className="btn-3d btn-3d-red flex-1" onClick={() => send('acceptBuyout')}>⚔️ Cướp Đất</button>
                     <button className="btn-3d btn-secondary flex-1" onClick={() => send('skipBuyout')}>❌ Bỏ qua</button>
@@ -153,11 +159,11 @@ export default function DiceRoller() {
           </div>
         )}
         {canAirport && (
-          <p className="text-[13px] text-accent2 italic text-center leading-[1.4]">✈️ Click vào ô trên bản đồ để chọn điểm đến</p>
+          <p className="text-[0.8667rem] text-accent2 italic text-center leading-[1.4]">✈️ Click vào ô trên bản đồ để chọn điểm đến</p>
         )}
         {canFestival && (
           <div className="flex flex-col items-center gap-2.5 w-full">
-            <p className="text-[13px] text-accent2 italic text-center leading-[1.4]">🎉 Click vào đất của bạn để tổ chức sự kiện (phí: 50K)</p>
+            <p className="text-[0.8667rem] text-accent2 italic text-center leading-[1.4]">🎉 Click vào đất của bạn để tổ chức sự kiện (phí: 50K)</p>
             <div className="flex justify-center mt-2.5 w-full">
               <button className="btn-3d btn-secondary w-full" onClick={() => send('skipFestival')}>❌ Bỏ qua</button>
             </div>
@@ -166,13 +172,13 @@ export default function DiceRoller() {
         {isPayingDebt && (
           <div className="flex flex-col items-center gap-2.5 w-full">
             <p className="text-base font-extrabold text-red-500 text-center">CẢNH BÁO NỢ NẦN</p>
-            <p className="text-[14px] my-1 text-center text-white">Bạn đang nợ <strong>{formatMoney(me?.debtAmount || 0)}</strong></p>
-            <p className="text-[13px] text-accent2 italic text-center leading-[1.4]">⚠️ Click vào đất của bạn để bán trả nợ (giá 50%)</p>
+            <p className="text-[0.9333rem] my-1 text-center text-white">Bạn đang nợ <strong>{formatMoney(me?.debtAmount || 0)}</strong></p>
+            <p className="text-[0.8667rem] text-accent2 italic text-center leading-[1.4]">⚠️ Click vào đất của bạn để bán trả nợ (giá 50%)</p>
           </div>
         )}
         {isMyTurn && turnPhase === 'go_remote_upgrade' && (
           <div className="flex flex-col items-center gap-2.5 w-full">
-            <p className="text-[13px] text-[#0ea5e9] italic text-center leading-[1.4]">✨ Click vào một ô đất của bạn trên bàn cờ để nâng cấp từ xa!</p>
+            <p className="text-[0.8667rem] text-[#0ea5e9] italic text-center leading-[1.4]">✨ Click vào một ô đất của bạn trên bàn cờ để nâng cấp từ xa!</p>
             <div className="flex justify-center mt-2.5 w-full">
               <button className="btn-3d btn-secondary w-full" onClick={() => send('skipRemoteUpgrade')}>❌ Bỏ qua</button>
             </div>

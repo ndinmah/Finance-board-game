@@ -50,15 +50,19 @@ export default function BuyUpgradeModal() {
   const board = useGameStore(s => s.board);
   const myPlayerId = useGameStore(s => s.myPlayerId);
   const me = useGameStore(s => s.players.get(s.myPlayerId));
+  const selectedTileId = useGameStore(s => s.selectedTileId);
   const tile = useGameStore(s => {
+    if (s.turnPhase === 'go_remote_upgrade' && s.selectedTileId !== null) {
+      return s.board.get(s.selectedTileId);
+    }
     const myPos = s.players.get(s.myPlayerId)?.position ?? 0;
     return s.board.get(myPos);
   });
 
   const isBuy = isMyTurn && turnPhase === 'buy_decision';
-  const isUpgrade = isMyTurn && turnPhase === 'upgrade_decision';
-  const isActive = isBuy || isUpgrade;
-  
+  const isUpgrade = isMyTurn && (turnPhase === 'upgrade_decision' || turnPhase === 'go_remote_upgrade');
+  const isActive = isBuy || (isUpgrade && tile !== undefined && (turnPhase !== 'go_remote_upgrade' || selectedTileId !== null));
+
   const [selectedLevel, setSelectedLevel] = useState<number>(0);
   const [prevInputs, setPrevInputs] = useState<{ tileId: number; money: number; passCount: number; isBuy: boolean } | null>(null);
 
@@ -86,13 +90,18 @@ export default function BuyUpgradeModal() {
 
   const handleSkip = () => {
     if (isBuy) send('skipBuy');
-    else send('skipUpgrade');
+    else if (turnPhase === 'go_remote_upgrade') {
+      send('skipRemoteUpgrade');
+      useGameStore.getState().setSelectedTile(null);
+    } else {
+      send('skipUpgrade');
+    }
   };
 
   const headerColor = me.color ? (me.color.startsWith('#') ? me.color : `#${me.color}`) : '#9e9e9e';
 
   if (tile.tileType === 'port') {
-    const ownedPorts = Array.from(board.values()).filter(t => t.tileType === 'port' && t.ownerId === myPlayerId).length;
+    const ownedPorts = Array.from(board.values()).filter(t => t.tileType === 'port' && t.ownerId === myPlayerId && t.id !== tile.id).length;
     const nextPortCount = Math.min(4, ownedPorts + 1);
     const portPrice = tile.price || 200;
     const canAfford = me.money >= portPrice;
@@ -100,67 +109,71 @@ export default function BuyUpgradeModal() {
     const expectedRent = rentMap[nextPortCount] || 0;
 
     return (
-      <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[8px] flex items-center justify-center z-[1000] p-4" onClick={handleSkip}>
-        <div className="relative w-full max-w-[580px] md:max-w-[820px] animate-card-modal-slide" onClick={e => e.stopPropagation()}>
-          <div className="bg-white rounded-[24px] overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.25),0_0_0_1px_rgba(0,0,0,0.05),inset_0_2px_4px_rgba(255,255,255,0.8)] relative z-10 max-h-[92vh] flex flex-col">
-            <div className="p-[16px_24px] text-white flex justify-between items-start relative border-b border-[rgba(0,0,0,0.08)]" style={{ backgroundColor: headerColor }}>
-              <h3 className="text-[22px] font-bold m-0 leading-[1.2] drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)]">{tile.name}</h3>
-              <button className="absolute top-4 right-4 bg-[rgba(0,0,0,0.15)] text-white border-none w-8 h-8 rounded-full flex items-center justify-center text-[14px] cursor-pointer transition-colors duration-200 hover:bg-[rgba(0,0,0,0.3)]" onClick={handleSkip}>✕</button>
-            </div>
-            <div className="p-5">
-            <div className="flex flex-col md:flex-row gap-5 items-stretch mb-5">
-              <div className="flex-[0_0_160px] flex items-center bg-[#f0ece4] p-2.5 rounded-[16px] border border-[rgba(0,0,0,0.06)]">
-                <div className="w-full">
-                  <img src="/images/port.webp" alt="Resort" className="w-full h-[140px] object-cover rounded-[12px] shadow-sm" />
-                </div>
+      <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[0.5333rem] flex items-center justify-center z-[1000] p-[1rem]" onClick={handleSkip}>
+        <div className="relative w-full max-w-[38.6667rem] h-auto max-h-[95vh] animate-card-modal-slide flex flex-col
+          before:content-[''] before:absolute before:bg-[#fdfaf5] before:rounded-[1.6rem] before:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] before:-z-[1] before:inset-0 before:border before:border-[rgba(0,0,0,0.04)] before:transition-all before:duration-300 before:-rotate-2 before:-translate-x-1 before:translate-y-2
+          after:content-[''] after:absolute after:bg-[#f5f0e6] after:rounded-[1.6rem] after:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] after:-z-[2] after:inset-0 after:border after:border-[rgba(0,0,0,0.04)] after:transition-all after:duration-300 after:rotate-3 after:translate-x-1.5 after:translate-y-3">
+          <div
+            className="bg-gradient-to-b from-[#fdfbf7] to-[#f4f0e6] rounded-[1.6rem] overflow-hidden shadow-[0_1.6rem_3.2rem_rgba(0,0,0,0.25),0_0_0_0.0667rem_rgba(0,0,0,0.05),inset_0_0.1333rem_0.2667rem_rgba(255,255,255,0.8)] relative z-10 flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* ── Ticket Photo: covers full header + photo zone ── */}
+            <div className="relative w-full h-[9.3333rem] shrink-0 rounded-t-[1.6rem] overflow-hidden" style={{ borderTop: `5px solid ${headerColor}` }}>
+              <img src={'/images/port.webp'} alt={tile.name} className="w-full h-full object-cover block brightness-105 contrast-110 saturate-[1.2]" />
+              {/* Header overlaid on top of image */}
+              <div className="absolute top-0 left-0 right-0 p-[0.8rem_1.3333rem] flex justify-center items-center bg-gradient-to-b from-[rgba(0,0,0,0.65)] to-transparent z-10">
+                <h3 className="text-white font-extrabold text-[1.2rem] tracking-[0.1333rem] drop-shadow-[0_0.1333rem_0.5333rem_rgba(0,0,0,0.8)] text-center m-0">{tile.name.toUpperCase()}</h3>
+                <button className="absolute right-[0.9333rem] top-1/2 -translate-y-1/2 bg-[rgba(255,255,255,0.25)] border-[0.1rem] border-[rgba(255,255,255,0.6)] text-white w-[2.1333rem] h-[2.1333rem] rounded-full cursor-pointer text-[0.9333rem] flex items-center justify-center backdrop-blur-[0.4rem] transition-all duration-200 hover:bg-[rgba(255,255,255,0.45)] hover:scale-105 active:scale-95 z-[100] pointer-events-auto shadow-[0_0.1333rem_0.5333rem_rgba(0,0,0,0.3)]" onClick={(e) => { e.stopPropagation(); handleSkip(); }}>✕</button>
               </div>
-              <div className="flex-1 flex flex-col justify-center">
-                <p className="text-[15px] text-[#4a5568] leading-[1.5] m-[0_0_15px_0] border-b border-[rgba(0,0,0,0.05)] pb-3">
-                  Tiền thuê phải trả phụ thuộc vào số lượng các cảng khác mà người chơi sở hữu
+              <div className="absolute bottom-0 left-0 right-0 h-[4rem] bg-gradient-to-b from-transparent to-[#fdfbf7] pointer-events-none" />
+            </div>
+
+            <div className="p-[1.0667rem] pt-0 relative z-10 flex flex-col items-center">
+              <div className="w-full max-w-[32rem] bg-white rounded-[1.0667rem] p-[1.0667rem] shadow-[0_0.5333rem_1.6rem_rgba(0,0,0,0.06),0_0.1333rem_0.5333rem_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.05)] mb-[0.8rem] mt-[-1.5rem]">
+                <p className="text-[0.8667rem] font-bold text-[#4a5568] leading-[1.4] text-center m-[0_0_0.8rem_0] border-b border-[rgba(0,0,0,0.06)] pb-[0.8rem]">
+                  Phí tăng theo số cảng sở hữu (không thể bị cướp đất)
                 </p>
-                <table className="w-full border-collapse">
+                <table className="w-full border-collapse font-medium text-[0.9333rem] text-[#2d3748]">
                   <tbody>
-                    <tr className={nextPortCount === 1 ? 'bg-[rgba(74,144,217,0.1)] text-[#2c3e50] font-bold shadow-[inset_3px_0_0_#4a90d9]' : ''}>
-                      <td className="p-[8px_12px] border-b border-[rgba(0,0,0,0.04)] text-[14px]">1 cảng</td>
-                      <td className="p-[8px_12px] border-b border-[rgba(0,0,0,0.04)] text-[14px] text-right font-medium">{formatMoneyFull(25)} <span className="text-[#f5c518] font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
+                    <tr className={`border-b border-[rgba(0,0,0,0.04)] transition-colors duration-200 ${nextPortCount === 1 ? 'bg-[rgba(74,144,217,0.12)] shadow-[inset_0.2667rem_0_0_#4a90d9]' : 'hover:bg-[rgba(0,0,0,0.02)]'}`}>
+                      <td className="p-[0.5333rem_0.8rem] font-semibold">1 Cảng</td>
+                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem]">{formatMoneyFull(25)} <span className="text-[#22c55e] font-black drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
                     </tr>
-                    <tr className={nextPortCount === 2 ? 'bg-[rgba(74,144,217,0.1)] text-[#2c3e50] font-bold shadow-[inset_3px_0_0_#4a90d9]' : ''}>
-                      <td className="p-[8px_12px] border-b border-[rgba(0,0,0,0.04)] text-[14px]">2 cảng</td>
-                      <td className="p-[8px_12px] border-b border-[rgba(0,0,0,0.04)] text-[14px] text-right font-medium">{formatMoneyFull(50)} <span className="text-[#f5c518] font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
+                    <tr className={`border-b border-[rgba(0,0,0,0.04)] transition-colors duration-200 ${nextPortCount === 2 ? 'bg-[rgba(74,144,217,0.12)] shadow-[inset_0.2667rem_0_0_#4a90d9]' : 'hover:bg-[rgba(0,0,0,0.02)]'}`}>
+                      <td className="p-[0.5333rem_0.8rem] font-semibold">2 Cảng</td>
+                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem]">{formatMoneyFull(50)} <span className="text-[#22c55e] font-black drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
                     </tr>
-                    <tr className={nextPortCount === 3 ? 'bg-[rgba(74,144,217,0.1)] text-[#2c3e50] font-bold shadow-[inset_3px_0_0_#4a90d9]' : ''}>
-                      <td className="p-[8px_12px] border-b border-[rgba(0,0,0,0.04)] text-[14px]">3 cảng</td>
-                      <td className="p-[8px_12px] border-b border-[rgba(0,0,0,0.04)] text-[14px] text-right font-medium">{formatMoneyFull(100)} <span className="text-[#f5c518] font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
+                    <tr className={`border-b border-[rgba(0,0,0,0.04)] transition-colors duration-200 ${nextPortCount === 3 ? 'bg-[rgba(74,144,217,0.12)] shadow-[inset_0.2667rem_0_0_#4a90d9]' : 'hover:bg-[rgba(0,0,0,0.02)]'}`}>
+                      <td className="p-[0.5333rem_0.8rem] font-semibold">3 Cảng</td>
+                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem]">{formatMoneyFull(100)} <span className="text-[#22c55e] font-black drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
                     </tr>
-                    <tr className={nextPortCount === 4 ? 'bg-[rgba(74,144,217,0.1)] text-[#2c3e50] font-bold shadow-[inset_3px_0_0_#4a90d9]' : ''}>
-                      <td className="p-[8px_12px] border-b border-[rgba(0,0,0,0.04)] text-[14px]">4 cảng</td>
-                      <td className="p-[8px_12px] border-b border-[rgba(0,0,0,0.04)] text-[14px] text-right font-bold text-[#e67e22]">THẮNG LẬP TỨC! 🏆</td>
+                    <tr className={`transition-colors duration-200 ${nextPortCount === 4 ? 'bg-[rgba(74,144,217,0.12)] shadow-[inset_0.2667rem_0_0_#4a90d9]' : 'hover:bg-[rgba(0,0,0,0.02)]'}`}>
+                      <td className="p-[0.5333rem_0.8rem] font-semibold">4 Cảng</td>
+                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem] font-black text-[#e67e22] tracking-wide">THẮNG LẬP TỨC! 🏆</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-            </div>
-            <div className="flex flex-col items-center pt-4 border-t border-[rgba(0,0,0,0.08)] w-full">
-              <div className="text-[18px] text-[#2c3e50] mb-3">
-                Giá thuê: <strong className="text-[22px]">{formatMoneyFull(expectedRent)}</strong> <span className="text-[#2e7d32] font-black text-[1.1em]">$</span>
-              </div>
-              <button
-                className={`btn-3d w-[90%] max-w-[400px] p-[15px_30px] text-[16px] font-bold tracking-[1px] shadow-[0_12px_30px_rgba(74,144,217,0.4)] ${!canAfford ? 'opacity-50 cursor-not-allowed bg-gray-500' : 'btn-3d-blue'}`}
-                onClick={() => {
-                  if (canAfford) send('buyProperty', { houses: 0 });
-                }}
-                disabled={!canAfford}
-              >
-                MUA VỚI GIÁ {formatMoneyFull(portPrice)} <span className="text-[#2e7d32] font-black text-[1.1em]">$</span>
-              </button>
-              <div className="mt-3 text-[13px] text-[#718096] font-medium bg-[rgba(0,0,0,0.03)] p-[6px_12px] rounded-[6px]">
-                Các cảng không thể bị mua lại (cướp đất)
+
+              <div className="flex flex-col items-center w-full">
+                <div className="text-[1.1333rem] text-[#2c3e50] mb-[0.8rem] font-medium">
+                  Thu nhập mỗi lượt: <strong className="text-[1.4rem] ml-1">{formatMoneyFull(expectedRent)}</strong> <span className="text-[#22c55e] font-black text-[1.1em] drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)]">$</span>
+                </div>
+                <button
+                  className={`btn-3d w-full max-w-[24rem] p-[0.8rem_2rem] text-[1.0667rem] font-bold tracking-[0.0667rem] shadow-[0_0.8rem_2rem_rgba(74,144,217,0.4)] ${!canAfford ? 'opacity-50 cursor-not-allowed bg-gray-500' : 'btn-3d-blue hover:scale-[1.02] active:scale-[0.98]'}`}
+                  onClick={() => {
+                    if (canAfford) send('buyProperty', { houses: 0 });
+                  }}
+                  disabled={!canAfford}
+                >
+                  MUA VỚI GIÁ {formatMoneyFull(portPrice)} <span className="text-[#2e7d32] font-black text-[1.1em]">$</span>
+                </button>
+
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
     );
   }
 
@@ -188,7 +201,12 @@ export default function BuyUpgradeModal() {
     if (isBuy) {
       send('buyProperty', { houses: selectedLevel });
     } else {
-      send('upgradeProperty', { targetHouses: selectedLevel });
+      if (turnPhase === 'go_remote_upgrade') {
+        send('remoteUpgradeProperty', { tileId: tile.id, targetHouses: selectedLevel });
+        useGameStore.getState().setSelectedTile(null);
+      } else {
+        send('upgradeProperty', { targetHouses: selectedLevel });
+      }
     }
   };
   const cards = [
@@ -198,32 +216,37 @@ export default function BuyUpgradeModal() {
     { level: 3, label: 'Nhà 3', image: '/images/house-3.png', maxAllowed: 3 },
   ];
   return (
-    <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[8px] flex items-center justify-center z-[1000] p-4" onClick={handleSkip}>
-      <div className="relative w-full max-w-[580px] md:max-w-[820px] animate-card-modal-slide" onClick={e => e.stopPropagation()}>
-        <div className="bg-white rounded-[24px] overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.25),0_0_0_1px_rgba(0,0,0,0.05),inset_0_2px_4px_rgba(255,255,255,0.8)] relative z-10 max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[0.5333rem] flex items-center justify-center z-[1000] p-[1rem]" onClick={handleSkip}>
+      <div className="relative w-full max-w-[42rem] h-auto max-h-[95vh] animate-card-modal-slide flex flex-col
+        before:content-[''] before:absolute before:bg-[#fdfaf5] before:rounded-[1.6rem] before:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] before:-z-[1] before:inset-0 before:border before:border-[rgba(0,0,0,0.04)] before:transition-all before:duration-300 before:-rotate-2 before:-translate-x-1 before:translate-y-2
+        after:content-[''] after:absolute after:bg-[#f5f0e6] after:rounded-[1.6rem] after:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] after:-z-[2] after:inset-0 after:border after:border-[rgba(0,0,0,0.04)] after:transition-all after:duration-300 after:rotate-3 after:translate-x-1.5 after:translate-y-3">
+        <div
+          className="bg-white rounded-[1.6rem] overflow-hidden shadow-[0_1.6rem_3.2rem_rgba(0,0,0,0.25),0_0_0_0.0667rem_rgba(0,0,0,0.05),inset_0_0.1333rem_0.2667rem_rgba(255,255,255,0.8)] relative z-10 flex flex-col h-full max-h-full"
+          onClick={e => e.stopPropagation()}
+        >
           {/* ── Ticket Photo: covers full header + photo zone ── */}
-          <div className="relative w-full h-[160px] shrink-0 rounded-t-[24px] overflow-hidden" style={{ borderTop: `5px solid ${headerColor}` }}>
+          <div className="relative w-full h-[10.6667rem] shrink-0 rounded-t-[1.6rem] overflow-hidden" style={{ borderTop: `5px solid ${headerColor}` }}>
             <img src={TILE_IMAGE[tile.id] ?? '/images/go.webp'} alt={tile.name} className="w-full h-full object-cover block brightness-105 contrast-110 saturate-[1.2]" />
             {/* Header overlaid on top of image */}
-            <div className="absolute top-0 left-0 right-0 p-[16px_20px] flex justify-center items-center bg-gradient-to-b from-[rgba(0,0,0,0.55)] to-transparent z-10">
-              <h3 className="text-white font-extrabold text-[18px] tracking-[2px] drop-shadow-[0_1px_8px_rgba(0,0,0,0.7)] text-center m-0">{tile.name.toUpperCase()}</h3>
-              <button className="absolute right-[14px] top-1/2 -translate-y-1/2 bg-[rgba(255,255,255,0.2)] border-[1.5px] border-[rgba(255,255,255,0.5)] text-white w-[36px] h-[36px] rounded-full cursor-pointer text-[16px] flex items-center justify-center backdrop-blur-[4px] transition-all duration-200 hover:bg-[rgba(255,255,255,0.38)] active:scale-90 z-[100] pointer-events-auto" onClick={(e) => { e.stopPropagation(); handleSkip(); }}>✕</button>
+            <div className="absolute top-0 left-0 right-0 p-[1.0667rem_1.3333rem] flex justify-center items-center bg-gradient-to-b from-[rgba(0,0,0,0.55)] to-transparent z-10">
+              <h3 className="text-white font-extrabold text-[1.2rem] tracking-[0.1333rem] drop-shadow-[0_0.0667rem_0.5333rem_rgba(0,0,0,0.7)] text-center m-0">{tile.name.toUpperCase()}</h3>
+              <button className="absolute right-[0.9333rem] top-1/2 -translate-y-1/2 bg-[rgba(255,255,255,0.2)] border-[0.1rem] border-[rgba(255,255,255,0.5)] text-white w-[2.4rem] h-[2.4rem] rounded-full cursor-pointer text-[1.0667rem] flex items-center justify-center backdrop-blur-[0.2667rem] transition-all duration-200 hover:bg-[rgba(255,255,255,0.38)] active:scale-90 z-[100] pointer-events-auto" onClick={(e) => { e.stopPropagation(); handleSkip(); }}>✕</button>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 h-[80px] bg-gradient-to-b from-transparent to-white pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-[5.3333rem] bg-gradient-to-b from-transparent to-white pointer-events-none" />
           </div>
 
           {/* Wrapper for the cards that overlaps the image, outside of card-body */}
-          <div className="relative z-10 px-[20px] overflow-visible">
+          <div className="relative z-10 px-[1.3333rem] overflow-visible">
             {tile.houseCount === 3 ? (
-              <div className="flex items-center bg-white rounded-[12px] p-[16px_20px] mt-[-44px] mb-[20px] shadow-[0_6px_16px_rgba(0,0,0,0.15)] gap-4 border-[2px] border-[#fbbf24]">
-                <img src="/images/house-4.png" alt="Khách sạn" className="w-[64px] h-[64px] object-contain drop-shadow-[2px_2px_2px_rgba(0,0,0,0.3)] shrink-0" />
+              <div className="flex items-center bg-white rounded-[0.8rem] p-[1.0667rem_1.3333rem] mt-[-2.9333rem] mb-[1.3333rem] shadow-[0_0.4rem_1.0667rem_rgba(0,0,0,0.15)] gap-[1rem] border-[0.1333rem] border-[#fbbf24]">
+                <img src="/images/house-4.png" alt="Khách sạn" className="w-[4.2667rem] h-[4.2667rem] object-contain drop-shadow-[0.1333rem_0.1333rem_0.1333rem_rgba(0,0,0,0.3)] shrink-0" />
                 <div className="flex-1">
-                  <h4 className="m-[0_0_6px_0] text-[18px] text-[#b45309]">Nâng cấp lên Khách Sạn!</h4>
-                  <p className="m-0 text-[14px] text-[#4b5563] leading-[1.4]">Bạn có muốn dùng <strong>{formatMoneyFull(tile.hotelCost)}</strong> <span className="text-[#2e7d32] font-black text-[1.1em]">$</span> để xây khách sạn không?</p>
+                  <h4 className="m-[0_0_0.4rem_0] text-[1.2rem] text-[#b45309]">Nâng cấp lên Khách Sạn!</h4>
+                  <p className="m-0 text-[0.9333rem] text-[#4b5563] leading-[1.4]">Bạn có muốn dùng <strong>{formatMoneyFull(tile.hotelCost)}</strong> <span className="text-[#2e7d32] font-black text-[1.1em]">$</span> để xây khách sạn không?</p>
                 </div>
               </div>
             ) : (
-            <div className="flex justify-between gap-3 w-full mt-[-44px] mb-3 relative z-10">
+            <div className="flex justify-between gap-[0.6rem] w-full mt-[-2.9333rem] mb-[0.8rem] relative z-10">
               {cards.map((card) => {
                 const isBuilt = card.level <= tile.houseCount && !isBuy;
                 const isAllowed = card.level <= maxAllowed;
@@ -232,23 +255,23 @@ export default function BuyUpgradeModal() {
                 return (
                   <div
                     key={card.level}
-                    className={`flex-1 bg-[rgba(255,255,255,0.92)] border-[2px] ${isSelected ? 'border-[#84cc16] bg-[rgba(247,254,231,0.95)] shadow-[0_8px_28px_rgba(132,204,22,0.3),0_2px_4px_rgba(0,0,0,0.08)]' : isDisabled ? 'border-[rgba(163,230,53,0.4)] opacity-60 cursor-not-allowed bg-[rgba(241,241,241,0.9)]' : 'border-[rgba(163,230,53,0.4)] cursor-pointer hover:border-[#a3e635] hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.12)] shadow-[0_8px_24px_rgba(0,0,0,0.15),0_2px_4px_rgba(0,0,0,0.08)]'} rounded-[14px] p-[14px_8px] flex flex-col items-center relative transition-all duration-200 backdrop-blur-[4px]`}
+                    className={`flex-1 bg-[rgba(255,255,255,0.92)] border-[0.1333rem] ${isSelected ? 'border-[#84cc16] bg-[rgba(247,254,231,0.95)] shadow-[0_0.5333rem_1.8667rem_rgba(132,204,22,0.3),0_0.1333rem_0.2667rem_rgba(0,0,0,0.08)]' : isDisabled ? 'border-[rgba(163,230,53,0.4)] opacity-60 cursor-not-allowed bg-[rgba(241,241,241,0.9)]' : 'border-[rgba(163,230,53,0.4)] cursor-pointer hover:border-[#a3e635] hover:-translate-y-1 hover:shadow-[0_0.8rem_2.1333rem_rgba(0,0,0,0.2),0_0.2667rem_0.5333rem_rgba(0,0,0,0.12)] shadow-[0_0.5333rem_1.6rem_rgba(0,0,0,0.15),0_0.1333rem_0.2667rem_rgba(0,0,0,0.08)]'} rounded-[0.9333rem] p-[0.9333rem_0.2rem] flex flex-col items-center relative transition-all duration-200 backdrop-blur-[0.2667rem]`}
                     onClick={() => {
                       if (!isDisabled) setSelectedLevel(card.level);
                     }}
                   >
-                    <div className="w-[80px] h-[60px] relative mb-[15px] flex justify-center items-center">
-                       <div className="w-[60px] h-[60px] bg-[#a3e635] absolute top-[10px] [transform:rotateX(60deg)_rotateZ(-45deg)] shadow-[-2px_2px_0_#65a30d,-3px_3px_0_#65a30d]"></div>
-                       <img src={card.image} alt={card.label} className="relative w-[48px] h-[48px] object-contain z-10 bottom-[1px] drop-shadow-[2px_2px_2px_rgba(0,0,0,0.3)]" />
+                    <div className="w-[5.3333rem] h-[4rem] relative mb-[1rem] flex justify-center items-center">
+                       <div className="w-[4rem] h-[4rem] bg-[#a3e635] absolute top-[0.6667rem] [transform:rotateX(60deg)_rotateZ(-45deg)] shadow-[-0.1333rem_0.1333rem_0_#65a30d,-0.2rem_0.2rem_0_#65a30d]"></div>
+                       <img src={card.image} alt={card.label} className="relative w-[3.2rem] h-[3.2rem] object-contain z-10 bottom-[0.0667rem] drop-shadow-[0.1333rem_0.1333rem_0.1333rem_rgba(0,0,0,0.3)]" />
                     </div>
-                    <div className="text-[16px] font-semibold text-[#333] mb-3">{card.label}</div>
+                    <div className="text-[0.9333rem] font-semibold text-[#333] mb-[0.8rem] whitespace-nowrap">{card.label}</div>
 
                     {/* Checkbox */}
-                    <div className={`absolute bottom-[10px] right-[10px] w-[22px] h-[22px] border-[2px] ${isSelected ? 'border-[#84cc16] text-[#84cc16]' : 'border-[#ccc] text-transparent'} rounded-[4px] bg-white flex justify-center items-center text-[16px] font-bold`}>
+                    <div className={`absolute bottom-[0.6667rem] right-[0.6667rem] w-[1.4667rem] h-[1.4667rem] border-[0.1333rem] ${isSelected ? 'border-[#84cc16] text-[#84cc16]' : 'border-[#ccc] text-transparent'} rounded-[0.2667rem] bg-white flex justify-center items-center text-[1.0667rem] font-bold`}>
                       {isSelected && '✔'}
                     </div>
                     {!isAllowed && (
-                       <div className="absolute top-[10px] -left-1 w-[110%] bg-white border-[2px] border-[#e91e63] text-[#e91e63] text-[11px] font-bold p-1 text-center -rotate-12 rounded-[4px] z-10 shadow-[2px_2px_5px_rgba(0,0,0,0.1)]">
+                       <div className="absolute top-[0.6667rem] -left-1 w-[110%] bg-white border-[0.1333rem] border-[#e91e63] text-[#e91e63] text-[0.7333rem] font-bold p-1 text-center -rotate-12 rounded-[0.2667rem] z-10 shadow-[0.1333rem_0.1333rem_0.3333rem_rgba(0,0,0,0.1)] leading-tight">
                          Không thực hiện được ở vòng đầu tiên
                        </div>
                     )}
@@ -259,13 +282,13 @@ export default function BuyUpgradeModal() {
             )}
           </div>
 
-          <div className="p-[4px_20px_12px] relative z-10">
+          <div className="p-[0.2667rem_1.3333rem_0.8rem] relative z-10">
             <div className="flex flex-col items-center w-full">
-              <div className="text-[18px] text-[#333] mb-2.5">
-                Giá thuê: <strong className="text-[22px]">{formatMoneyFull(rentAtLevel)}</strong> <span className="text-[#2e7d32] font-black text-[1.1em]">$</span>
+              <div className="text-[1.2rem] text-[#333] mb-[0.6667rem]">
+                Giá thuê: <strong className="text-[1.4667rem]">{formatMoneyFull(rentAtLevel)}</strong> <span className="text-[#2e7d32] font-black text-[1.1em]">$</span>
               </div>
               <button
-                className={`btn-3d w-[90%] max-w-[400px] p-[15px_30px] text-[16px] font-bold tracking-[1px] shadow-[0_12px_30px_rgba(74,144,217,0.4)] ${!canAfford ? 'opacity-50 cursor-not-allowed bg-gray-500' : 'btn-3d-blue'}`}
+                className={`btn-3d w-[90%] max-w-[26.6667rem] p-[1rem_2rem] text-[1.0667rem] font-bold tracking-[0.0667rem] shadow-[0_0.8rem_2rem_rgba(74,144,217,0.4)] ${!canAfford ? 'opacity-50 cursor-not-allowed bg-gray-500' : 'btn-3d-blue'}`}
                 onClick={handleConfirm}
                 disabled={!canAfford}
               >
