@@ -1,140 +1,98 @@
-# Luật Chơi Webopoly (Dựa trên mã nguồn hiện tại)
+# Luật Chơi Webopoly (Dựa trên logic code thực tế)
 
-Đây là tài liệu mô tả chi tiết luật chơi của Webopoly, được trình bày theo cấu trúc Business Logic (dễ dàng tham chiếu cho lập trình viên).
+Đây là tài liệu mô tả chi tiết luật chơi của Webopoly, được trích xuất trực tiếp từ mã nguồn hiện tại của game (WebopolyRoom.ts & mapData.ts).
 
-## ⚙️ Thiết lập cơ bản
-- Số người chơi: 2 - 6 người.
-- Tiền ban đầu: 2.000đ mỗi người.
-- Thứ tự đi: Random khi bắt đầu game.
-- Hết thời gian lượt (5 phút):
-    -> Hệ thống tự động tung xúc xắc hoặc thực hiện hành động mặc định.
+## ⚙️ Thiết Lập Cơ Bản
+- **Số người chơi:** 2 - 6 người.
+- **Tiền ban đầu:** 20.000K mỗi người.
+- **Thứ tự đi:** Ngẫu nhiên khi bắt đầu game.
+- **Thời gian lượt:** 5 phút (300,000 ms). Hết giờ hệ thống tự động thao tác (tung xúc xắc, bỏ qua mua đất/cướp đất, tự động bán đất trả nợ).
+- **Mất kết nối:** Nếu người chơi mất kết nối và không trở lại, Bot sẽ đánh thay. Nếu Bot đánh thay quá 3 lượt, người chơi đó bị xử Phá sản.
+- **Thời gian tối đa (Time Limit):** 1 Tiếng. Nếu hết 1 tiếng game chưa kết thúc, người có **Tổng Tài Sản (Tiền mặt + 100% Giá trị gốc của đất đai)** cao nhất sẽ thắng.
 
-## 🗺️ Bản đồ (32 ô)
-Bản đồ gồm 32 ô:
-- 4 ô góc:
-    -> Ô 0: Xuất Phát (Go)
-    -> Ô 8: Nhà Tù (Jail)
-    -> Ô 16: Lễ Hội (Festival)
-    -> Ô 24: Sân Bay (Airport)
-- 24 ô đất (8 nhóm màu):
-    -> Đỏ: Cà Mau, Bến Tre, Cần Thơ (60đ)
-    -> Cam: Long An, Vĩnh Long, Mỹ Tho (100–120đ)
-    -> Vàng: Đà Nẵng, Hội An, Huế (140–160đ)
-    -> Xanh lá: Điện Biên, Mộc Châu (180–200đ)
-    -> Xanh dương: Nha Trang, Phú Quốc (220–240đ)
-    -> Tím: Ninh Bình, Hạ Long, Hà Nội (260–280đ)
-    -> Hồng: Vũng Tàu, HCM (300–320đ)
-    -> Lục lam: Thanh Hóa, Đà Lạt (360–400đ)
-- 4 ô Cảng (Port):
-    -> Giá mua: 200đ.
-- 3 ô Cơ hội (Chance):
-    -> Chưa có chức năng, vào ô sẽ kết thúc lượt.
-- 1 ô Thuế (Tax):
-    -> Phạt 10% tổng tài sản.
+## 🗺️ Bản Đồ (32 Ô)
+- **4 Ô Góc:** Xuất Phát (0), Nhà Tù (8), Lễ Hội (16), Sân Bay (24).
+- **20 Ô Đất (8 nhóm màu):**
+    - Đỏ (3 ô): Cà Mau, Bến Tre, Cần Thơ.
+    - Cam (3 ô): Long An, Vĩnh Long, Mỹ Tho.
+    - Vàng (3 ô): Đà Nẵng, Hội An, Huế.
+    - Xanh lá (2 ô): Điện Biên, Mộc Châu.
+    - Xanh dương (2 ô): Nha Trang, Phú Quốc.
+    - Tím (3 ô): Ninh Bình, Hạ Long, Hà Nội.
+    - Hồng (2 ô): Vũng Tàu, HCM.
+    - Lục lam (2 ô): Thanh Hóa, Đà Lạt.
+- **4 Ô Cảng (Port):** Nam (4), Tây (14), Bắc (18), Đông (25). Giá mua: 200K.
+- **3 Ô Cơ Hội (Chance):** Ô số 12, 20, 28.
+- **1 Ô Thuế (Tax):** Ô số 30.
+- **✨ ĐIỂM DU LỊCH (Đặc biệt):** Ngay khi game bắt đầu, 3 ô ngẫu nhiên (chọn từ đất hoặc cảng) sẽ được buff làm Điểm Du Lịch, tiền tô tại các ô này luôn được nhân đôi (x2).
 
-## 🎲 Lượt chơi & Di chuyển
-Khi tới lượt của người chơi:
-    - Tung 2 viên xúc xắc.
-    - Di chuyển số bước = Tổng 2 viên xúc xắc.
+## 🎲 Lượt Chơi & Di Chuyển
+- Tung 2 viên xúc xắc. Di chuyển theo tổng xúc xắc.
+- **Double (Đổ Đôi):** Được đi thêm 1 lượt. Nếu đổ Double 3 lần liên tiếp, vào thẳng Nhà Tù và mất lượt.
+- **Qua ô Xuất Phát (GO):** Nhận 300K tiền lương.
+- **Dừng ĐÚNG ô Xuất Phát (GO):** 
+    - Không nhận thêm tiền (chỉ nhận 300K vì đã tính là đi qua).
+    - Có 50% cơ hội: Được tặng thêm 1 lượt đi ngay lập tức.
+    - Có 50% cơ hội: Được kích hoạt "Nâng cấp từ xa". Bạn được chọn 1 mảnh đất bất kỳ đang sở hữu để xây nhà mà không cần phải đứng trên nó (phí xây nhà vẫn trừ bình thường).
 
-    Nếu 2 viên xúc xắc giống nhau (Double):
-        - Nếu số lần Double liên tiếp == 3:
-            -> Bị đưa vào Nhà Tù (Jail).
-            -> Kết thúc lượt.
-        - Nếu số lần Double liên tiếp < 3:
-            -> Được tung xúc xắc thêm 1 lần nữa sau khi hoàn thành các hành động của ô hiện tại.
+## 🏠 Đất Đai & Xây Dựng
+- **Cấp độ nhà:** Đất trống -> Nhà 1 -> Nhà 2 -> Nhà 3 -> Khách sạn (Cấp 4).
+- **Giới hạn xây dựng:**
+    - Vòng 1 (Chưa qua ô GO lần nào): Chỉ được xây tối đa lên Nhà 2. *(Lưu ý: Nếu cướp đất đã có sẵn 3 nhà, hệ thống sẽ giữ nguyên 3 nhà chứ không ép hạ xuống).*
+    - Từ Vòng 2 trở đi (Đã qua ô GO ít nhất 1 lần): Được xây lên Nhà 3 và Khách sạn.
+- **Cướp đất (Buyout):**
+    - Khi dẫm lên đất đối thủ, nếu họ **chưa xây Khách sạn** và đó **không phải là Bến Cảng**, bạn có quyền Cướp đất.
+    - **Giá cướp:** Gấp 2 lần tổng giá trị hiện tại của mảnh đất (Giá mua đất + Tổng tiền đã xây nhà). Số tiền này được trả thẳng cho chủ cũ.
+    - Cướp xong, bạn có quyền xây thêm nhà ngay lập tức nếu đủ điều kiện vòng chơi.
 
-    Khi người chơi đi qua ô Bắt đầu (nhưng không dừng lại):
-        -> Nhận ngay 300đ.
-
-    Khi người chơi dừng đúng ô Bắt đầu:
-        - Không nhận thêm tiền phụ (chỉ nhận 300đ do đi qua).
-        - Random 1 trong 2 sự kiện:
-            Sự kiện 1:
-                -> Được tung xúc xắc thêm 1 lần (dù không đổ Double).
-            Sự kiện 2:
-                -> Được quyền nâng cấp nhà từ xa (nếu nâng cấp sẽ tốn phí như bình thường).
-                -> Nếu không sở hữu đất hoặc không đủ tiền cho bất kỳ mảnh đất nào:
-                    -> Tự động bỏ qua.
-                -> Ngược lại:
-                    -> Chọn 1 ô đất để nâng cấp.
-                    -> Hoặc chọn bỏ qua.
-
-## 🏠 Đất đai & Xây dựng
-Khi dừng ở ô đất trống:
-    - Nếu đủ tiền:
-        -> Có quyền mua đất.
-    - Không yêu cầu phải sở hữu cả nhóm màu để mua hoặc xây nhà.
-    - Không thể xây nhà trên Cảng.
-
-Khi dừng ở ô đất đã sở hữu:
-    - Có quyền nâng cấp (mua thêm cấp nhà).
-    - Cấp độ nhà: Nhà 1 -> Nhà 2 -> Nhà 3 -> Khách sạn.
-    - Điều kiện nâng cấp:
-        - Vòng đầu tiên (passCount == 0):
-            -> Xây tối đa đến Nhà 2.
-        - Sau khi đi qua ô Bắt đầu >= 1 lần (passCount > 0):
-            -> Được phép xây lên Nhà 3 và Khách sạn.
-        - Khách sạn chỉ được phép xây khi đất đã đạt Nhà 3.
-        - Cho phép xây nhiều nhà cùng lúc (nhảy cóc) nếu đủ tiền và không vượt giới hạn vòng chơi.
-
-Khi dừng ở ô đất của người khác:
-    - Nếu chủ sở hữu chưa độc quyền nhóm màu:
-        -> Phải trả tiền thuê (tương ứng cấp nhà hiện tại).
-    - Nếu chủ sở hữu đã độc quyền (sở hữu toàn bộ nhóm màu đó):
-        -> Phải trả tiền thuê x2 (bất kể cấp nhà).
+## 💰 Tiền Tô (Rent)
+Tiền tô được tính theo cấp nhà, có thể được buff bằng các hệ số nhân sau (cộng dồn nhân lẫn nhau):
+- **Độc quyền nhóm màu:** Nếu sở hữu tất cả các mảnh đất cùng 1 màu, tiền tô của màu đó nhân đôi (x2).
+- **Điểm Du lịch:** Tiền tô nhân đôi (x2).
+- **Lễ Hội (Festival):** Tiền tô nhân đôi (x2) nếu ô đất đang có Lễ hội.
+- *Ví dụ: Nếu 1 mảnh đất vừa độc quyền màu, vừa là điểm du lịch, vừa tổ chức lễ hội -> Tiền tô được nhân x8!*
 
 ## 🚢 Bến Cảng (Port)
-Khi sở hữu Bến Cảng:
-    - Tiền tô = 25đ * (Số lượng Cảng mà chủ sở hữu đang có).
-    - Nếu một người chơi sở hữu đủ 4 Cảng:
-        -> Người chơi đó lập tức Thắng game.
+- Thu tô dựa trên số lượng Cảng mà chủ sở hữu đang có: 
+    - 1 Cảng = 25K
+    - 2 Cảng = 50K
+    - 3 Cảng = 100K
+    - 4 Cảng = 200K (Thường game sẽ kết thúc luôn ngay khi ai đó gom đủ 4 Cảng).
+- Không thể xây nhà, không thể bị Cướp (Buyout) theo cách thông thường (trừ khi dùng thẻ Cơ Hội).
 
-## 🎪 Lễ Hội (Festival - Ô 16)
-Khi dừng ở ô Lễ Hội:
-    -> Chọn 1 lô đất đang sở hữu để tổ chức Lễ Hội.
-    -> Tiền tô của lô đất đó được nhân đôi (x2) (cộng dồn với hiệu ứng độc quyền nếu có).
-    -> Chỉ có duy nhất 1 Lễ Hội được diễn ra trên bản đồ cùng một lúc (Lễ hội mới sẽ thay thế Lễ hội cũ).
+## ⚖️ Các Ô Chức Năng Đặc Biệt
+- **Thuế (Tax - Ô 30):** Bị phạt 10% Tổng Tài Sản (Tiền mặt + (Giá bán lại đất * 2)).
+- **Sân Bay (Airport - Ô 24):** 
+    - Dừng chân kết thúc lượt chờ chuyến bay. Nếu đổ đôi vào Sân bay sẽ bị mất lượt đôi.
+    - Lượt tiếp theo: Phải trả phí 50K. Bạn được chọn bay thẳng đến **Bất kỳ ô đất/cảng vô chủ nào** hoặc **Ô đất của chính bạn**. Bay xong thực hiện sự kiện tại ô đó bình thường.
+- **Lễ Hội (Festival - Ô 16):** 
+    - Trả phí 50K để tổ chức Lễ hội tại 1 thành phố bất kỳ mà bạn đang sở hữu. Thành phố đó sẽ được x2 Tiền tô. Chỉ có 1 Lễ hội được phép tồn tại trên toàn bản đồ.
+- **Nhà Tù (Jail - Ô 8):**
+    - Phải ở tù 3 lượt. 
+    - Cách ra tù: (1) Trả phí bảo lãnh 200K, (2) Đổ xúc xắc ra Đôi (Đổ đôi thoát tù sẽ mất luôn quyền đi thêm lượt), (3) Dùng Thẻ ra tù miễn phí, hoặc (4) Chờ hết 3 lượt sẽ tự động thả.
 
-## ✈️ Sân Bay (Airport - Ô 24)
-Khi dừng ở ô Sân Bay:
-    - Nếu đổ bằng Double để vào:
-        -> Bị hủy quyền đi thêm lượt của Double.
-    -> Kết thúc lượt ngay lập tức.
-
-Ở lượt tiếp theo của người chơi đó (đang đứng tại Sân Bay):
-    - Chọn 1 trong 2 hành động:
-        Hành động 1:
-            -> Tung xúc xắc miễn phí để di chuyển như bình thường.
-        Hành động 2:
-            -> Trả 50đ để mua vé.
-            -> Bay thẳng đến bất kỳ ô đất trống nào hoặc ô đất thuộc sở hữu của bản thân.
-
-## 💸 Cướp đất (Buyout)
-Khi dừng ở ô đất của người khác (không phải Cảng, chưa xây Khách sạn):
-    - Có quyền mua lại (Cướp) mảnh đất đó.
-    - Số tiền phải trả = 2 * (Chi phí mua đất + Tổng chi phí xây nhà hiện tại).
-    - Số tiền này được trả thẳng cho chủ sở hữu cũ.
+## 🃏 Thẻ Cơ Hội (Chance)
+Hệ thống thẻ cơ hội gồm 18 thẻ có thể thay đổi hoàn toàn cục diện game:
+- **Buff/Debuff tiền tô:** Giảm 50% tiền thuê tiếp theo, Trả gấp đôi tiền thuê tiếp theo.
+- **Tấn Công / Phòng Thủ:** 
+    - *Shield:* Tạo 1 Khiên bảo vệ trên 1 thành phố của mình.
+    - *Force Sell:* Ép đối thủ bán 1 ô đất (họ nhận lại tiền bán bằng 50% giá trị gốc).
+    - *Sabotage:* Giáng cấp 1 nhà của đối thủ.
+    - *Earthquake:* Xóa sổ hoàn toàn 1 mảnh đất (về trạng thái vô chủ).
+    - *Blackout:* Cúp điện thành phố đối thủ. Thành phố bị mất hiệu lực thu tiền cho đến khi đối thủ đi qua vạch Xuất Phát 3 lần!
+    - *Lưu ý:* Khiên bảo vệ có thể đỡ được 1 lần các đòn Tấn công.
+- **Dịch Chuyển:** Bay đến Sân bay, bay về Xuất Phát, bay đến ô Lễ Hội, dính bẫy bay về ô Thuế / ô Nhà Tù.
+- **Sự Kiện Đặc Biệt:** Nhận 25K tiền sinh nhật từ MỖI đối thủ, Bị phạt 50K ngẫu nhiên, Tặng 1 thành phố cho người khác, Thẻ ra tù miễn phí.
 
 ## 🏦 Nợ Nần & Phá Sản
-Không có tính năng cầm cố. Áp dụng bán đất trả nợ.
+- **Giá trị bán đất:** Mọi mảnh đất khi bán cho Ngân hàng để trả nợ chỉ thu hồi được **50%** (Giá gốc + Tiền xây nhà).
+- Khi bạn thiếu tiền, game đưa bạn vào trạng thái trả nợ. Nếu hết giờ lượt (5 phút) mà bạn chưa trả xong, hệ thống **tự động bán mảnh đất rẻ nhất** của bạn đi cho đến khi đủ trả nợ.
+- Nếu bạn bán sạch tài sản vẫn không đủ trả: Bạn bị Phá Sản. Toàn bộ số tiền (nếu còn) được thanh toán cho chủ nợ. Trò chơi kết thúc nếu chỉ còn 1 người.
 
-Khi phải trả tiền (thuế, tiền tô) nhưng không đủ tiền mặt:
-    - Trạng thái nợ nần được kích hoạt.
-    - Giá trị bán lại của đất = 50% * (Chi phí gốc của đất + Tổng chi phí xây nhà).
-    - Tính (Tổng giá trị bán lại của tất cả tài sản).
-
-    Nếu (Tổng giá trị bán lại >= Số tiền đang nợ):
-        -> Bắt buộc chọn bán đất để trả nợ cho đến khi đủ tiền.
-        -> Đất bị bán sẽ bị dỡ sạch nhà và trở thành đất vô chủ.
-        -> Nếu hết giờ không thao tác:
-            -> Hệ thống tự động bán các mảnh đất rẻ nhất để trừ nợ.
-
-    Nếu (Tổng giá trị bán lại < Số tiền đang nợ):
-        -> Người chơi bị Phá sản.
-        -> Hệ thống tự động thanh lý toàn bộ đất cho Ngân Hàng (trả về trạng thái vô chủ).
-        -> Tính Tổng quỹ = (Tiền thanh lý đất + Tiền mặt đang có).
-        -> Trả cho chủ nợ số tiền = Tổng quỹ (nếu nợ nhiều hơn Tổng quỹ, chủ nợ chỉ nhận được Tổng quỹ; nếu tự nguyện bỏ cuộc khi nợ ít hơn Tổng quỹ, chủ nợ nhận đủ nợ).
-        -> Số tiền dư (nếu có) bị Ngân Hàng thu hồi (về 0).
-        -> Người chơi bị loại khỏi game.
-        -> Trò chơi kết thúc nếu chỉ còn 1 người chơi sống sót.
+## 🏆 ĐIỀU KIỆN THẮNG (WIN CONDITIONS)
+Trò chơi sẽ lập tức kết thúc nếu một người chơi đạt được 1 trong các điều kiện sau:
+1. **Sống sót cuối cùng:** Tất cả người chơi khác đều phá sản.
+2. **Độc Quyền Cảng (Port Monopoly):** Sở hữu đủ 4 Bến Cảng.
+3. **Độc Quyền Đường Bay (Line Monopoly):** Sở hữu toàn bộ các lô đất và cảng trên cùng 1 cạnh của bàn cờ (ví dụ: ôm trọn từ ô 1 đến ô 7).
+4. **Độc Quyền 3 Màu (Triple Monopoly):** Hoàn thành việc Độc quyền (gom đủ các ô) của 3 nhóm màu khác nhau trên bản đồ.
+5. **Hết giờ (Time Limit):** Sau 1 tiếng (60 phút) tính từ lúc bắt đầu, game tự động chốt sổ. Người có Tổng tài sản lớn nhất chiến thắng.
