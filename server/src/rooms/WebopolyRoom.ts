@@ -1,4 +1,5 @@
 import { Room, Client, Delayed } from '@colyseus/core';
+import { z } from 'zod';
 import {
   GameState, Player, MapTile, Dice, ChatMessage, GameEvent,
   GamePhase, TurnPhase
@@ -667,10 +668,15 @@ export class WebopolyRoom extends Room<GameState> {
 
   // ─── Buy / Skip ──────────────────────────────────────────────────────────────
 
-  private _handleBuyProperty(client: Client, data?: { houses?: number }) {
+  private _handleBuyProperty(client: Client, rawData?: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'buy_decision') return;
+
+    const parsed = z.object({ houses: z.number().int().min(0).max(3).optional() }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
+
     const houses = data?.houses || 0;
     this._doBuyProperty(client.sessionId, Math.min(3, Math.max(0, houses)));
   }
@@ -781,10 +787,14 @@ export class WebopolyRoom extends Room<GameState> {
 
   // ─── Upgrade ─────────────────────────────────────────────────────────────────
 
-  private _handleUpgradeProperty(client: Client, data: { targetHouses: number }) {
+  private _handleUpgradeProperty(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'upgrade_decision') return;
+
+    const parsed = z.object({ targetHouses: z.number().int().min(0).max(4) }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
 
     const player = state.players.get(client.sessionId);
     if (!player || player.isBankrupt) return;
@@ -831,10 +841,14 @@ export class WebopolyRoom extends Room<GameState> {
     this._advanceTurn();
   }
 
-  private _handleRemoteUpgradeProperty(client: Client, data: { tileId: number; targetHouses: number }) {
+  private _handleRemoteUpgradeProperty(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'go_remote_upgrade') return;
+
+    const parsed = z.object({ tileId: z.number().int(), targetHouses: z.number().int().min(0).max(4) }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
 
     const player = state.players.get(client.sessionId);
     if (!player || player.isBankrupt) return;
@@ -913,11 +927,14 @@ export class WebopolyRoom extends Room<GameState> {
     this._pushEvent('airport_wait', client.sessionId, '', 0, AIRPORT_TILE, `${player.name} đang chọn chuyến bay (50K)...`);
   }
 
-  private _handleAirportSelect(client: Client, data: { tileId: number }) {
+  private _handleAirportSelect(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'airport_select') return;
-    if (data.tileId < 0 || data.tileId >= TOTAL_TILES) return;
+
+    const parsed = z.object({ tileId: z.number().int().min(0).max(TOTAL_TILES - 1) }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
 
     const tile = state.board.get(String(data.tileId));
     if (!tile) return;
@@ -967,10 +984,14 @@ export class WebopolyRoom extends Room<GameState> {
     this._pushEvent('festival', playerId, '', 0, FESTIVAL_TILE, `${player.name} đến Lễ Hội! Chọn 1 thành phố để tổ chức sự kiện (50K).`);
   }
 
-  private _handleFestivalSelect(client: Client, data: { tileId: number }) {
+  private _handleFestivalSelect(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'festival_select') return;
+
+    const parsed = z.object({ tileId: z.number().int().min(0).max(TOTAL_TILES - 1) }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
 
     const tile = state.board.get(String(data.tileId));
     if (!tile || tile.ownerId !== client.sessionId) return;
@@ -1137,9 +1158,14 @@ export class WebopolyRoom extends Room<GameState> {
     }
   }
 
-  private _handleChanceShieldSelect(client: Client, data: any) {
+  private _handleChanceShieldSelect(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_shield_select') return;
+
+    const parsed = z.object({ tileId: z.number().int() }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
+
     const tile = state.board.get(String(data.tileId));
     if (!tile || tile.ownerId !== client.sessionId) return;
 
@@ -1149,9 +1175,14 @@ export class WebopolyRoom extends Room<GameState> {
     this._advanceTurn();
   }
 
-  private _handleChanceAttackSelect(client: Client, data: any) {
+  private _handleChanceAttackSelect(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_attack_select') return;
+
+    const parsed = z.object({ tileId: z.number() }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
+
     const tile = state.board.get(String(data.tileId));
     if (!tile || !tile.ownerId || tile.ownerId === client.sessionId || tile.houseCount >= HOTEL_LEVEL) return;
 
@@ -1197,9 +1228,14 @@ export class WebopolyRoom extends Room<GameState> {
     this._advanceTurn();
   }
 
-  private _handleChanceGiveCitySelect(client: Client, data: any) {
+  private _handleChanceGiveCitySelect(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_give_city_select') return;
+
+    const parsed = z.object({ tileId: z.number() }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
+
     const tile = state.board.get(String(data.tileId));
     if (!tile || tile.ownerId !== client.sessionId) return;
 
@@ -1208,9 +1244,14 @@ export class WebopolyRoom extends Room<GameState> {
     this._startTurnTimer();
   }
 
-  private _handleChanceGiveCityTarget(client: Client, data: any) {
+  private _handleChanceGiveCityTarget(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_give_city_target') return;
+
+    const parsed = z.object({ targetId: z.string() }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
+
     const targetId = data.targetId;
     const targetPlayer = state.players.get(targetId);
     if (!targetPlayer || targetPlayer.isBankrupt || targetId === client.sessionId) return;
@@ -1231,9 +1272,14 @@ export class WebopolyRoom extends Room<GameState> {
     this._advanceTurn();
   }
 
-  private _handleChanceFestivalSelect(client: Client, data: any) {
+  private _handleChanceFestivalSelect(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId || state.turnPhase !== 'chance_festival_city_select') return;
+
+    const parsed = z.object({ tileId: z.number() }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
+
     const tile = state.board.get(String(data.tileId));
     if (!tile || tile.ownerId !== client.sessionId || tile.tileType !== 'property') return;
 
@@ -1385,10 +1431,14 @@ export class WebopolyRoom extends Room<GameState> {
   // ─── Debt ────────────────────────────────────────────────────────────────────
 
 
-  private _handleSellForDebt(client: Client, data: { tileId: number }) {
+  private _handleSellForDebt(client: Client, rawData: any) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'pay_debt') return;
+
+    const parsed = z.object({ tileId: z.number().int().min(0).max(TOTAL_TILES - 1) }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
 
     const player = state.players.get(client.sessionId);
     if (!player || player.debtAmount <= 0) return;
@@ -1465,9 +1515,14 @@ export class WebopolyRoom extends Room<GameState> {
 
   // ─── Chat ────────────────────────────────────────────────────────────────────
 
-  private _handleChat(client: Client, data: { text: string }) {
+  private _handleChat(client: Client, rawData: any) {
     const state = this.state;
     const player = state.players.get(client.sessionId);
+
+    const parsed = z.object({ text: z.string().max(500) }).safeParse(rawData);
+    if (!parsed.success) return;
+    const data = parsed.data;
+
     if (!player || !data.text?.trim()) return;
 
     const msg = new ChatMessage();
