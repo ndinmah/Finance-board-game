@@ -7,7 +7,7 @@
 - **Tiền ban đầu:** 20.000K mỗi người.
 - **Thứ tự đi:** Ngẫu nhiên khi bắt đầu game.
 - **Thời gian lượt:** 5 phút (300,000 ms). Hết giờ hệ thống tự động thao tác (tung xúc xắc, bỏ qua mua đất/cướp đất, tự động bán đất trả nợ).
-- **Mất kết nối:** Nếu người chơi mất kết nối và không trở lại, Bot sẽ đánh thay. Nếu Bot đánh thay quá 3 lượt, người chơi đó bị xử Phá sản.
+- **Mất kết nối:** Nếu người chơi mất kết nối và không trở lại, Bot sẽ đánh thay.
 - **Thời gian tối đa (Time Limit):** 1 Tiếng. Nếu hết 1 tiếng game chưa kết thúc, người có **Tổng Tài Sản (Tiền mặt + 100% Giá trị gốc của đất đai)** cao nhất sẽ thắng.
 
 ## 🗺️ Bản Đồ (32 Ô)
@@ -30,7 +30,7 @@
 - Tung 2 viên xúc xắc. Di chuyển theo tổng xúc xắc.
 - **Double (Đổ Đôi):** Được đi thêm 1 lượt. Nếu đổ Double 3 lần liên tiếp, vào thẳng Nhà Tù và mất lượt.
 - **Qua ô Xuất Phát (GO):** Nhận 300K tiền lương.
-- **Dừng ĐÚNG ô Xuất Phát (GO):** 
+- **Dừng ĐÚNG ô Xuất Phát (GO):**
     - Không nhận thêm tiền (chỉ nhận 300K vì đã tính là đi qua).
     - Có 50% cơ hội: Được tặng thêm 1 lượt đi ngay lập tức.
     - Có 50% cơ hội: Được kích hoạt "Nâng cấp từ xa". Bạn được chọn 1 mảnh đất bất kỳ đang sở hữu để xây nhà mà không cần phải đứng trên nó (phí xây nhà vẫn trừ bình thường).
@@ -53,7 +53,7 @@ Tiền tô được tính theo cấp nhà, có thể được buff bằng các h
 - *Ví dụ: Nếu 1 mảnh đất vừa độc quyền màu, vừa là điểm du lịch, vừa tổ chức lễ hội -> Tiền tô được nhân x8!*
 
 ## 🚢 Bến Cảng (Port)
-- Thu tô dựa trên số lượng Cảng mà chủ sở hữu đang có: 
+- Thu tô dựa trên số lượng Cảng mà chủ sở hữu đang có:
     - 1 Cảng = 25K
     - 2 Cảng = 50K
     - 3 Cảng = 100K
@@ -62,19 +62,19 @@ Tiền tô được tính theo cấp nhà, có thể được buff bằng các h
 
 ## ⚖️ Các Ô Chức Năng Đặc Biệt
 - **Thuế (Tax - Ô 30):** Bị phạt 10% Tổng Tài Sản (Tiền mặt + (Giá bán lại đất * 2)).
-- **Sân Bay (Airport - Ô 24):** 
+- **Sân Bay (Airport - Ô 24):**
     - Dừng chân kết thúc lượt chờ chuyến bay. Nếu đổ đôi vào Sân bay sẽ bị mất lượt đôi.
     - Lượt tiếp theo: Phải trả phí 50K. Bạn được chọn bay thẳng đến **Bất kỳ ô đất/cảng vô chủ nào** hoặc **Ô đất của chính bạn**. Bay xong thực hiện sự kiện tại ô đó bình thường.
-- **Lễ Hội (Festival - Ô 16):** 
+- **Lễ Hội (Festival - Ô 16):**
     - Trả phí 50K để tổ chức Lễ hội tại 1 thành phố bất kỳ mà bạn đang sở hữu. Thành phố đó sẽ được x2 Tiền tô. Chỉ có 1 Lễ hội được phép tồn tại trên toàn bản đồ.
 - **Nhà Tù (Jail - Ô 8):**
-    - Phải ở tù 3 lượt. 
+    - Phải ở tù 3 lượt.
     - Cách ra tù: (1) Trả phí bảo lãnh 200K, (2) Đổ xúc xắc ra Đôi (Đổ đôi thoát tù sẽ mất luôn quyền đi thêm lượt), (3) Dùng Thẻ ra tù miễn phí, hoặc (4) Chờ hết 3 lượt sẽ tự động thả.
 
 ## 🃏 Thẻ Cơ Hội (Chance)
 Hệ thống thẻ cơ hội gồm 18 thẻ có thể thay đổi hoàn toàn cục diện game:
 - **Buff/Debuff tiền tô:** Giảm 50% tiền thuê tiếp theo, Trả gấp đôi tiền thuê tiếp theo.
-- **Tấn Công / Phòng Thủ:** 
+- **Tấn Công / Phòng Thủ:**
     - *Shield:* Tạo 1 Khiên bảo vệ trên 1 thành phố của mình.
     - *Force Sell:* Ép đối thủ bán 1 ô đất (họ nhận lại tiền bán bằng 50% giá trị gốc).
     - *Sabotage:* Giáng cấp 1 nhà của đối thủ.

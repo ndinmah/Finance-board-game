@@ -8,7 +8,7 @@ import {
   MAP_TILES, COLOR_GROUPS, TOTAL_TILES,
   GO_TILE, JAIL_TILE, FESTIVAL_TILE, AIRPORT_TILE,
   GO_SALARY, BAIL_COST, STARTING_MONEY,
-  MAX_PLAYERS, MIN_PLAYERS, TURN_TIMEOUT_MS, BOT_TAKEOVER_TURNS,
+  MAX_PLAYERS, MIN_PLAYERS, TURN_TIMEOUT_MS,
   TAX_TILE, HOTEL_LEVEL, BIRTHDAY_AMOUNT, PENALTY_AMOUNT, BLACKOUT_PASSES,
   ChanceCardId, CHANCE_CARDS
 } from '../config/mapData';
@@ -78,7 +78,7 @@ export class WebopolyRoom extends Room<GameState> {
       const existing = state.players.get(client.sessionId);
       if (existing) {
         existing.isConnected = true;
-        existing.disconnectedTurns = 0;
+        existing.isBot = false;
         this._clearBotTimer(client.sessionId);
         this._pushEvent('reconnect', client.sessionId, '', 0, -1, `${existing.name} đã kết nối lại!`);
         return;
@@ -1713,13 +1713,7 @@ export class WebopolyRoom extends Room<GameState> {
   private _scheduleBotTurn(playerId: string) {
     const player = this.state.players.get(playerId);
     if (!player) return;
-    player.disconnectedTurns += 1;
 
-    if (player.disconnectedTurns > BOT_TAKEOVER_TURNS) {
-      // Eliminate player
-      this._doBankrupt(playerId);
-      return;
-    }
     // Bot will handle via _scheduleBotAction when it's their turn
   }
 

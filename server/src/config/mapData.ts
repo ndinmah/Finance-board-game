@@ -122,7 +122,6 @@ export const STARTING_MONEY = 20000;  // Starting cash per player
 export const MAX_PLAYERS = 6;
 export const MIN_PLAYERS = 2;
 export const TURN_TIMEOUT_MS = 300000; // 5 minutes per turn
-export const BOT_TAKEOVER_TURNS = 3;  // Turns before disconnected player is eliminated
 export const TAX_TILE = 30;
 export const HOTEL_LEVEL = 4;
 export const BIRTHDAY_AMOUNT = 25;

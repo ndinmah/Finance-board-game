@@ -33,7 +33,6 @@ export class Player extends Schema {
   @type('number') jailTurns: number = 0;       // turns remaining in jail
   @type('boolean') isBankrupt: boolean = false;
   @type('boolean') isConnected: boolean = true;
-  @type('number') disconnectedTurns: number = 0;
   @type('string') color: string = '';           // token color
   @type('string') avatarIndex: string = '0';
   @type('boolean') isReady: boolean = false;
