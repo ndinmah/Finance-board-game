@@ -1,8 +1,10 @@
 import { Client, Room } from 'colyseus.js';
 import { useGameStore } from '../store/gameStore';
 
-// Lấy IP/domain hiện tại của trình duyệt thay vì hardcode localhost
-const WS_URL = `ws://${window.location.hostname}:2567`;
+// Lấy IP/domain hiện tại của trình duyệt. Tự động hỗ trợ HTTPS -> WSS và cổng reverse proxy.
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_URL = import.meta.env.VITE_WS_URL || (isLocal ? `ws://${window.location.hostname}:2567` : `${protocol}//${window.location.host}`);
 
 let client: Client | null = null;
 let room: Room | null = null;
@@ -58,9 +60,25 @@ function _bindRoomEvents() {
     store.setError(message || 'Connection error');
   });
 
-  room.onLeave((code) => {
+  room.onLeave(async (code) => {
     console.log(`[Room] Left with code ${code}`);
-    if (code > 1000) store.setError('Mất kết nối. Đang thử kết nối lại...');
+    if (code > 1000) {
+      store.setError('Mất kết nối. Đang thử kết nối lại...');
+      const token = room?.reconnectionToken;
+      if (token) {
+        try {
+          room = await getClient().reconnect(token);
+          _bindRoomEvents();
+          store.setError(null);
+          console.log('[Room] Reconnected successfully!');
+        } catch (e) {
+          console.error('Reconnect failed', e);
+          store.setError('Kết nối thất bại hoàn toàn. Vui lòng tải lại trang.');
+        }
+      } else {
+        store.setError('Không thể khôi phục kết nối. Vui lòng tải lại trang.');
+      }
+    }
   });
 
   // Server-pushed errors (e.g. invalid action)

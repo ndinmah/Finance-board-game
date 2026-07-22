@@ -73,6 +73,9 @@ export class WebopolyRoom extends Room<GameState> {
 
   onJoin(client: Client, options: any) {
     const state = this.state;
+    if (state.players.size >= MAX_PLAYERS) {
+      throw new Error('Phòng đã đầy');
+    }
     if (state.gamePhase !== 'waiting') {
       // Reconnection
       const existing = state.players.get(client.sessionId);
@@ -86,7 +89,12 @@ export class WebopolyRoom extends Room<GameState> {
       throw new Error('Game already started');
     }
 
-    const playerIndex = state.players.size;
+    let playerIndex = 0;
+    const usedIndices = new Set<number>();
+    state.players.forEach((p: Player) => usedIndices.add(Number(p.avatarIndex)));
+    while (usedIndices.has(playerIndex)) {
+      playerIndex++;
+    }
     const player = new Player();
     player.id = client.sessionId;
     player.name = options.name || `Player ${playerIndex + 1}`;
@@ -108,6 +116,7 @@ export class WebopolyRoom extends Room<GameState> {
 
     if (state.gamePhase === 'waiting') {
       state.players.delete(client.sessionId);
+      this._checkReadyToStart();
       return;
     }
 
@@ -115,12 +124,19 @@ export class WebopolyRoom extends Room<GameState> {
     this._pushEvent('disconnect', client.sessionId, '', 0, -1, `${player.name} mất kết nối. Bot đang tiếp quản...`);
 
     // Allow reconnection within 30s, then bot takes over
-    this.allowReconnection(client, 30).then(() => {
-      // Will trigger onJoin again with same sessionId
+    this.allowReconnection(client, 30).then((reconnectedClient) => {
+      const p = this.state.players.get(reconnectedClient.sessionId);
+      if (p) {
+        p.isConnected = true;
+        p.isBot = false;
+        this._pushEvent('reconnect', reconnectedClient.sessionId, '', 0, -1, `${p.name} đã kết nối lại.`);
+      }
     }).catch(() => {
       // Player didn't reconnect — start bot mode
       player.isBot = true;
-      this._scheduleBotTurn(client.sessionId);
+      if (state.currentPlayerId === client.sessionId) {
+        this._scheduleBotAction();
+      }
     });
   }
 
@@ -169,16 +185,21 @@ export class WebopolyRoom extends Room<GameState> {
 
   // ─── Game Start ──────────────────────────────────────────────────────────────
 
+  private _checkReadyToStart() {
+    const state = this.state;
+    if (state.gamePhase !== 'waiting') return;
+    const allReady = state.players.size >= MIN_PLAYERS &&
+      Array.from(state.players.values() as Iterable<Player>).every((p: Player) => p.isReady);
+    if (allReady) this._startGame();
+  }
+
   private _handleReady(client: Client) {
     const state = this.state;
     const player = state.players.get(client.sessionId);
     if (!player || state.gamePhase !== 'waiting') return;
 
     player.isReady = true;
-    const allReady = state.players.size >= MIN_PLAYERS &&
-      Array.from(state.players.values() as Iterable<Player>).every((p: Player) => p.isReady);
-
-    if (allReady) this._startGame();
+    this._checkReadyToStart();
   }
 
   private _handleAddBot(client: Client) {
@@ -186,19 +207,27 @@ export class WebopolyRoom extends Room<GameState> {
     if (state.gamePhase !== 'waiting') return;
     if (state.players.size >= MAX_PLAYERS) return;
 
+    let playerIndex = 0;
+    const usedIndices = new Set<number>();
+    state.players.forEach((p: Player) => usedIndices.add(Number(p.avatarIndex)));
+    while (usedIndices.has(playerIndex)) {
+      playerIndex++;
+    }
+
     const botId = 'bot_' + Math.floor(Math.random() * 100000);
-    const color = PLAYER_COLORS[state.players.size % PLAYER_COLORS.length] || '#888';
+    const color = PLAYER_COLORS[playerIndex % PLAYER_COLORS.length] || '#888';
 
     const p = new Player();
     p.id = botId;
     p.name = 'Bot ' + Math.floor(Math.random() * 100);
     p.money = STARTING_MONEY;
     p.color = color;
-    p.avatarIndex = String(state.players.size % 4);
+    p.avatarIndex = String(playerIndex);
     p.isBot = true;
     p.isReady = true;
 
     state.players.set(botId, p);
+    this._checkReadyToStart();
   }
 
   private _startGame() {
@@ -245,7 +274,7 @@ export class WebopolyRoom extends Room<GameState> {
       if (player.isBankrupt) return;
       let propertyValue = 0;
       state.board.forEach(t => {
-        if (t.ownerId === id) propertyValue += this._getTileSellValue(t) * 2;
+        if (t.ownerId === id) propertyValue += this._getTileTotalValue(t);
       });
       const totalAssets = player.money + propertyValue;
       if (totalAssets > maxAssets) {
@@ -321,11 +350,12 @@ export class WebopolyRoom extends Room<GameState> {
       die2 = Math.max(1, Math.min(6, devData.d2));
     }
 
-    const isDouble = die1 === die2;
+    let isDouble = die1 === die2;
 
     state.dice.die1 = die1;
     state.dice.die2 = die2;
     state.dice.isDouble = isDouble;
+    state.dice.rollCount += 1;
 
     // Jail logic
     if (player.isInJail) {
@@ -333,6 +363,8 @@ export class WebopolyRoom extends Room<GameState> {
         player.isInJail = false;
         player.jailTurns = 0;
         state.doublesCount = 0; // BUG-02 Fix: Không cấp thêm lượt khi ra tù bằng đôi
+        state.dice.isDouble = false; // Ngăn không cho tính là đôi để _advanceTurn() không tặng thêm lượt
+        isDouble = false;
         this._pushEvent('jail_exit', playerId, '', 0, JAIL_TILE, `${player.name} đổ được đôi, thoát tù!`);
       } else {
         player.jailTurns -= 1;
@@ -354,14 +386,6 @@ export class WebopolyRoom extends Room<GameState> {
     const steps = die1 + die2;
     const newPos = (player.position + steps) % TOTAL_TILES;
 
-    // Check if passing Go
-    if (newPos < player.position || (player.position + steps >= TOTAL_TILES)) {
-      player.passCount += 1;
-      this._tickBlackoutTasks(playerId);
-      this._applyMoneyChange(playerId, GO_SALARY, 'go_salary');
-      this._pushEvent('go_salary', playerId, '', GO_SALARY, GO_TILE, `${player.name} qua ô Xuất Phát, nhận ${formatMoney(GO_SALARY)} lương!`);
-    }
-
     if (isDouble) state.doublesCount += 1;
     else state.doublesCount = 0;
 
@@ -370,6 +394,14 @@ export class WebopolyRoom extends Room<GameState> {
       state.doublesCount = 0;
       this._sendToJail(playerId);
       return;
+    }
+
+    // Check if passing Go
+    if (newPos < player.position || (player.position + steps >= TOTAL_TILES)) {
+      player.passCount += 1;
+      this._tickBlackoutTasks(playerId);
+      this._applyMoneyChange(playerId, GO_SALARY, 'go_salary');
+      this._pushEvent('go_salary', playerId, '', GO_SALARY, GO_TILE, `${player.name} qua ô Xuất Phát, nhận ${formatMoney(GO_SALARY)} lương!`);
     }
 
     state.turnPhase = 'moving';
@@ -389,6 +421,7 @@ export class WebopolyRoom extends Room<GameState> {
 
     if (collectGoIfPass && target < player.position) {
       player.passCount += 1;
+      this._tickBlackoutTasks(playerId);
       this._applyMoneyChange(playerId, GO_SALARY, 'go_salary');
       this._pushEvent('go_salary', playerId, '', GO_SALARY, GO_TILE, `${player.name} qua Xuất Phát, nhận ${formatMoney(GO_SALARY)}!`);
     }
@@ -420,6 +453,7 @@ export class WebopolyRoom extends Room<GameState> {
 
   private _processLanding(playerId: string) {
     const state = this.state;
+    if (state.gamePhase === 'ended') return;
     const player = state.players.get(playerId);
     if (!player) return;
 
@@ -517,7 +551,8 @@ export class WebopolyRoom extends Room<GameState> {
     } else if (tile.ownerId === playerId) {
       // Own property — check if can upgrade
       const maxHouses = this._getMaxHouses(player, tile.houseCount);
-      if (tile.tileType === 'property' && tile.houseCount < maxHouses && player.money >= tile.buildCost) {
+      const nextCost = tile.houseCount === 3 ? tile.hotelCost : tile.buildCost;
+      if (tile.tileType === 'property' && tile.houseCount < maxHouses && player.money >= nextCost) {
         state.turnPhase = 'upgrade_decision';
         this._startTurnTimer();
         this._pushEvent('own_land', playerId, '', 0, tile.id, `${player.name} đứng trên đất của mình. Có thể nâng cấp.`);
@@ -593,7 +628,7 @@ export class WebopolyRoom extends Room<GameState> {
     state.board.forEach(t => {
       if (t.ownerId === playerId) {
         ownedTiles.push(t);
-        propertyValue += this._getTileSellValue(t) * 2; // Original logic calculated full value for tax, which is 2 * sell value
+        propertyValue += this._getTileTotalValue(t);
       }
     });
 
@@ -625,25 +660,25 @@ export class WebopolyRoom extends Room<GameState> {
     if (!tile.isActive) return 0;
     if (!tile.ownerId) return tile.baseRent;
     const state = this.state;
+    let rent = 0;
     if (tile.tileType === 'port') {
       let portCount = 0;
       state.board.forEach(t => {
         if (t.tileType === 'port' && t.ownerId === tile.ownerId) portCount++;
       });
-      if (portCount === 1) return 25;
-      if (portCount === 2) return 50;
-      if (portCount === 3) return 100;
-      return 200; // 4 ports gives 200 rent (if game hasn't ended yet)
-    }
-
-    let rent = 0;
-    switch (tile.houseCount) {
-      case 0: rent = tile.baseRent; break;
-      case 1: rent = tile.rent1; break;
-      case 2: rent = tile.rent2; break;
-      case 3: rent = tile.rent3; break;
-      case 4: rent = tile.rentHotel; break;
-      default: rent = tile.baseRent;
+      if (portCount === 1) rent = 25;
+      else if (portCount === 2) rent = 50;
+      else if (portCount === 3) rent = 100;
+      else rent = 200; // 4 ports gives 200 rent (if game hasn't ended yet)
+    } else {
+      switch (tile.houseCount) {
+        case 0: rent = tile.baseRent; break;
+        case 1: rent = tile.rent1; break;
+        case 2: rent = tile.rent2; break;
+        case 3: rent = tile.rent3; break;
+        case 4: rent = tile.rentHotel; break;
+        default: rent = tile.baseRent;
+      }
     }
     // Monopoly bonus: x2 rent if owner has all tiles in group (custom rule)
     if (tile.hasMonopoly) {
@@ -750,6 +785,7 @@ export class WebopolyRoom extends Room<GameState> {
     this._applyMoneyChange(client.sessionId, -buyoutPrice, 'buyout_pay');
     this._applyMoneyChange(oldOwnerId, buyoutPrice, 'buyout_receive');
 
+    this._resetTileEffects(tile);
     tile.ownerId = client.sessionId;
     this._updateAllRents();
 
@@ -761,7 +797,8 @@ export class WebopolyRoom extends Room<GameState> {
 
     // Check if player can immediately upgrade after buyout
     const maxHouses = this._getMaxHouses(player, tile.houseCount);
-    if (tile.houseCount < maxHouses && player.money >= tile.buildCost) {
+    const nextCost = tile.houseCount === 3 ? tile.hotelCost : tile.buildCost;
+    if (tile.houseCount < maxHouses && player.money >= nextCost) {
       state.turnPhase = 'upgrade_decision';
       this._startTurnTimer();
       this._pushEvent('own_land', client.sessionId, '', 0, tile.id, `${player.name} vừa cướp đất thành công. Có thể nâng cấp ngay!`);
@@ -898,6 +935,9 @@ export class WebopolyRoom extends Room<GameState> {
 
   private _handlePayBail(client: Client) {
     const state = this.state;
+    if (client.sessionId !== state.currentPlayerId) return;
+    if (state.turnPhase !== 'wait_roll') return;
+
     const player = state.players.get(client.sessionId);
     if (!player || !player.isInJail) return;
     if (player.money < BAIL_COST) { client.send('error', { message: 'Không đủ tiền bảo lãnh!' }); return; }
@@ -969,7 +1009,7 @@ export class WebopolyRoom extends Room<GameState> {
 
     // Find tiles owned by this player
     const ownedTiles = Array.from(state.board.values() as Iterable<MapTile>).filter(
-      (t: MapTile) => t.ownerId === playerId && t.tileType === 'property'
+      (t: MapTile) => t.ownerId === playerId && (t.tileType === 'property' || t.tileType === 'port')
     );
 
     if (ownedTiles.length === 0 || player.money < 50) {
@@ -1069,6 +1109,7 @@ export class WebopolyRoom extends Room<GameState> {
         let hasValidTarget = false;
         state.board.forEach(t => {
           if (t.ownerId && t.ownerId !== playerId && t.houseCount < HOTEL_LEVEL) {
+            if (card === 'SABOTAGE' && t.tileType === 'port') return;
             hasValidTarget = true;
           }
         });
@@ -1083,7 +1124,7 @@ export class WebopolyRoom extends Room<GameState> {
         break;
       case 'CHANCE_FESTIVAL':
         let hasPropertyForFestival = false;
-        state.board.forEach(t => { if (t.ownerId === playerId && t.tileType === 'property') hasPropertyForFestival = true; });
+        state.board.forEach(t => { if (t.ownerId === playerId && (t.tileType === 'property' || t.tileType === 'port')) hasPropertyForFestival = true; });
         if (!hasPropertyForFestival) {
           this._pushEvent('chance_skip', playerId, '', 0, player.position, `${player.name} không có công trình để tổ chức Festival. Bỏ qua thẻ.`);
           this._advanceTurn();
@@ -1185,6 +1226,7 @@ export class WebopolyRoom extends Room<GameState> {
 
     const tile = state.board.get(String(data.tileId));
     if (!tile || !tile.ownerId || tile.ownerId === client.sessionId || tile.houseCount >= HOTEL_LEVEL) return;
+    if (state.pendingChanceEffect === 'SABOTAGE' && tile.tileType === 'port') return;
 
     const targetPlayer = state.players.get(tile.ownerId);
     if (tile.isShielded) {
@@ -1206,15 +1248,18 @@ export class WebopolyRoom extends Room<GameState> {
         tile.houseCount -= 1;
         this._pushEvent('chance_sabotage', client.sessionId, tile.ownerId, 0, tile.id, `${tile.name} bị hạ 1 cấp nhà!`);
         tile.currentRent = this._calculateRent(tile);
-      } else {
+      } else if (tile.tileType === 'property') {
         this._pushEvent('chance_sabotage', client.sessionId, tile.ownerId, 0, tile.id, `${tile.name} bị hạ xuống thành đất vô chủ!`);
         this._resetTileEffectsAndOwner(tile);
+      } else {
+        this._pushEvent('chance_sabotage', client.sessionId, tile.ownerId, 0, tile.id, `SABOTAGE thất bại do Cảng không thể bị phá hủy!`);
       }
     } else if (effect === 'EARTHQUAKE') {
       this._pushEvent('chance_earthquake', client.sessionId, tile.ownerId, 0, tile.id, `${tile.name} bị Động Đất phá hủy hoàn toàn!`);
       this._resetTileEffectsAndOwner(tile);
     } else if (effect === 'BLACKOUT') {
       tile.isActive = false;
+      this._updateAllRents();
       this._pushEvent('chance_blackout', client.sessionId, tile.ownerId, 0, tile.id, `${tile.name} bị Cúp Điện trong 3 lượt (của ${targetPlayer?.name})!`);
       if (targetPlayer) {
         const tasks = JSON.parse(targetPlayer.blackoutTasksJson || '[]');
@@ -1281,7 +1326,7 @@ export class WebopolyRoom extends Room<GameState> {
     const data = parsed.data;
 
     const tile = state.board.get(String(data.tileId));
-    if (!tile || tile.ownerId !== client.sessionId || tile.tileType !== 'property') return;
+    if (!tile || tile.ownerId !== client.sessionId || (tile.tileType !== 'property' && tile.tileType !== 'port')) return;
 
     state.activeFestivalTile = tile.id;
     this._updateAllRents();
@@ -1293,6 +1338,9 @@ export class WebopolyRoom extends Room<GameState> {
 
   private _handleUseJailCard(client: Client) {
     const state = this.state;
+    if (client.sessionId !== state.currentPlayerId) return;
+    if (state.turnPhase !== 'wait_roll') return;
+
     const player = state.players.get(client.sessionId);
     if (!player || !player.isInJail || !player.hasJailCard) return;
 
@@ -1318,7 +1366,13 @@ export class WebopolyRoom extends Room<GameState> {
       }
     } else if (state.turnPhase === 'chance_attack_select') {
       const validTiles: MapTile[] = [];
-      state.board.forEach(t => { if (t.ownerId && t.ownerId !== playerId && t.houseCount < HOTEL_LEVEL) validTiles.push(t); });
+      const isSabotage = state.pendingChanceEffect === 'SABOTAGE';
+      state.board.forEach(t => {
+        if (t.ownerId && t.ownerId !== playerId && t.houseCount < HOTEL_LEVEL) {
+          if (isSabotage && t.tileType === 'port') return;
+          validTiles.push(t);
+        }
+      });
       if (validTiles.length > 0) {
         this._handleChanceAttackSelect(c, { tileId: validTiles[Math.floor(Math.random() * validTiles.length)].id });
       } else {
@@ -1369,6 +1423,8 @@ export class WebopolyRoom extends Room<GameState> {
         state.board.forEach(t => { if (t.ownerId === p.id) totalSellValue += this._getTileSellValue(t); });
 
         if (totalSellValue < shortfall) {
+          p.debtAmount = shortfall;
+          p.debtTo = playerId;
           this._doBankrupt(p.id);
         } else {
           p.debtAmount = shortfall;
@@ -1392,17 +1448,23 @@ export class WebopolyRoom extends Room<GameState> {
     const remaining = tasks.map(t => {
       t.passesLeft -= 1;
       return t;
-    }).filter(t => {
-      if (t.passesLeft <= 0) {
-        const tile = this.state.board.get(String(t.tileId));
-        if (tile) tile.isActive = true;
-        changed = true;
-        return false;
-      }
-      return true;
-    });
-    player.blackoutTasksJson = JSON.stringify(remaining);
-    if (changed) this._updateAllRents();
+    }).filter(t => t.passesLeft > 0);
+    
+    if (remaining.length !== tasks.length) {
+      player.blackoutTasksJson = JSON.stringify(remaining);
+      const stillBlackedOut = new Set<number>();
+      remaining.forEach(t => stillBlackedOut.add(t.tileId));
+      
+      this.state.board.forEach(tile => {
+        if (tile.ownerId === playerId && !tile.isActive && !stillBlackedOut.has(tile.id)) {
+          tile.isActive = true;
+          changed = true;
+        }
+      });
+      if (changed) this._updateAllRents();
+    } else {
+      player.blackoutTasksJson = JSON.stringify(remaining);
+    }
   }
 
   private _resetTileEffects(tile: MapTile) {
@@ -1583,7 +1645,9 @@ export class WebopolyRoom extends Room<GameState> {
     if (activePlayers.length <= 1) {
       this._endGame(activePlayers[0] || '');
     } else {
-      this._advanceTurn();
+      if (playerId === state.currentPlayerId) {
+        this._advanceTurn();
+      }
     }
   }
 
@@ -1591,6 +1655,7 @@ export class WebopolyRoom extends Room<GameState> {
 
   private _advanceTurn() {
     const state = this.state;
+    if (state.gamePhase === 'ended') return;
     this.turnTimer?.clear();
     state.pendingChanceEffect = '';
 
@@ -1864,7 +1929,7 @@ export class WebopolyRoom extends Room<GameState> {
     return 0;
   }
 
-  private _getTileSellValue(tile: MapTile): number {
+  private _getTileTotalValue(tile: MapTile): number {
     let value = tile.price;
     if (tile.tileType !== 'port' && tile.houseCount > 0) {
       if (tile.houseCount === 4) {
@@ -1873,7 +1938,11 @@ export class WebopolyRoom extends Room<GameState> {
         value += tile.houseCount * tile.buildCost;
       }
     }
-    return Math.floor(value * 0.5);
+    return value;
+  }
+
+  private _getTileSellValue(tile: MapTile): number {
+    return Math.floor(this._getTileTotalValue(tile) * 0.5);
   }
 
   private _pushEvent(type: string, playerId: string, targetId: string, amount: number, tileId: number, message: string) {

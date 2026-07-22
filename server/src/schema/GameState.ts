@@ -61,6 +61,7 @@ export class Dice extends Schema {
   @type('number') die1: number = 1;
   @type('number') die2: number = 1;
   @type('boolean') isDouble: boolean = false;
+  @type('number') rollCount: number = 0;
 }
 
 // ─── Chat Message ─────────────────────────────────────────────────────────────
