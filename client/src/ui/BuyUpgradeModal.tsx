@@ -51,6 +51,7 @@ export default function BuyUpgradeModal() {
   const myPlayerId = useGameStore(s => s.myPlayerId);
   const me = useGameStore(s => s.players.get(s.myPlayerId));
   const selectedTileId = useGameStore(s => s.selectedTileId);
+  const activeFestivalTile = useGameStore(s => s.activeFestivalTile);
   const tile = useGameStore(s => {
     if (s.turnPhase === 'go_remote_upgrade' && s.selectedTileId !== null) {
       return s.board.get(s.selectedTileId);
@@ -106,7 +107,11 @@ export default function BuyUpgradeModal() {
     const portPrice = tile.price || 200;
     const canAfford = me.money >= portPrice;
     const rentMap: Record<number, number> = { 1: 25, 2: 50, 3: 100, 4: 0 };
-    const expectedRent = rentMap[nextPortCount] || 0;
+    let expectedRent = rentMap[nextPortCount] || 0;
+    if (tile.hasMonopoly) expectedRent *= 2;
+    if (tile.isTouristSpot) expectedRent *= 2;
+    if (activeFestivalTile === tile.id) expectedRent *= 2;
+    if (!tile.isActive) expectedRent = 0;
 
     return (
       <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[0.5333rem] flex items-center justify-center z-[1000] p-[1rem]" onClick={handleSkip}>
@@ -193,8 +198,22 @@ export default function BuyUpgradeModal() {
   else if (selectedLevel === 2) rentAtLevel = tile.rent2;
   else if (selectedLevel === 3) rentAtLevel = tile.rent3;
   else if (selectedLevel === 4) rentAtLevel = tile.rentHotel;
-  if (tile.hasMonopoly && selectedLevel === 0) rentAtLevel *= 2;
+  
+  let willHaveMonopoly = tile.hasMonopoly;
+  if (isBuy && tile.tileType === 'property' && tile.colorGroup) {
+    let ownsAllOthers = true;
+    board.forEach((t) => {
+      if (t.colorGroup === tile.colorGroup && t.id !== tile.id) {
+        if (t.ownerId !== myPlayerId) ownsAllOthers = false;
+      }
+    });
+    willHaveMonopoly = ownsAllOthers;
+  }
+  
+  if (willHaveMonopoly) rentAtLevel *= 2;
   if (tile.isTouristSpot) rentAtLevel *= 2;
+  if (activeFestivalTile === tile.id) rentAtLevel *= 2;
+  if (!tile.isActive) rentAtLevel = 0;
   const canAfford = me.money >= totalCost;
   const handleConfirm = () => {
     if (!canAfford) return;

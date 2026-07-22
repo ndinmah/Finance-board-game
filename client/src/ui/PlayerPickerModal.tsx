@@ -46,10 +46,10 @@ export default function PlayerPickerModal({ onClose }: Props) {
                 className="w-full flex items-center p-3 bg-white border border-[rgba(0,0,0,0.08)] rounded-[0.8rem] shadow-sm hover:border-[#8b5cf6] hover:shadow-md transition-all text-left group"
               >
                 <div 
-                  className="w-12 h-12 rounded-full border-2 border-white shadow-sm flex-shrink-0 mr-4"
+                  className="w-12 h-12 rounded-full border-2 border-white shadow-sm flex-shrink-0 mr-4 flex items-center justify-center text-white font-bold text-xl"
                   style={{ backgroundColor: p.color }}
                 >
-                  <img src={`/images/avt/avt_${p.avatarIndex}.jpg`} alt={p.name} className="w-full h-full rounded-full object-cover" />
+                  {p.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1">
                   <div className="font-bold text-[1.0667rem] text-[#1f2937] group-hover:text-[#8b5cf6] transition-colors">{p.name}</div>

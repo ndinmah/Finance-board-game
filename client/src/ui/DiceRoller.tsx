@@ -34,7 +34,7 @@ export default function DiceRoller() {
 
   // When server updates dice, animate then settle
   useEffect(() => {
-    if (dice.die1 === 1 && dice.die2 === 1) return;
+    if (dice.rollCount === 0) return;
     setRolling(true);
     let frames = 0;
     rollTimer.current = setInterval(() => {
@@ -50,7 +50,7 @@ export default function DiceRoller() {
       }
     }, 60);
     return () => { if (rollTimer.current) clearInterval(rollTimer.current); };
-  }, [dice.die1, dice.die2]);
+  }, [dice.rollCount, dice.die1, dice.die2]);
 
   const handleRoll = () => { 
     if (!canRoll || rolling) return; 

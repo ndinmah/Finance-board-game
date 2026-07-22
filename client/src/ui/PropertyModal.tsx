@@ -7,7 +7,7 @@ import { TILE_IMAGE } from '../game/tileImages';
 interface Props { tileId: number; onClose: () => void; }
 
 export default function PropertyModal({ tileId, onClose }: Props) {
-  const { board, players, myPlayerId, turnPhase, currentPlayerId } = useGameStore();
+  const { board, players, myPlayerId, turnPhase, currentPlayerId, pendingChanceEffect } = useGameStore();
   const tile = board.get(tileId);
   if (!tile || (tile.tileType !== 'property' && tile.tileType !== 'port')) { onClose(); return null; }
 
@@ -171,8 +171,8 @@ export default function PropertyModal({ tileId, onClose }: Props) {
             (isMyTurn && isOwner && turnPhase === 'festival_select') ||
             (isMyTurn && isOwner && turnPhase === 'chance_shield_select') ||
             (isMyTurn && isOwner && turnPhase === 'chance_give_city_select') ||
-            (isMyTurn && isOwner && turnPhase === 'chance_festival_city_select' && tile.tileType === 'property') ||
-            (isMyTurn && !isOwner && tile.ownerId !== '' && turnPhase === 'chance_attack_select')
+            (isMyTurn && isOwner && turnPhase === 'chance_festival_city_select' && (tile.tileType === 'property' || tile.tileType === 'port')) ||
+            (isMyTurn && !isOwner && tile.ownerId !== '' && turnPhase === 'chance_attack_select' && tile.houseCount < 4 && !(pendingChanceEffect === 'SABOTAGE' && tile.tileType === 'port'))
           ) && (
             <div className="p-[0_1.6rem_1rem] bg-[#f0eadd] border-t border-[rgba(0,0,0,0.06)] flex flex-col items-center gap-3 shrink-0">
               {isMyTurn && isOwner && turnPhase === 'pay_debt' && (
@@ -204,13 +204,13 @@ export default function PropertyModal({ tileId, onClose }: Props) {
                 </button>
               )}
 
-              {turnPhase === 'chance_festival_city_select' && isMyTurn && isOwner && tile.tileType === 'property' && (
+              {turnPhase === 'chance_festival_city_select' && isMyTurn && isOwner && (tile.tileType === 'property' || tile.tileType === 'port') && (
                 <button className="btn-3d btn-3d-purple text-[0.9333rem] px-8 py-2" onClick={() => { send('chanceFestivalSelect', { tileId }); onClose(); }}>
                   🎉 Tổ chức Lễ Hội miễn phí
                 </button>
               )}
 
-              {turnPhase === 'chance_attack_select' && isMyTurn && !isOwner && tile.ownerId !== '' && (
+              {turnPhase === 'chance_attack_select' && isMyTurn && !isOwner && tile.ownerId !== '' && tile.houseCount < 4 && !(pendingChanceEffect === 'SABOTAGE' && tile.tileType === 'port') && (
                 <button className="btn-3d btn-3d-red text-[0.9333rem] px-8 py-2" onClick={() => { send('chanceAttackSelect', { tileId }); onClose(); }}>
                   ⚔️ Tấn công ô này
                 </button>

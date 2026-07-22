@@ -93,13 +93,15 @@ export default function GameScreen() {
       });
     } else if (turnPhase === 'chance_festival_city_select') {
       board.forEach((tile, id) => {
-        if (tile.ownerId === useGameStore.getState().myPlayerId && tile.tileType === 'property') {
+        if (tile.ownerId === useGameStore.getState().myPlayerId && (tile.tileType === 'property' || tile.tileType === 'port')) {
           validTiles.add(id);
         }
       });
     } else if (turnPhase === 'chance_attack_select') {
+      const state = useGameStore.getState();
       board.forEach((tile, id) => {
-        if (tile.ownerId && tile.ownerId !== useGameStore.getState().myPlayerId) {
+        if (tile.ownerId && tile.ownerId !== state.myPlayerId && tile.houseCount < 4) {
+          if (state.pendingChanceEffect === 'SABOTAGE' && tile.tileType === 'port') return;
           validTiles.add(id);
         }
       });
