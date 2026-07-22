@@ -80,7 +80,7 @@ Hệ thống thẻ cơ hội gồm 18 thẻ có thể thay đổi hoàn toàn c�
     - *Sabotage:* Giáng cấp 1 nhà của đối thủ.
     - *Earthquake:* Xóa sổ hoàn toàn 1 mảnh đất (về trạng thái vô chủ).
     - *Blackout:* Cúp điện thành phố đối thủ. Thành phố bị mất hiệu lực thu tiền cho đến khi đối thủ đi qua vạch Xuất Phát 3 lần!
-    - *Lưu ý:* Khiên bảo vệ có thể đỡ được 1 lần các đòn Tấn công.
+    - *Lưu ý:* Khiên bảo vệ có thể đỡ được 1 lần các đòn Tấn công. SABOTAGE, EARTHQUAKE, FORCE_SELL và BLACKOUT đều không thể chọn ô có Khách Sạn.
 - **Dịch Chuyển:** Bay đến Sân bay, bay về Xuất Phát, bay đến ô Lễ Hội, dính bẫy bay về ô Thuế / ô Nhà Tù.
 - **Sự Kiện Đặc Biệt:** Nhận 25K tiền sinh nhật từ MỖI đối thủ, Bị phạt 50K ngẫu nhiên, Tặng 1 thành phố cho người khác, Thẻ ra tù miễn phí.
 
