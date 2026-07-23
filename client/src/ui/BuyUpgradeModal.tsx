@@ -62,7 +62,15 @@ export default function BuyUpgradeModal() {
 
   const isBuy = isMyTurn && turnPhase === 'buy_decision';
   const isUpgrade = isMyTurn && (turnPhase === 'upgrade_decision' || turnPhase === 'go_remote_upgrade');
-  const isActive = isBuy || (isUpgrade && tile !== undefined && (turnPhase !== 'go_remote_upgrade' || selectedTileId !== null));
+  const isValidRemoteUpgrade = turnPhase !== 'go_remote_upgrade' || (
+    selectedTileId !== null &&
+    tile?.ownerId === myPlayerId &&
+    tile.tileType === 'property' &&
+    !!me &&
+    tile.houseCount < getMaxHouses(me.passCount || 0, tile.houseCount) &&
+    me.money >= (tile.houseCount === 3 ? tile.hotelCost : tile.buildCost)
+  );
+  const isActive = isBuy || (isUpgrade && tile !== undefined && isValidRemoteUpgrade);
 
   const [selectedLevel, setSelectedLevel] = useState<number>(0);
   const [prevInputs, setPrevInputs] = useState<{ tileId: number; money: number; passCount: number; isBuy: boolean } | null>(null);

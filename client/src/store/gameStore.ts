@@ -44,8 +44,7 @@ export interface PlayerState {
 
 export interface DiceState { die1: number; die2: number; isDouble: boolean; rollCount: number; }
 
-export interface ChatMsg { playerId: string; playerName: string; text: string; timestamp: number; }
-export interface GameEvt  { type: string; playerId: string; targetId: string; amount: number; tileId: number; message: string; timestamp: number; }
+export interface GameEvt  { type: string; playerId: string; targetId: string; amount: number; tileId: number; cardId: string; message: string; timestamp: number; }
 
 export type GamePhase = 'waiting' | 'playing' | 'ended';
 export type TurnPhase = 'wait_roll' | 'moving' | 'land_event' | 'buy_decision' | 'buyout_decision' | 'upgrade_decision' | 'go_remote_upgrade' | 'airport_select' | 'festival_select' | 'game_over' | 'pay_debt' | 'chance_shield_select' | 'chance_attack_select' | 'chance_give_city_select' | 'chance_give_city_target' | 'chance_festival_city_select';
@@ -60,12 +59,12 @@ interface GameStore {
   currentPlayerId: string;
   turnNumber: number;
   winnerId: string;
+  movementMode: 'steps' | 'teleport';
   activeFestivalTile: number;
   pendingChanceEffect: string;
   players: Map<string, PlayerState>;
   board: Map<number, TileState>;
   dice: DiceState;
-  chat: ChatMsg[];
   events: GameEvt[];
   turnOrder: string[];
 
@@ -90,12 +89,12 @@ const defaultState = {
   currentPlayerId: '',
   turnNumber: 0,
   winnerId: '',
+  movementMode: 'steps' as const,
   activeFestivalTile: -1,
   pendingChanceEffect: '',
   players: new Map<string, PlayerState>(),
   board: new Map<number, TileState>(),
   dice: { die1: 1, die2: 1, isDouble: false, rollCount: 0 },
-  chat: [] as ChatMsg[],
   events: [] as GameEvt[],
   turnOrder: [] as string[],
   error: null as string | null,
@@ -108,12 +107,36 @@ const DEV_OPPONENT_ID = 'dev2';
 const DEV_GO_SALARY = 300;
 const DEV_BAIL_COST = 200;
 const DEV_HOTEL_LEVEL = 4;
+const DEV_MOVE_ANIMATION_FALLBACK_MS = 9000;
 const DEV_CHANCE_CARDS = [
   'DISCOUNT_RENT', 'DOUBLE_RENT', 'SHIELD', 'FORCE_SELL', 'SABOTAGE',
   'EARTHQUAKE', 'BLACKOUT', 'CHANCE_FESTIVAL', 'GIVE_CITY', 'GOTO_AIRPORT',
   'GOTO_START', 'GOTO_ACTIVE_FESTIVAL', 'GOTO_FESTIVAL_CORNER', 'GOTO_TAX',
   'GOTO_JAIL', 'BIRTHDAY', 'PENALTY', 'JAIL_CARD',
 ] as const;
+type DevChanceCard = typeof DEV_CHANCE_CARDS[number];
+let devChanceDeck: DevChanceCard[] = [];
+let devMovementFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+let devMovementFallbackGeneration = 0;
+
+const clearDevMovementFallback = () => {
+  devMovementFallbackGeneration += 1;
+  if (devMovementFallbackTimer !== null) {
+    window.clearTimeout(devMovementFallbackTimer);
+    devMovementFallbackTimer = null;
+  }
+};
+
+const drawDevChanceCard = (): DevChanceCard => {
+  if (devChanceDeck.length === 0) {
+    devChanceDeck = [...DEV_CHANCE_CARDS];
+    for (let i = devChanceDeck.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [devChanceDeck[i], devChanceDeck[j]] = [devChanceDeck[j], devChanceDeck[i]];
+    }
+  }
+  return devChanceDeck.pop()!;
+};
 
 type DevDraft = {
   players: Map<string, PlayerState>;
@@ -123,6 +146,7 @@ type DevDraft = {
   turnNumber: number;
   gamePhase: GamePhase;
   winnerId: string;
+  movementMode: 'steps' | 'teleport';
   activeFestivalTile: number;
   pendingChanceEffect: string;
   selectedTileId: number | null;
@@ -138,6 +162,7 @@ const cloneDevDraft = (state: GameStore): DevDraft => ({
   turnNumber: state.turnNumber,
   gamePhase: state.gamePhase,
   winnerId: state.winnerId,
+  movementMode: state.movementMode,
   activeFestivalTile: state.activeFestivalTile,
   pendingChanceEffect: state.pendingChanceEffect,
   selectedTileId: state.selectedTileId,
@@ -145,8 +170,8 @@ const cloneDevDraft = (state: GameStore): DevDraft => ({
   devDoublesCount: state.devDoublesCount,
 });
 
-const pushDevEvent = (draft: DevDraft, type: string, playerId: string, targetId: string, amount: number, tileId: number, message: string) => {
-  draft.events.push({ type, playerId, targetId, amount, tileId, message, timestamp: Date.now() });
+const pushDevEvent = (draft: DevDraft, type: string, playerId: string, targetId: string, amount: number, tileId: number, message: string, cardId = '') => {
+  draft.events.push({ type, playerId, targetId, amount, tileId, cardId, message, timestamp: Date.now() });
   if (draft.events.length > 50) draft.events.shift();
 };
 
@@ -325,6 +350,7 @@ const moveDevPlayerTo = (draft: DevDraft, playerId: string, target: number, coll
     player.passCount += 1;
     tickDevBlackouts(draft, playerId);
   }
+  draft.movementMode = 'teleport';
   player.position = target;
 };
 
@@ -390,7 +416,7 @@ const resolveDevProperty = (draft: DevDraft, playerId: string, tile: TileState) 
     return;
   }
   const buyoutPrice = getDevTileTotalValue(tile) * 2;
-  if (tile.tileType !== 'port' && tile.houseCount < DEV_HOTEL_LEVEL && player.money >= buyoutPrice) draft.turnPhase = 'buyout_decision';
+  if (tile.tileType !== 'port' && !tile.isShielded && tile.houseCount < DEV_HOTEL_LEVEL && player.money >= buyoutPrice) draft.turnPhase = 'buyout_decision';
   else finishDevTurn(draft);
 };
 
@@ -414,12 +440,12 @@ const resolveDevBirthday = (draft: DevDraft, playerId: string) => {
   if (draft.gamePhase !== 'ended') finishDevTurn(draft);
 };
 
-const resolveDevChance = (draft: DevDraft, playerId: string, card: typeof DEV_CHANCE_CARDS[number]) => {
+const resolveDevChance = (draft: DevDraft, playerId: string, card: DevChanceCard) => {
   const player = draft.players.get(playerId);
   if (!player) return;
   const owned = Array.from(draft.board.values()).filter(tile => tile.ownerId === playerId);
   const targets = Array.from(draft.board.values()).filter(tile => tile.ownerId && tile.ownerId !== playerId && tile.houseCount < DEV_HOTEL_LEVEL);
-  pushDevEvent(draft, 'chance', playerId, '', 0, player.position, `${player.name} rút thẻ Cơ Hội: [${card}]`);
+  pushDevEvent(draft, 'chance', playerId, '', 0, player.position, `${player.name} rút thẻ Cơ Hội: [${card}]`, card);
 
   if (card === 'DISCOUNT_RENT' || card === 'DOUBLE_RENT') {
     player.nextRentMultiplier = card === 'DISCOUNT_RENT' ? 0.5 : 2;
@@ -439,24 +465,27 @@ const resolveDevChance = (draft: DevDraft, playerId: string, card: typeof DEV_CH
   } else if (card === 'GOTO_AIRPORT') {
     moveDevPlayerTo(draft, playerId, 24, false);
     draft.devDoublesCount = 0;
-    finishDevTurn(draft);
+    draft.turnPhase = 'moving';
   } else if (card === 'GOTO_START') {
     moveDevPlayerTo(draft, playerId, 0, true);
-    resolveDevLanding(draft, playerId);
+    draft.turnPhase = 'moving';
   } else if (card === 'GOTO_ACTIVE_FESTIVAL') {
     if (draft.activeFestivalTile < 0) finishDevTurn(draft);
     else {
-      moveDevPlayerTo(draft, playerId, draft.activeFestivalTile, true);
-      resolveDevLanding(draft, playerId);
+      moveDevPlayerTo(draft, playerId, draft.activeFestivalTile, false);
+      draft.turnPhase = 'moving';
     }
   } else if (card === 'GOTO_FESTIVAL_CORNER') {
-    moveDevPlayerTo(draft, playerId, 16, true);
-    resolveDevLanding(draft, playerId);
+    moveDevPlayerTo(draft, playerId, 16, false);
+    draft.turnPhase = 'moving';
   } else if (card === 'GOTO_TAX') {
-    moveDevPlayerTo(draft, playerId, 30, true);
-    resolveDevTax(draft, playerId, 30);
-  } else if (card === 'GOTO_JAIL') sendDevToJail(draft, playerId);
-  else if (card === 'BIRTHDAY') resolveDevBirthday(draft, playerId);
+    moveDevPlayerTo(draft, playerId, 30, false);
+    draft.turnPhase = 'moving';
+  } else if (card === 'GOTO_JAIL') {
+    moveDevPlayerTo(draft, playerId, 8, false);
+    draft.devDoublesCount = 0;
+    draft.turnPhase = 'moving';
+  } else if (card === 'BIRTHDAY') resolveDevBirthday(draft, playerId);
   else if (card === 'PENALTY') {
     const shortfall = chargeDevPlayer(draft, playerId, 50);
     if (!startDevDebt(draft, playerId, shortfall, 'bank', player.position)) finishDevTurn(draft);
@@ -485,7 +514,7 @@ function resolveDevLanding(draft: DevDraft, playerId: string) {
     const hasOwnedTile = Array.from(draft.board.values()).some(t => t.ownerId === playerId);
     if (hasOwnedTile && player.money >= 50) draft.turnPhase = 'festival_select'; else finishDevTurn(draft);
   } else if (tile.tileType === 'chance') {
-    resolveDevChance(draft, playerId, DEV_CHANCE_CARDS[Math.floor(Math.random() * DEV_CHANCE_CARDS.length)]);
+    resolveDevChance(draft, playerId, drawDevChanceCard());
   } else if (tile.tileType === 'go') {
     if (Math.random() < 0.5) draft.turnPhase = 'wait_roll';
     else {
@@ -498,6 +527,26 @@ function resolveDevLanding(draft: DevDraft, playerId: string) {
       if (canUpgrade) draft.turnPhase = 'go_remote_upgrade'; else finishDevTurn(draft);
     }
   } else finishDevTurn(draft);
+}
+
+function scheduleDevMovementFallback(playerId: string, targetPosition: number) {
+  clearDevMovementFallback();
+  const generation = devMovementFallbackGeneration;
+  devMovementFallbackTimer = window.setTimeout(() => {
+    if (generation !== devMovementFallbackGeneration) return;
+    devMovementFallbackTimer = null;
+    let followUpMovementTarget: number | null = null;
+    useGameStore.setState(current => {
+      if (current.turnPhase !== 'moving' || current.players.get(playerId)?.position !== targetPosition) return {};
+      const landingDraft = cloneDevDraft(current);
+      resolveDevLanding(landingDraft, playerId);
+      if (landingDraft.turnPhase === 'moving') {
+        followUpMovementTarget = landingDraft.players.get(playerId)?.position ?? null;
+      }
+      return landingDraft;
+    });
+    if (followUpMovementTarget !== null) scheduleDevMovementFallback(playerId, followUpMovementTarget);
+  }, DEV_MOVE_ANIMATION_FALLBACK_MS);
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -530,11 +579,8 @@ export const useGameStore = create<GameStore>((set) => ({
       });
     });
 
-    const chat: ChatMsg[] = [];
-    state.chat?.forEach((m: any) => chat.push({ playerId: m.playerId, playerName: m.playerName, text: m.text, timestamp: m.timestamp }));
-
     const events: GameEvt[] = [];
-    state.events?.forEach((e: any) => events.push({ type: e.type, playerId: e.playerId, targetId: e.targetId, amount: e.amount, tileId: e.tileId, message: e.message, timestamp: e.timestamp }));
+    state.events?.forEach((e: any) => events.push({ type: e.type, playerId: e.playerId, targetId: e.targetId, amount: e.amount, tileId: e.tileId, cardId: e.cardId || '', message: e.message, timestamp: e.timestamp }));
 
     const turnOrder: string[] = [];
     state.turnOrder?.forEach((id: string) => turnOrder.push(id));
@@ -546,20 +592,26 @@ export const useGameStore = create<GameStore>((set) => ({
       currentPlayerId: state.currentPlayerId || '',
       turnNumber: state.turnNumber || 0,
       winnerId: state.winnerId || '',
+      movementMode: state.movementMode === 'teleport' ? 'teleport' : 'steps',
       activeFestivalTile: state.activeFestivalTile ?? -1,
       pendingChanceEffect: state.pendingChanceEffect || '',
       players,
       board,
       dice: { die1: state.dice.die1, die2: state.dice.die2, isDouble: state.dice.isDouble, rollCount: state.dice.rollCount },
-      chat, events, turnOrder,
+      events, turnOrder,
     });
   },
 
-  reset: () => set({ ...defaultState }),
+  reset: () => {
+    clearDevMovementFallback();
+    set({ ...defaultState });
+  },
   setError: (msg) => set({ error: msg }),
   setSelectedTile: (id: number | null) => set({ selectedTileId: id }),
 
   loadDevState: () => {
+    clearDevMovementFallback();
+    devChanceDeck = [];
     const players = new Map<string, PlayerState>();
     players.set('dev1', { id: 'dev1', name: 'Dev Player 1', position: 0, money: 20000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: false, color: '#FF6B6B', avatarIndex: '0', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 0, nextRentMultiplier: 1, hasJailCard: false, blackoutTasks: [] });
     players.set('dev2', { id: 'dev2', name: 'Dev Player 2', position: 5, money: 2000, isInJail: false, jailTurns: 0, isBankrupt: false, isConnected: true, isBot: true, color: '#4D96FF', avatarIndex: '1', isReady: true, airportTarget: -1, debtAmount: 0, debtTo: '', passCount: 0, nextRentMultiplier: 1, hasJailCard: false, blackoutTasks: [] });
@@ -611,6 +663,7 @@ export const useGameStore = create<GameStore>((set) => ({
       activeFestivalTile: -1,
       selectedTileId: null,
       winnerId: '',
+      movementMode: 'steps',
     });
   },
 
@@ -650,8 +703,11 @@ export const useGameStore = create<GameStore>((set) => ({
 
       draft.devDoublesCount = isDouble ? draft.devDoublesCount + 1 : 0;
       if (draft.devDoublesCount >= 3) {
-        sendDevToJail(draft, DEV_PLAYER_ID);
+        draft.devDoublesCount = 0;
+        moveDevPlayerTo(draft, DEV_PLAYER_ID, 8, false);
+        draft.turnPhase = 'moving';
         set(draft);
+        scheduleDevMovementFallback(DEV_PLAYER_ID, 8);
         return;
       }
 
@@ -665,19 +721,34 @@ export const useGameStore = create<GameStore>((set) => ({
       }
       p.position = nextPosition;
       draft.turnPhase = 'moving';
+      draft.movementMode = 'steps';
       set(draft);
 
-      window.setTimeout(() => {
-        useGameStore.setState(current => {
-          if (current.turnPhase !== 'moving' || current.players.get(DEV_PLAYER_ID)?.position !== nextPosition) return {};
-          const landingDraft = cloneDevDraft(current);
-          resolveDevLanding(landingDraft, DEV_PLAYER_ID);
-          return landingDraft;
-        });
-      }, 800);
+      scheduleDevMovementFallback(DEV_PLAYER_ID, nextPosition);
       return;
     }
 
+    if (type === 'animationDone') {
+      let followUpMovementTarget: number | null = null;
+      let movementCompleted = false;
+      useGameStore.setState(current => {
+        const currentPosition = current.players.get(DEV_PLAYER_ID)?.position;
+        if (current.turnPhase !== 'moving' || data?.playerId !== DEV_PLAYER_ID || data?.targetPosition !== currentPosition) return {};
+        movementCompleted = true;
+        const landingDraft = cloneDevDraft(current);
+        resolveDevLanding(landingDraft, DEV_PLAYER_ID);
+        if (landingDraft.turnPhase === 'moving') {
+          followUpMovementTarget = landingDraft.players.get(DEV_PLAYER_ID)?.position ?? null;
+        }
+        return landingDraft;
+      });
+      if (!movementCompleted) return;
+      clearDevMovementFallback();
+      if (followUpMovementTarget !== null) scheduleDevMovementFallback(DEV_PLAYER_ID, followUpMovementTarget);
+      return;
+    }
+
+    let startedMovementTarget: number | null = null;
     useGameStore.setState(current => {
       const draft = cloneDevDraft(current);
       const p = draft.players.get(DEV_PLAYER_ID);
@@ -698,7 +769,7 @@ export const useGameStore = create<GameStore>((set) => ({
         if (!checkDevWin(draft, DEV_PLAYER_ID)) finishDevTurn(draft);
       } else if (type === 'skipBuy' && draft.turnPhase === 'buy_decision') finishDevTurn(draft);
       else if (type === 'acceptBuyout') {
-        if (draft.turnPhase !== 'buyout_decision' || !currentTile || !currentTile.ownerId || currentTile.ownerId === DEV_PLAYER_ID || currentTile.tileType !== 'property' || currentTile.houseCount >= 4) return {};
+        if (draft.turnPhase !== 'buyout_decision' || !currentTile || !currentTile.ownerId || currentTile.ownerId === DEV_PLAYER_ID || currentTile.tileType !== 'property' || currentTile.isShielded || currentTile.houseCount >= 4) return {};
         const price = getDevTileTotalValue(currentTile) * 2;
         if (p.money < price) return {};
         const oldOwner = draft.players.get(currentTile.ownerId);
@@ -739,7 +810,8 @@ export const useGameStore = create<GameStore>((set) => ({
         p.money -= 50;
         draft.devDoublesCount = 0;
         moveDevPlayerTo(draft, DEV_PLAYER_ID, tile.id, true);
-        resolveDevLanding(draft, DEV_PLAYER_ID);
+        draft.turnPhase = 'moving';
+        startedMovementTarget = tile.id;
       } else if (type === 'selectFestival' || type === 'chanceFestivalSelect') {
         const chance = type === 'chanceFestivalSelect';
         if ((!chance && draft.turnPhase !== 'festival_select') || (chance && draft.turnPhase !== 'chance_festival_city_select')) return {};
@@ -816,14 +888,10 @@ export const useGameStore = create<GameStore>((set) => ({
         tile.ownerId = target.id;
         updateDevRents(draft);
         if (!checkDevWin(draft, target.id)) finishDevTurn(draft);
-      } else if (type === 'chat') {
-        const text = String(data?.text || '').trim().slice(0, 200);
-        if (!text) return {};
-        const chat = [...current.chat, { playerId: DEV_PLAYER_ID, playerName: p.name, text, timestamp: Date.now() }].slice(-100);
-        return { ...draft, chat };
       } else return {};
 
       return draft;
     });
+    if (startedMovementTarget !== null) scheduleDevMovementFallback(DEV_PLAYER_ID, startedMovementTarget);
   }
 }));

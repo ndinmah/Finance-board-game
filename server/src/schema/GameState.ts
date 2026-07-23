@@ -64,14 +64,6 @@ export class Dice extends Schema {
   @type('number') rollCount: number = 0;
 }
 
-// ─── Chat Message ─────────────────────────────────────────────────────────────
-export class ChatMessage extends Schema {
-  @type('string') playerId: string = '';
-  @type('string') playerName: string = '';
-  @type('string') text: string = '';
-  @type('number') timestamp: number = 0;
-}
-
 // ─── Game Event (for event log) ───────────────────────────────────────────────
 export class GameEvent extends Schema {
   @type('string') type: string = '';   // 'rent', 'buy', 'upgrade', 'bankrupt', etc.
@@ -79,6 +71,7 @@ export class GameEvent extends Schema {
   @type('string') targetId: string = ''; // affected player
   @type('number') amount: number = 0;
   @type('number') tileId: number = 0;
+  @type('string') cardId: string = '';
   @type('string') message: string = '';
   @type('number') timestamp: number = 0;
 }
@@ -112,13 +105,13 @@ export class GameState extends Schema {
   @type('number') turnNumber: number = 0;
   @type('number') doublesCount: number = 0;   // consecutive doubles this turn
   @type('string') winnerId: string = '';
+  @type('string') movementMode: 'steps' | 'teleport' = 'steps';
 
   @type('number') activeFestivalTile: number = -1;
   @type('string') pendingChanceEffect: string = '';
 
   @type({ map: Player })  players = new MapSchema<Player>();
   @type({ map: MapTile }) board   = new MapSchema<MapTile>();
-  @type([ChatMessage])    chat    = new ArraySchema<ChatMessage>();
   @type([GameEvent])      events  = new ArraySchema<GameEvent>();
   @type(Dice)             dice    = new Dice();
 

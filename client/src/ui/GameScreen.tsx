@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { send } from '../net/colyseusClient';
 import { IsoBoard } from '../game/IsoBoard';
 import GameHUD from './GameHUD';
 import DiceRoller from './DiceRoller';
@@ -17,10 +18,13 @@ import GoModal from './GoModal';
 import PlayerPickerModal from './PlayerPickerModal';
 import boardBg from '../assets/broad.png';
 
+const DICE_RESULT_HOLD_MS = 1000;
+
 export default function GameScreen() {
   const canvasRef   = useRef<HTMLCanvasElement>(null);
   const boardRef    = useRef<IsoBoard | null>(null);
   const wrapperRef  = useRef<HTMLDivElement>(null);
+  const [boardReady, setBoardReady] = useState(false);
 
   const board = useGameStore(s => s.board);
   const players = useGameStore(s => s.players);
@@ -28,55 +32,217 @@ export default function GameScreen() {
   const winnerId = useGameStore(s => s.winnerId);
   const gamePhase = useGameStore(s => s.gamePhase);
   const turnPhase = useGameStore(s => s.turnPhase);
+  const currentPlayerId = useGameStore(s => s.currentPlayerId);
+  const movementMode = useGameStore(s => s.movementMode);
   const events = useGameStore(s => s.events);
   const setSelectedTileFn = useGameStore(s => s.setSelectedTile);
   const [prevSelected, setPrevSelected] = useState<number | null>(null);
+  const [revealedRollCount, setRevealedRollCount] = useState(0);
+  const dicePresentationActiveRef = useRef(false);
+  const handleRollRevealed = useCallback((rollCount: number) => {
+    setRevealedRollCount(rollCount);
+  }, []);
+  const handleDicePresentationChange = useCallback((active: boolean) => {
+    dicePresentationActiveRef.current = active;
+  }, []);
+  const handleModalClose = useCallback(() => {
+    setSelectedTileFn(null);
+  }, [setSelectedTileFn]);
 
   // Chance Card Display logic
-  const [showChanceCard, setShowChanceCard] = useState(false);
-  const [lastChanceEventTime, setLastChanceEventTime] = useState(0);
+  const latestChanceEvent = [...events].reverse().find(event => event.type === 'chance');
+  const latestChanceEventTime = latestChanceEvent?.timestamp ?? 0;
+  const shouldResumeChancePresentation = Boolean(
+    latestChanceEvent
+    && latestChanceEvent.playerId === currentPlayerId
+    && (
+      turnPhase.startsWith('chance_')
+      || (turnPhase === 'moving' && latestChanceEvent.cardId.startsWith('GOTO_'))
+    )
+  );
+  const [showChanceCard, setShowChanceCard] = useState(shouldResumeChancePresentation);
+  const [lastChanceEventTime, setLastChanceEventTime] = useState(latestChanceEventTime);
+  const chancePresentationPending = latestChanceEventTime > lastChanceEventTime;
+  const handleChanceCardClose = useCallback(() => setShowChanceCard(false), []);
 
   useEffect(() => {
-    const chanceEvent = [...events].reverse().find(e => e.type === 'chance');
-    if (chanceEvent && chanceEvent.timestamp > lastChanceEventTime) {
-      setLastChanceEventTime(chanceEvent.timestamp);
+    if (latestChanceEventTime > lastChanceEventTime) {
+      setLastChanceEventTime(latestChanceEventTime);
       setShowChanceCard(true);
     }
-  }, [events, lastChanceEventTime]);
+  }, [latestChanceEventTime, lastChanceEventTime]);
 
   // Use a ref to store the latest selectedTileId to avoid stale closure in the initial useEffect callback
   const selectedTileIdRef = useRef(selectedTileId);
+  const turnPhaseRef = useRef(turnPhase);
+  const showChanceCardRef = useRef(showChanceCard);
+  const settledPlayersRef = useRef(players);
+  const mountedDuringMovementRef = useRef(turnPhase === 'moving');
   useEffect(() => {
     selectedTileIdRef.current = selectedTileId;
   }, [selectedTileId]);
 
+  useEffect(() => {
+    turnPhaseRef.current = turnPhase;
+    showChanceCardRef.current = showChanceCard;
+  }, [showChanceCard, turnPhase]);
+
+  const previousTurnContextRef = useRef({ currentPlayerId, turnPhase });
+  useEffect(() => {
+    const previous = previousTurnContextRef.current;
+    if (previous.currentPlayerId !== currentPlayerId || previous.turnPhase !== turnPhase) {
+      setSelectedTileFn(null);
+      setPrevSelected(null);
+    }
+    previousTurnContextRef.current = { currentPlayerId, turnPhase };
+  }, [currentPlayerId, setSelectedTileFn, turnPhase]);
+
+  useEffect(() => {
+    if (turnPhase !== 'moving') settledPlayersRef.current = players;
+  }, [players, turnPhase]);
+
   // Init PixiJS board
   useEffect(() => {
     if (!canvasRef.current) return;
-    const iso = new IsoBoard({
-      onTileClick: (id) => {
-        const currentSelected = selectedTileIdRef.current;
-        setPrevSelected(currentSelected);
-        // Luôn set thành id thay vì toggle để tránh lỗi click bị bắn 2 lần liên tiếp gây đóng modal lập tức
-        setSelectedTileFn(id);
-      },
-      onTileHover: () => {},
-    });
-    iso.init(canvasRef.current).then(() => { boardRef.current = iso; });
-    return () => { boardRef.current?.destroy(); boardRef.current = null; };
-  }, []);
+    let disposed = false;
+    let iso: IsoBoard | null = null;
+    const initFrame = requestAnimationFrame(() => {
+      if (disposed || !canvasRef.current) return;
+      iso = new IsoBoard({
+        onTileClick: (id) => {
+          if (turnPhaseRef.current === 'moving' || showChanceCardRef.current || dicePresentationActiveRef.current) return;
+          if (turnPhaseRef.current === 'go_remote_upgrade') {
+            const state = useGameStore.getState();
+            const me = state.players.get(state.myPlayerId);
+            const tile = state.board.get(id);
+            if (!me || !tile || tile.ownerId !== me.id || tile.tileType !== 'property') return;
 
-  // Sync board state to PixiJS
+            const maxHouses = me.passCount === 0 ? 2 : tile.houseCount < 3 ? 3 : 4;
+            const nextLevelCost = tile.houseCount === 3 ? tile.hotelCost : tile.buildCost;
+            if (tile.houseCount >= maxHouses || me.money < nextLevelCost) return;
+          }
+          if (turnPhaseRef.current === 'airport_select') {
+            const state = useGameStore.getState();
+            const tile = state.board.get(id);
+            const isValidType = tile?.tileType === 'property' || tile?.tileType === 'port';
+            if (!tile || !isValidType || (tile.ownerId && tile.ownerId !== state.myPlayerId)) return;
+          }
+          const currentSelected = selectedTileIdRef.current;
+          setPrevSelected(currentSelected);
+          // Luôn set thành id thay vì toggle để tránh lỗi click bị bắn 2 lần liên tiếp gây đóng modal lập tức
+          setSelectedTileFn(id);
+        },
+        onTileHover: () => {},
+      });
+      const instance = iso;
+      instance.init(canvasRef.current).then(() => {
+        if (disposed) {
+          instance.destroy();
+          return;
+        }
+        boardRef.current = instance;
+        const state = useGameStore.getState();
+        instance.updateTiles(state.board, state.players);
+        instance.updateTokens(state.turnPhase === 'moving' ? settledPlayersRef.current : state.players);
+        setBoardReady(true);
+
+      });
+    });
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(initFrame);
+      if (boardRef.current === iso) {
+        iso?.destroy();
+        boardRef.current = null;
+      }
+    };
+  }, [setSelectedTileFn]);
+
+  const diceRollCount = useGameStore(s => s.dice.rollCount);
+  const prevRollCountRef = useRef(diceRollCount);
+  const playersRef = useRef(players);
+  const movementKeyRef = useRef<string | null>(null);
+  const movementTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
+
+  // Sync board tiles to PixiJS
   useEffect(() => {
     if (!boardRef.current || board.size === 0) return;
     boardRef.current.updateTiles(board, players);
-    boardRef.current.updateTokens(players);
   }, [board, players]);
+
+  // Start each movement once and let Canvas notify the server when it has finished.
+  useEffect(() => {
+    if (!boardReady || !boardRef.current || players.size === 0) return;
+
+    if (turnPhase === 'moving') {
+      if (showChanceCard || chancePresentationPending) return;
+      if (mountedDuringMovementRef.current) return;
+
+      const currentPlayerId = useGameStore.getState().currentPlayerId;
+      const targetPos = players.get(currentPlayerId)?.position;
+      if (targetPos === undefined) return;
+
+      const movementKey = `${currentPlayerId}:${targetPos}:${diceRollCount}:${movementMode}`;
+      if (movementKeyRef.current === movementKey) return;
+
+      const followsDiceRoll = diceRollCount > 0 && diceRollCount !== prevRollCountRef.current;
+      if (followsDiceRoll && revealedRollCount !== diceRollCount) return;
+
+      movementKeyRef.current = movementKey;
+      prevRollCountRef.current = diceRollCount;
+      if (movementTimerRef.current) clearTimeout(movementTimerRef.current);
+
+      if (followsDiceRoll) {
+        boardRef.current.setTargetDestination(targetPos);
+      }
+
+      movementTimerRef.current = setTimeout(() => {
+        movementTimerRef.current = null;
+        boardRef.current?.updateTokens(playersRef.current, playerId => {
+          const targetPosition = playersRef.current.get(playerId)?.position;
+          send('animationDone', { playerId, targetPosition });
+        }, movementMode);
+      }, followsDiceRoll ? DICE_RESULT_HOLD_MS : 0);
+      return;
+    }
+
+    if (movementTimerRef.current) {
+      clearTimeout(movementTimerRef.current);
+      movementTimerRef.current = null;
+    }
+    movementKeyRef.current = null;
+    prevRollCountRef.current = diceRollCount;
+    boardRef.current.updateTokens(players);
+  }, [boardReady, chancePresentationPending, diceRollCount, movementMode, players, revealedRollCount, showChanceCard, turnPhase]);
+
+  useEffect(() => {
+    if (
+      !boardReady
+      || !mountedDuringMovementRef.current
+      || turnPhase !== 'moving'
+      || showChanceCard
+      || chancePresentationPending
+    ) return;
+
+    mountedDuringMovementRef.current = false;
+    const state = useGameStore.getState();
+    const playerId = state.currentPlayerId;
+    const targetPosition = state.players.get(playerId)?.position;
+    send('animationDone', { playerId, targetPosition });
+  }, [boardReady, chancePresentationPending, showChanceCard, turnPhase]);
+
+  useEffect(() => () => {
+    if (movementTimerRef.current) clearTimeout(movementTimerRef.current);
+  }, []);
 
   // Highlight selected tile
   useEffect(() => {
     boardRef.current?.highlightTile(selectedTileId, prevSelected);
-  }, [selectedTileId]);
+  }, [boardReady, prevSelected, selectedTileId]);
 
   // Handle chance phase highlights
   useEffect(() => {
@@ -111,6 +277,13 @@ export default function GameScreen() {
           validTiles.add(id);
         }
       });
+    } else if (turnPhase === 'festival_select' || turnPhase === 'pay_debt') {
+      const state = useGameStore.getState();
+      const me = state.players.get(state.myPlayerId);
+      board.forEach((tile, id) => {
+        const isOwnedAsset = tile.ownerId === state.myPlayerId && (tile.tileType === 'property' || tile.tileType === 'port');
+        if (isOwnedAsset && (turnPhase === 'pay_debt' || (me?.money ?? 0) >= 50)) validTiles.add(id);
+      });
     } else if (turnPhase === 'go_remote_upgrade') {
       const state = useGameStore.getState();
       const me = state.players.get(state.myPlayerId);
@@ -139,7 +312,7 @@ export default function GameScreen() {
     } else {
       iso.clearHighlights();
     }
-  }, [turnPhase, board]);
+  }, [boardReady, turnPhase, board]);
 
   // Handle resize
   useEffect(() => {
@@ -159,17 +332,17 @@ export default function GameScreen() {
       </div>
 
       {/* HUD overlay */}
-      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 md:p-3 [&>*]:pointer-events-auto">
+      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 md:p-3">
         <GameHUD />
-        <DiceRoller />
+        <DiceRoller boardReady={boardReady} onRollRevealed={handleRollRevealed} onPresentationChange={handleDicePresentationChange} />
         <EventLog />
       </div>
 
       {/* Modals */}
-      <ModalRouter onClose={() => setSelectedTileFn(null)} />
+      <ModalRouter onClose={handleModalClose} />
       <BuyUpgradeModal />
       <PlayerPickerModal />
-      {showChanceCard && <ChanceCard onClose={() => setShowChanceCard(false)} />}
+      {showChanceCard && <ChanceCard onClose={handleChanceCardClose} />}
       {gamePhase === 'ended' && winnerId && <WinnerModal />}
 
       {/* Editor Controls (Uncomment when you need to recalibrate coordinates) */}
@@ -202,7 +375,7 @@ function ModalRouter({ onClose }: ModalRouterProps) {
   const tile = useGameStore(s => selectedTileId !== null ? s.board.get(selectedTileId) : undefined);
 
   if (selectedTileId === null || !tile) return null;
-  if (turnPhase === 'go_remote_upgrade' && tile.tileType === 'property') return null;
+  if (turnPhase === 'go_remote_upgrade') return null;
 
   switch (tile.tileType) {
     case 'property':

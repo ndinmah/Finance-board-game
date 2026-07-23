@@ -17,6 +17,11 @@ export class IsoBoard {
 
   private tiles: Map<number, PIXI.Container> = new Map();
   private tokens: Map<string, PIXI.Container> = new Map();
+  private tokenTilePositions: Map<string, number> = new Map();
+  private activeTokenAnimationTargets: Map<string, number> = new Map();
+  private tokenMovementAnimations: Map<string, gsap.core.Animation> = new Map();
+  private targetDestinationTileId: number | null = null;
+  private targetHighlightContainer: PIXI.Container | null = null;
   private callbacks: BoardCallbacks;
 
   private editMode: boolean = false;
@@ -215,6 +220,87 @@ export class IsoBoard {
       // Clean up custom overlay
       this._clearCustomOverlay(container);
     });
+  }
+
+  setTargetDestination(tileId: number | null) {
+    if (this.targetDestinationTileId === tileId) return;
+
+    // Clean up previous target highlight
+    if (this.targetHighlightContainer) {
+      this.targetHighlightContainer.children.forEach(c => {
+        gsap.killTweensOf(c);
+        gsap.killTweensOf(c.position);
+        gsap.killTweensOf(c.scale);
+      });
+      this.targetHighlightContainer.destroy();
+      this.targetHighlightContainer = null;
+    }
+
+    this.targetDestinationTileId = tileId;
+    if (tileId === null) return;
+
+    const tileContainer = this.tiles.get(tileId);
+    if (!tileContainer) return;
+
+    const highlightContainer = new PIXI.Container();
+    highlightContainer.label = 'target_destination_highlight';
+
+    const color = 0xFFD700; // Neon Gold
+    const poly = this._getIsoPolygon(tileId);
+
+    // Glowing border lines
+    const borderGfx = new PIXI.Graphics();
+    borderGfx.poly(poly);
+    borderGfx.stroke({ color: color, width: 8, alpha: 0.35 });
+    borderGfx.poly(poly);
+    borderGfx.stroke({ color: 0xFFEA00, width: 4, alpha: 0.8 });
+    borderGfx.poly(poly);
+    borderGfx.stroke({ color: 0xFFFFFF, width: 2, alpha: 1.0 });
+    highlightContainer.addChild(borderGfx);
+
+    // Expanding ground target ring
+    const ringGfx = new PIXI.Graphics();
+    ringGfx.circle(0, 0, 20);
+    ringGfx.stroke({ color: color, width: 3, alpha: 0.9 });
+    ringGfx.scale.y = 0.572;
+    highlightContainer.addChild(ringGfx);
+
+    // Floating Target Pin
+    const pinContainer = new PIXI.Container();
+    pinContainer.position.set(0, -35);
+    const pinGfx = new PIXI.Graphics();
+    pinGfx.poly([0, 0, -8, -16, -4, -16, -4, -28, 4, -28, 4, -16, 8, -16]);
+    pinGfx.fill({ color: 0xFFEA00 });
+    pinGfx.stroke({ color: 0xFF3D00, width: 1.5 });
+    pinGfx.circle(0, -28, 4);
+    pinGfx.fill({ color: 0xFFFFFF });
+    pinContainer.addChild(pinGfx);
+    highlightContainer.addChild(pinContainer);
+
+    tileContainer.addChild(highlightContainer);
+    this.targetHighlightContainer = highlightContainer;
+
+    // Animations: Breathing border
+    gsap.fromTo(borderGfx,
+      { alpha: 0.4 },
+      { alpha: 1.0, duration: 0.5, yoyo: true, repeat: -1, ease: 'sine.inOut' }
+    );
+
+    // Ring expanding
+    gsap.fromTo(ringGfx.scale,
+      { x: 0.5, y: 0.5 * 0.572 },
+      { x: 1.6, y: 1.6 * 0.572, duration: 0.9, repeat: -1, ease: 'power1.out' }
+    );
+    gsap.fromTo(ringGfx,
+      { alpha: 1.0 },
+      { alpha: 0.0, duration: 0.9, repeat: -1, ease: 'power1.out' }
+    );
+
+    // Floating pin bounce
+    gsap.fromTo(pinContainer.position,
+      { y: -35 },
+      { y: -45, duration: 0.5, yoyo: true, repeat: -1, ease: 'power1.inOut' }
+    );
   }
 
   private _getHighlightColor(turnPhase: string): number {
@@ -1135,11 +1221,14 @@ export class IsoBoard {
   }
   // ─── Tokens ────────────────────────────────────────────────────────────────
 
-  updateTokens(players: Map<string, PlayerState>) {
+  updateTokens(players: Map<string, PlayerState>, onMovementComplete?: (playerId: string) => void, movementMode: 'steps' | 'teleport' = 'steps') {
     players.forEach((player, id) => {
       if (player.isBankrupt) {
         const t = this.tokens.get(id);
         if (t) { t.visible = false; }
+        this.tokenMovementAnimations.get(id)?.kill();
+        this.tokenMovementAnimations.delete(id);
+        this.activeTokenAnimationTargets.delete(id);
         return;
       }
 
@@ -1147,22 +1236,177 @@ export class IsoBoard {
         const token = this._createToken(player);
         this.tokens.set(id, token);
         this.tokenContainer.addChild(token);
+
+        const pos = this._getTokenPos(player.position, id, players);
+        token.position.set(pos.x, pos.y);
+        this.tokenTilePositions.set(id, player.position);
+        return;
       }
 
       const token = this.tokens.get(id)!;
-      const pos   = this._getTokenPos(player.position, id, players);
+      if (this.activeTokenAnimationTargets.get(id) === player.position) return;
 
-      gsap.to(token.position, {
-        x: pos.x, y: pos.y,
-        duration: 0.6,
-        ease: 'power2.inOut',
+      const prevTile = this.tokenTilePositions.get(id) ?? player.position;
+
+      if (prevTile === player.position) {
+        const pos = this._getTokenPos(player.position, id, players);
+        gsap.to(token.position, { x: pos.x, y: pos.y, duration: 0.3, ease: 'power2.out' });
+        return;
+      }
+
+      const numHops = (player.position - prevTile + TILE_COUNT) % TILE_COUNT;
+      const destination = player.position;
+      const targetPos = this._getTokenPos(player.position, id, players);
+      const shadow = token.children.find(c => c.label === 'shadow') as PIXI.Graphics;
+      const jumper = token.children.find(c => c.label === 'jumper') as PIXI.Container;
+
+      this.tokenMovementAnimations.get(id)?.kill();
+      this.tokenMovementAnimations.delete(id);
+      gsap.killTweensOf(token.position);
+      if (jumper) {
+        gsap.killTweensOf(jumper.position);
+        gsap.killTweensOf(jumper.scale);
+        gsap.set(jumper.position, { y: 0 });
+        gsap.set(jumper.scale, { x: 1, y: 1 });
+      }
+      if (shadow) {
+        gsap.killTweensOf(shadow);
+        gsap.killTweensOf(shadow.scale);
+        gsap.set(shadow, { alpha: 1 });
+        gsap.set(shadow.scale, { x: 1, y: 1 });
+      }
+      this.activeTokenAnimationTargets.set(id, destination);
+
+      if (movementMode === 'teleport') {
+        const completeFlight = () => {
+          if (this.activeTokenAnimationTargets.get(id) !== destination) return;
+
+          if (jumper) {
+            jumper.position.y = 0;
+            jumper.scale.set(1);
+          }
+          if (shadow) {
+            shadow.alpha = 1;
+            shadow.scale.set(1);
+          }
+
+          this.tokenTilePositions.set(id, destination);
+          this.activeTokenAnimationTargets.delete(id);
+          this.tokenMovementAnimations.delete(id);
+          if (this.targetDestinationTileId === destination) {
+            this.setTargetDestination(null);
+          }
+          onMovementComplete?.(id);
+        };
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          token.position.set(targetPos.x, targetPos.y);
+          completeFlight();
+          return;
+        }
+
+        // Take off, fly above the board, then land at the destination.
+        const tl = gsap.timeline({ onComplete: completeFlight });
+        this.tokenMovementAnimations.set(id, tl);
+
+        if (jumper) {
+          tl.to(jumper.position, { y: -55, duration: 0.18, ease: 'power2.out' }, 0)
+            .to(jumper.scale, { x: 0.92, y: 1.08, duration: 0.14, ease: 'power2.out' }, 0)
+            .to(jumper.scale, { x: 1, y: 1, duration: 0.12, ease: 'power1.out' }, 0.14);
+        }
+        if (shadow) {
+          tl.to(shadow.scale, { x: 0.35, y: 0.35, duration: 0.18, ease: 'power2.out' }, 0)
+            .to(shadow, { alpha: 0.12, duration: 0.18, ease: 'power2.out' }, 0);
+        }
+
+        tl.to(token.position, {
+          x: targetPos.x,
+          y: targetPos.y,
+          duration: 0.45,
+          ease: 'power1.inOut',
+        }, 0.12);
+
+        if (jumper) {
+          tl.to(jumper.position, { y: 0, duration: 0.2, ease: 'power3.in' }, 0.57)
+            .to(jumper.scale, { x: 1.16, y: 0.84, duration: 0.06, ease: 'power1.out' }, 0.71)
+            .to(jumper.scale, { x: 1, y: 1, duration: 0.1, ease: 'back.out(2)' }, 0.77);
+        }
+        if (shadow) {
+          tl.to(shadow.scale, { x: 1, y: 1, duration: 0.2, ease: 'power3.in' }, 0.57)
+            .to(shadow, { alpha: 1, duration: 0.2, ease: 'power3.in' }, 0.57);
+        }
+        return;
+      }
+
+      // Tile-by-tile hopping
+      const path: number[] = [];
+      let stepTile = prevTile;
+      for (let i = 0; i < numHops; i++) {
+        stepTile = (stepTile + 1) % TILE_COUNT;
+        path.push(stepTile);
+      }
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          if (this.activeTokenAnimationTargets.get(id) !== destination) return;
+          if (jumper) {
+            gsap.to(jumper.position, { y: 0, duration: 0.1 });
+            gsap.to(jumper.scale, { x: 1, y: 1, duration: 0.1 });
+          }
+          if (shadow) {
+            gsap.to(shadow.scale, { x: 1, y: 1, duration: 0.1 });
+          }
+          this.tokenTilePositions.set(id, destination);
+          this.activeTokenAnimationTargets.delete(id);
+          this.tokenMovementAnimations.delete(id);
+          if (this.targetDestinationTileId === destination) {
+            this.setTargetDestination(null);
+          }
+          onMovementComplete?.(id);
+        }
+      });
+      this.tokenMovementAnimations.set(id, tl);
+
+      const hopDuration = 0.18; // 180ms per tile hop
+
+      path.forEach((tileIdx) => {
+        const hopPos = this._getTokenPos(tileIdx, id, players);
+
+        tl.to(token.position, {
+          x: hopPos.x,
+          y: hopPos.y,
+          duration: hopDuration,
+          ease: 'power1.inOut',
+          onComplete: () => {
+            if (this.activeTokenAnimationTargets.get(id) === destination) {
+              this.tokenTilePositions.set(id, tileIdx);
+            }
+          },
+          onStart: () => {
+            if (jumper) {
+              gsap.timeline()
+                .to(jumper.position, { y: -22, duration: hopDuration * 0.5, ease: 'power2.out' })
+                .to(jumper.position, { y: 0, duration: hopDuration * 0.5, ease: 'power2.in' })
+                .to(jumper.scale, { x: 1.15, y: 0.85, duration: 0.04, ease: 'power1.out' })
+                .to(jumper.scale, { x: 1, y: 1, duration: 0.06, ease: 'power1.out' });
+            }
+            if (shadow) {
+              gsap.timeline()
+                .to(shadow.scale, { x: 0.5, y: 0.5, duration: hopDuration * 0.5, ease: 'power2.out' })
+                .to(shadow.scale, { x: 1, y: 1, duration: hopDuration * 0.5, ease: 'power2.in' });
+            }
+          }
+        });
       });
     });
   }
 
   private _createToken(player: PlayerState): PIXI.Container {
     const root = new PIXI.Container();
+    const jumper = new PIXI.Container();
+    jumper.label = 'jumper';
     const c = new PIXI.Container();
+    c.label = 'body';
     const color = parseInt(player.color.replace('#', '0x'));
 
     // Tính màu tối hơn cho chân/tay, và màu sáng hơn cho đầu
@@ -1174,6 +1418,7 @@ export class IsoBoard {
 
     // Bóng đổ (tĩnh, không nảy)
     const shadow = new PIXI.Graphics();
+    shadow.label = 'shadow';
     shadow.ellipse(0, 2, 14, 5);
     shadow.fill({ color: 0x000000, alpha: 0.3 });
     root.addChild(shadow);
@@ -1227,7 +1472,8 @@ export class IsoBoard {
     g.fill({ color: 0xFFFFFF, alpha: 0.35 });
 
     c.addChild(g);
-    root.addChild(c);
+    jumper.addChild(c);
+    root.addChild(jumper);
 
     // Animation nảy lên xuống
     gsap.to(c, {
@@ -1276,6 +1522,22 @@ export class IsoBoard {
   }
 
   destroy() {
+    this.tokenMovementAnimations.forEach(animation => animation.kill());
+    this.tokenMovementAnimations.clear();
+
+    const killDisplayTreeTweens = (container: PIXI.Container) => {
+      gsap.killTweensOf(container);
+      gsap.killTweensOf(container.position);
+      gsap.killTweensOf(container.scale);
+      container.children.forEach(child => {
+        gsap.killTweensOf(child);
+        gsap.killTweensOf(child.position);
+        gsap.killTweensOf(child.scale);
+        if (child instanceof PIXI.Container) killDisplayTreeTweens(child);
+      });
+    };
+    killDisplayTreeTweens(this.app.stage);
+
     this.app.destroy(false, { children: true });
   }
 

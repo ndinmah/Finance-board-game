@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { send, getCurrentRoom } from '../net/colyseusClient';
+import { send, getCurrentRoomCode } from '../net/colyseusClient';
 
 
 export default function WaitingRoom() {
@@ -26,7 +26,7 @@ export default function WaitingRoom() {
       <div className="bg-[linear-gradient(160deg,_#1e2d5a,_#162040)] border-[0.1rem] border-[rgba(74,144,217,0.3)] rounded-2xl md:rounded-[1.6rem] p-6 md:p-10 w-full max-w-[32rem] shadow-[0_1.6rem_4.2667rem_rgba(0,0,0,0.6)] animate-slide-up">
         <h2 className="font-nunito text-[1.4667rem] md:text-[1.8667rem] font-black text-center bg-[linear-gradient(135deg,_#7ec8e3,_#4a90d9)] bg-clip-text text-transparent mb-1">🎲 Phòng Chờ</h2>
         <p className="text-center text-[#8faad4] text-sm mb-6">Chờ người chơi khác... ({playerList.length}/6)</p>
-        <p className="text-center text-[#8faad4] text-sm mt-4" id="debug-room-id">Mã phòng: {getCurrentRoom()?.id || 'Unknown'}</p>
+        <p className="text-center text-[#8faad4] text-sm mt-4" id="debug-room-id">Mã phòng: {getCurrentRoomCode() || 'Unknown'}</p>
 
         <div className="flex flex-col gap-2.5 mb-6">
           {playerList.map(p => (

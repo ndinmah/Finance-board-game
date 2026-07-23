@@ -9,11 +9,12 @@ interface Props { tileId: number; onClose: () => void; }
 export default function PropertyModal({ tileId, onClose }: Props) {
   const { board, players, myPlayerId, turnPhase, currentPlayerId, pendingChanceEffect } = useGameStore();
   const tile = board.get(tileId);
-  if (!tile || (tile.tileType !== 'property' && tile.tileType !== 'port')) { onClose(); return null; }
+  if (!tile || (tile.tileType !== 'property' && tile.tileType !== 'port')) return null;
 
   const owner    = tile.ownerId ? players.get(tile.ownerId) : null;
   const isOwner  = tile.ownerId === myPlayerId;
   const isMyTurn = currentPlayerId === myPlayerId;
+  const isValidAirportDestination = !tile.ownerId || isOwner;
 
   // Header band color: owner color if owned, neutral gray if not
   const ownerColor = owner?.color
@@ -167,7 +168,7 @@ export default function PropertyModal({ tileId, onClose }: Props) {
           {/* ── Actions ── */}
           {(
             (isMyTurn && isOwner && turnPhase === 'pay_debt') ||
-            (isMyTurn && turnPhase === 'airport_select') ||
+            (isMyTurn && isValidAirportDestination && turnPhase === 'airport_select') ||
             (isMyTurn && isOwner && turnPhase === 'festival_select') ||
             (isMyTurn && isOwner && turnPhase === 'chance_shield_select') ||
             (isMyTurn && isOwner && turnPhase === 'chance_give_city_select') ||
@@ -180,7 +181,7 @@ export default function PropertyModal({ tileId, onClose }: Props) {
                   Bán để trả nợ ({formatMoneyFull(Math.floor(totalValue * 0.5))}$)
                 </button>
               )}
-              {turnPhase === 'airport_select' && isMyTurn && (
+              {turnPhase === 'airport_select' && isMyTurn && isValidAirportDestination && (
                 <button className="btn-3d btn-primary text-[0.9333rem] px-8 py-2" onClick={handleAirportSelect}>
                   ✈️ Bay đến đây!
                 </button>

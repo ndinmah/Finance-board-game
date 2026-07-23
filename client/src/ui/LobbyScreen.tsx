@@ -21,9 +21,9 @@ export default function LobbyScreen() {
 
   const handleJoin = async () => {
     if (!name.trim())    { setError('Nhập tên trước!'); return; }
-    if (!roomCode.trim()) { setError('Nhập mã phòng!'); return; }
+    if (!/^\d{6}$/.test(roomCode)) { setError('Mã phòng phải gồm đúng 6 chữ số!'); return; }
     setLoading(true);
-    try { await joinRoom(roomCode.trim(), name.trim()); }
+    try { await joinRoom(roomCode, name.trim()); }
     catch (e: any) { setError(e.message || 'Không tìm thấy phòng'); }
     finally { setLoading(false); }
   };
@@ -85,10 +85,12 @@ export default function LobbyScreen() {
                 id="room-code"
                 className="w-full bg-[#0d152b] border-[1.5px] border-[rgba(74,144,217,0.3)] focus:border-[#4a90d9] focus:shadow-[0_0_12px_rgba(74,144,217,0.3)] rounded-[0.8rem] px-[1rem] py-[0.8rem] text-center text-white text-[1.2rem] font-black uppercase tracking-[0.2em] shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] transition-all duration-200 outline-none placeholder-[#58739d]"
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]{6}"
                 value={roomCode}
-                onChange={e => { setRoomCode(e.target.value); setError(null); }}
-                placeholder="XXXXXX"
-                maxLength={12}
+                onChange={e => { setRoomCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setError(null); }}
+                placeholder="000000"
+                maxLength={6}
                 onKeyDown={e => e.key === 'Enter' && handleJoin()}
               />
             </div>

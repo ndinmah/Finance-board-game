@@ -1,7 +1,7 @@
 import { Room, Client, Delayed } from '@colyseus/core';
 import { z } from 'zod';
 import {
-  GameState, Player, MapTile, Dice, ChatMessage, GameEvent,
+  GameState, Player, MapTile, Dice, GameEvent,
   GamePhase, TurnPhase
 } from '../schema/GameState';
 import {
@@ -14,7 +14,9 @@ import {
 } from '../config/mapData';
 
 const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
-const MOVE_ANIMATION_MS = 800; // time client needs to animate movement
+// Also covers a 4s Chance card before a follow-up movement begins.
+const MOVE_ANIMATION_FALLBACK_MS = 9000;
+const CHANCE_CARD_PRESENTATION_MS = 4000;
 
 function formatMoney(val: number): string {
   const isNegative = val < 0;
@@ -32,13 +34,17 @@ export class WebopolyRoom extends Room<GameState> {
   maxClients = MAX_PLAYERS;
   private turnTimer: Delayed | null = null;
   private gameTimer: Delayed | null = null;
+  private movementTimer: Delayed | null = null;
+  private pendingMovementPlayerId: string = '';
   private botTimers: Map<string, NodeJS.Timeout> = new Map();
+  private chanceDeck: ChanceCardId[] = [];
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
 
   onCreate(options: any) {
     this.setState(new GameState());
     this._initBoard();
+    this.chanceDeck = this._shuffleArray([...CHANCE_CARDS]);
     this.setMetadata({ isPrivate: !!options.isPrivate, roomCode: options.roomCode || '' });
 
     // Register message handlers
@@ -59,8 +65,7 @@ export class WebopolyRoom extends Room<GameState> {
     this.onMessage('selectFestival',  (client, data) => this._handleFestivalSelect(client, data));
     this.onMessage('skipFestival',    (client) => this._handleSkipFestival(client));
     this.onMessage('sellForDebt',     (client, data) => this._handleSellForDebt(client, data));
-    this.onMessage('animationDone',   (client) => this._handleAnimationDone(client));
-    this.onMessage('chat',            (client, data) => this._handleChat(client, data));
+    this.onMessage('animationDone',   (client, data) => this._handleAnimationDone(client, data));
     this.onMessage('chanceShieldSelect',     (c, d) => this._handleChanceShieldSelect(c, d));
     this.onMessage('chanceAttackSelect',     (c, d) => this._handleChanceAttackSelect(c, d));
     this.onMessage('chanceGiveCitySelect',   (c, d) => this._handleChanceGiveCitySelect(c, d));
@@ -142,6 +147,7 @@ export class WebopolyRoom extends Room<GameState> {
 
   onDispose() {
     this.turnTimer?.clear();
+    this.movementTimer?.clear();
     this.botTimers.forEach(t => clearTimeout(t));
     console.log(`[WebopolyRoom] Room ${this.roomId} disposed`);
   }
@@ -292,13 +298,13 @@ export class WebopolyRoom extends Room<GameState> {
 
   // ─── Turn Timer ──────────────────────────────────────────────────────────────
 
-  private _startTurnTimer() {
+  private _startTurnTimer(extraDelayMs = 0) {
     this.turnTimer?.clear();
     const state = this.state;
     const curPlayer = state.players.get(state.currentPlayerId);
 
     if (curPlayer?.isBot) {
-      this._scheduleBotAction();
+      this._scheduleBotAction(extraDelayMs);
     }
 
     this.turnTimer = this.clock.setTimeout(() => {
@@ -324,7 +330,7 @@ export class WebopolyRoom extends Room<GameState> {
       } else if (state.turnPhase.startsWith('chance_')) {
         this._handleChanceTimeout(state.currentPlayerId);
       }
-    }, state.turnPhase.startsWith('chance_') ? 15000 : TURN_TIMEOUT_MS);
+    }, (state.turnPhase.startsWith('chance_') ? 15000 : TURN_TIMEOUT_MS) + extraDelayMs);
   }
 
   // ─── Roll Dice ───────────────────────────────────────────────────────────────
@@ -392,7 +398,7 @@ export class WebopolyRoom extends Room<GameState> {
     // 3 consecutive doubles → go to jail
     if (state.doublesCount >= 3) {
       state.doublesCount = 0;
-      this._sendToJail(playerId);
+      this._movePlayerTo(playerId, JAIL_TILE, false);
       return;
     }
 
@@ -405,11 +411,11 @@ export class WebopolyRoom extends Room<GameState> {
     }
 
     state.turnPhase = 'moving';
+    state.movementMode = 'steps';
     player.position = newPos;
     this.turnTimer?.clear();
 
-    // Give client time to animate, then process tile
-    this.clock.setTimeout(() => this._processLanding(playerId), MOVE_ANIMATION_MS);
+    this._waitForMovementAnimation(playerId);
   }
 
   // ─── Movement ────────────────────────────────────────────────────────────────
@@ -427,8 +433,9 @@ export class WebopolyRoom extends Room<GameState> {
     }
 
     state.turnPhase = 'moving';
+    state.movementMode = 'teleport';
     player.position = target;
-    this.clock.setTimeout(() => this._processLanding(playerId), MOVE_ANIMATION_MS);
+    this._waitForMovementAnimation(playerId);
   }
 
   private _sendToJail(playerId: string) {
@@ -444,9 +451,31 @@ export class WebopolyRoom extends Room<GameState> {
 
   // ─── Animation sync ──────────────────────────────────────────────────────────
 
-  private _handleAnimationDone(client: Client) {
-    // Client notifies when animation is complete (optional fast-path)
-    // We use clock timer as authoritative, so this is informational only
+  private _waitForMovementAnimation(playerId: string) {
+    this.turnTimer?.clear();
+    this.movementTimer?.clear();
+    this.pendingMovementPlayerId = playerId;
+    this.movementTimer = this.clock.setTimeout(
+      () => this._completeMovement(playerId),
+      MOVE_ANIMATION_FALLBACK_MS
+    );
+  }
+
+  private _completeMovement(playerId: string) {
+    if (this.state.turnPhase !== 'moving' || this.pendingMovementPlayerId !== playerId) return;
+    this.movementTimer?.clear();
+    this.movementTimer = null;
+    this.pendingMovementPlayerId = '';
+    this._processLanding(playerId);
+  }
+
+  private _handleAnimationDone(client: Client, data?: { playerId?: string; targetPosition?: number }) {
+    const playerId = this.pendingMovementPlayerId;
+    if (!playerId || data?.playerId !== playerId) return;
+    const player = this.state.players.get(playerId);
+    if (!player || (!player.isBot && client.sessionId !== playerId)) return;
+    if (data?.targetPosition !== player.position) return;
+    this._completeMovement(playerId);
   }
 
   // ─── Tile Landing ────────────────────────────────────────────────────────────
@@ -606,7 +635,7 @@ export class WebopolyRoom extends Room<GameState> {
         const totalValue = tile.price + (tile.houseCount === 4 ? (tile.buildCost * 3 + tile.hotelCost) : tile.houseCount * tile.buildCost);
         const buyoutPrice = totalValue * 2;
 
-        if (tile.tileType !== 'port' && tile.houseCount < 4 && player.money >= buyoutPrice) {
+        if (tile.tileType !== 'port' && !tile.isShielded && tile.houseCount < 4 && player.money >= buyoutPrice) {
           state.turnPhase = 'buyout_decision';
           this._startTurnTimer();
           this._pushEvent('buyout_offer', playerId, '', buyoutPrice, tile.id, `${player.name} có thể cướp ${tile.name} từ ${owner.name} với giá ${formatMoney(buyoutPrice)}.`);
@@ -771,7 +800,7 @@ export class WebopolyRoom extends Room<GameState> {
     const player = state.players.get(client.sessionId);
     if (!player) return;
     const tile = state.board.get(String(player.position));
-    if (!tile || !tile.ownerId || tile.ownerId === client.sessionId || tile.tileType !== 'property') return;
+    if (!tile || !tile.ownerId || tile.ownerId === client.sessionId || tile.tileType !== 'property' || tile.isShielded) return;
     if (tile.houseCount >= 4) return; // Cannot buyout hotels
 
     const totalValue = tile.price + (tile.houseCount * tile.buildCost);
@@ -1067,13 +1096,19 @@ export class WebopolyRoom extends Room<GameState> {
   // ─── Chance Cards ────────────────────────────────────────────────────────────
 
   private _processChance(playerId: string) {
-    const cards = CHANCE_CARDS;
-    const card = cards[Math.floor(Math.random() * cards.length)];
+    const card = this._drawChanceCard();
     const player = this.state.players.get(playerId);
     if (!player) return;
 
-    this._pushEvent('chance', playerId, '', 0, player.position, `${player.name} rút thẻ Cơ Hội: [${card}]`);
+    this._pushEvent('chance', playerId, '', 0, player.position, `${player.name} rút thẻ Cơ Hội: [${card}]`, card);
     this._resolveChanceCard(playerId, card);
+  }
+
+  private _drawChanceCard(): ChanceCardId {
+    if (this.chanceDeck.length === 0) {
+      this.chanceDeck = this._shuffleArray([...CHANCE_CARDS]);
+    }
+    return this.chanceDeck.pop()!;
   }
 
   private _resolveChanceCard(playerId: string, card: ChanceCardId) {
@@ -1099,7 +1134,7 @@ export class WebopolyRoom extends Room<GameState> {
           this._advanceTurn();
         } else {
           state.turnPhase = 'chance_shield_select';
-          this._startTurnTimer();
+          this._startTurnTimer(CHANCE_CARD_PRESENTATION_MS);
         }
         break;
       case 'FORCE_SELL':
@@ -1119,7 +1154,7 @@ export class WebopolyRoom extends Room<GameState> {
         } else {
           state.turnPhase = 'chance_attack_select';
           state.pendingChanceEffect = card;
-          this._startTurnTimer();
+          this._startTurnTimer(CHANCE_CARD_PRESENTATION_MS);
         }
         break;
       case 'CHANCE_FESTIVAL':
@@ -1130,7 +1165,7 @@ export class WebopolyRoom extends Room<GameState> {
           this._advanceTurn();
         } else {
           state.turnPhase = 'chance_festival_city_select';
-          this._startTurnTimer();
+          this._startTurnTimer(CHANCE_CARD_PRESENTATION_MS);
         }
         break;
       case 'GIVE_CITY':
@@ -1139,7 +1174,7 @@ export class WebopolyRoom extends Room<GameState> {
           this._advanceTurn();
         } else {
           state.turnPhase = 'chance_give_city_select';
-          this._startTurnTimer();
+          this._startTurnTimer(CHANCE_CARD_PRESENTATION_MS);
         }
         break;
       case 'GOTO_AIRPORT':
@@ -1153,17 +1188,17 @@ export class WebopolyRoom extends Room<GameState> {
           this._pushEvent('chance_skip', playerId, '', 0, player.position, `Hiện không có Festival nào đang diễn ra. Bỏ qua thẻ.`);
           this._advanceTurn();
         } else {
-          this._movePlayerTo(playerId, state.activeFestivalTile, true);
+          this._movePlayerTo(playerId, state.activeFestivalTile, false);
         }
         break;
       case 'GOTO_FESTIVAL_CORNER':
-        this._movePlayerTo(playerId, FESTIVAL_TILE, true);
+        this._movePlayerTo(playerId, FESTIVAL_TILE, false);
         break;
       case 'GOTO_TAX':
-        this._movePlayerTo(playerId, TAX_TILE, true);
+        this._movePlayerTo(playerId, TAX_TILE, false);
         break;
       case 'GOTO_JAIL':
-        this._sendToJail(playerId);
+        this._movePlayerTo(playerId, JAIL_TILE, false);
         break;
       case 'BIRTHDAY':
         this._resolveBirthday(playerId);
@@ -1396,7 +1431,9 @@ export class WebopolyRoom extends Room<GameState> {
       }
     } else if (state.turnPhase === 'chance_festival_city_select') {
       const validTiles: MapTile[] = [];
-      state.board.forEach(t => { if (t.ownerId === playerId && t.tileType === 'property') validTiles.push(t); });
+      state.board.forEach(t => {
+        if (t.ownerId === playerId && (t.tileType === 'property' || t.tileType === 'port')) validTiles.push(t);
+      });
       if (validTiles.length > 0) {
         this._handleChanceFestivalSelect(c, { tileId: validTiles[Math.floor(Math.random() * validTiles.length)].id });
       } else {
@@ -1449,12 +1486,12 @@ export class WebopolyRoom extends Room<GameState> {
       t.passesLeft -= 1;
       return t;
     }).filter(t => t.passesLeft > 0);
-    
+
     if (remaining.length !== tasks.length) {
       player.blackoutTasksJson = JSON.stringify(remaining);
       const stillBlackedOut = new Set<number>();
       remaining.forEach(t => stillBlackedOut.add(t.tileId));
-      
+
       this.state.board.forEach(tile => {
         if (tile.ownerId === playerId && !tile.isActive && !stillBlackedOut.has(tile.id)) {
           tile.isActive = true;
@@ -1573,29 +1610,6 @@ export class WebopolyRoom extends Room<GameState> {
         this._advanceTurn();
       }
     }
-  }
-
-  // ─── Chat ────────────────────────────────────────────────────────────────────
-
-  private _handleChat(client: Client, rawData: any) {
-    const state = this.state;
-    const player = state.players.get(client.sessionId);
-
-    const parsed = z.object({ text: z.string().max(500) }).safeParse(rawData);
-    if (!parsed.success) return;
-    const data = parsed.data;
-
-    if (!player || !data.text?.trim()) return;
-
-    const msg = new ChatMessage();
-    msg.playerId = client.sessionId;
-    msg.playerName = player.name;
-    msg.text = data.text.trim().substring(0, 200); // sanitize length
-    msg.timestamp = Date.now();
-    state.chat.push(msg);
-
-    // Keep chat history lean
-    if (state.chat.length > 100) state.chat.splice(0, 1);
   }
 
   // ─── Bankrupt ────────────────────────────────────────────────────────────────
@@ -1782,14 +1796,14 @@ export class WebopolyRoom extends Room<GameState> {
     // Bot will handle via _scheduleBotAction when it's their turn
   }
 
-  private _scheduleBotAction() {
+  private _scheduleBotAction(initialDelayMs = 0) {
     const state = this.state;
     const playerId = state.currentPlayerId;
     const player = state.players.get(playerId);
     if (!player || !player.isBot) return;
 
     // Delay bot action to feel natural
-    const delay = 1500 + Math.random() * 1500;
+    const delay = initialDelayMs + 1500 + Math.random() * 1500;
 
     // Clear any existing timer for this bot so we don't queue multiple actions
     this._clearBotTimer(playerId);
@@ -1884,7 +1898,7 @@ export class WebopolyRoom extends Room<GameState> {
         let bestTile: any = null;
         let highestRent = -1;
         state.board.forEach((t) => {
-          if (t.ownerId === playerId && t.tileType === 'property') {
+          if (t.ownerId === playerId && (t.tileType === 'property' || t.tileType === 'port')) {
             const rent = this._calculateRent(t);
             if (rent > highestRent) {
               highestRent = rent;
@@ -1945,13 +1959,14 @@ export class WebopolyRoom extends Room<GameState> {
     return Math.floor(this._getTileTotalValue(tile) * 0.5);
   }
 
-  private _pushEvent(type: string, playerId: string, targetId: string, amount: number, tileId: number, message: string) {
+  private _pushEvent(type: string, playerId: string, targetId: string, amount: number, tileId: number, message: string, cardId = '') {
     const ev = new GameEvent();
     ev.type      = type;
     ev.playerId  = playerId;
     ev.targetId  = targetId;
     ev.amount    = amount;
     ev.tileId    = tileId;
+    ev.cardId    = cardId;
     ev.message   = message;
     ev.timestamp = Date.now();
     this.state.events.push(ev);

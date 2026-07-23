@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function PlayerPickerModal({ onClose }: Props) {
-  const { players, myPlayerId, turnPhase, currentPlayerId } = useGameStore();
+  const { players, board, myPlayerId, turnPhase, currentPlayerId } = useGameStore();
 
   // Modal này chỉ được hiển thị khi đang trong phase chọn người chơi để tặng đất (chance_give_city_target)
   // và mình là người đang thực hiện lượt.
@@ -20,6 +20,18 @@ export default function PlayerPickerModal({ onClose }: Props) {
   const handleSelect = (targetId: string) => {
     send('chanceGiveCityTarget', { targetId });
     if (onClose) onClose();
+  };
+
+  const getTotalAssets = (playerId: string, money: number) => {
+    let total = money;
+    board.forEach(tile => {
+      if (tile.ownerId !== playerId) return;
+      total += tile.price;
+      total += tile.houseCount === 4
+        ? tile.buildCost * 3 + tile.hotelCost
+        : tile.houseCount * tile.buildCost;
+    });
+    return total;
   };
 
   return (
@@ -54,7 +66,7 @@ export default function PlayerPickerModal({ onClose }: Props) {
                 <div className="flex-1">
                   <div className="font-bold text-[1.0667rem] text-[#1f2937] group-hover:text-[#8b5cf6] transition-colors">{p.name}</div>
                   <div className="text-[0.9333rem] text-[#6b7280] flex items-center gap-1 mt-0.5">
-                    Tài sản: <span className="font-bold text-[#f59e0b]">{formatMoneyFull(p.money)}$</span>
+                    Tổng tài sản: <span className="font-bold text-[#f59e0b]">{formatMoneyFull(getTotalAssets(p.id, p.money))}$</span>
                   </div>
                 </div>
                 <div className="w-8 h-8 rounded-full bg-[#f3f4f6] flex items-center justify-center group-hover:bg-[#8b5cf6] group-hover:text-white transition-colors">

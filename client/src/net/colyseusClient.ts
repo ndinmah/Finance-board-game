@@ -8,6 +8,7 @@ const WS_URL = import.meta.env.VITE_WS_URL || (isLocal ? `ws://${window.location
 
 let client: Client | null = null;
 let room: Room | null = null;
+let currentRoomCode = '';
 
 function getClient(): Client {
   if (!client) client = new Client(WS_URL);
@@ -15,14 +16,28 @@ function getClient(): Client {
 }
 
 export async function createRoom(playerName: string, isPrivate = false): Promise<string> {
-  const roomCode = isPrivate ? Math.random().toString(36).substring(2, 8).toUpperCase() : '';
+  const availableRooms = await getClient().getAvailableRooms('webopoly');
+  const usedCodes = new Set(availableRooms.map(available => String(available.metadata?.roomCode || '')));
+  let roomCode = '';
+  do {
+    roomCode = String(Math.floor(100000 + Math.random() * 900000));
+  } while (usedCodes.has(roomCode));
+
   room = await getClient().create('webopoly', { name: playerName, isPrivate, roomCode });
+  currentRoomCode = roomCode;
   _bindRoomEvents();
-  return room.id;
+  return roomCode;
 }
 
-export async function joinRoom(roomId: string, playerName: string): Promise<void> {
-  room = await getClient().joinById(roomId, { name: playerName });
+export async function joinRoom(roomCode: string, playerName: string): Promise<void> {
+  if (!/^\d{6}$/.test(roomCode)) throw new Error('Mã phòng phải gồm đúng 6 chữ số');
+
+  const availableRooms = await getClient().getAvailableRooms('webopoly');
+  const matchedRoom = availableRooms.find(available => String(available.metadata?.roomCode || '') === roomCode);
+  if (!matchedRoom) throw new Error('Không tìm thấy phòng với mã này');
+
+  room = await getClient().joinById(matchedRoom.roomId, { name: playerName });
+  currentRoomCode = roomCode;
   _bindRoomEvents();
 }
 
@@ -32,6 +47,7 @@ export async function joinOrCreate(playerName: string): Promise<void> {
 }
 
 export function getCurrentRoom(): Room | null { return room; }
+export function getCurrentRoomCode(): string { return currentRoomCode; }
 
 export function send(type: string, data?: any) {
   if (room) {
@@ -44,6 +60,7 @@ export function send(type: string, data?: any) {
 export function leaveRoom() {
   room?.leave();
   room = null;
+  currentRoomCode = '';
   useGameStore.getState().reset();
 }
 
