@@ -1,6 +1,6 @@
 // Map configuration - Data-driven tile definitions
 // Layout: 32 tiles total = 4 corners + 28 regular tiles (7 per side)
-// Each side: 2 color groups (3 tiles each) + 1 special (port/station)
+// Purchasable tiles: 20 properties across 8 color groups + 4 ports
 
 export type TileType = 'go' | 'jail' | 'festival' | 'airport' | 'property' | 'port' | 'tax' | 'chance';
 
@@ -17,10 +17,8 @@ export interface TileDef {
   icon?: string;
 }
 
-// 8 color groups, 3 tiles each = 24 property tiles
-// 4 port/special tiles (one per side)
-// 4 corner tiles
-// Total: 24 + 4 + 4 = 32
+// Other tiles: 4 corners, 3 Chance tiles and 1 Tax tile
+// Total: 20 properties + 4 ports + 4 corners + 3 Chance + 1 Tax = 32
 
 export const MAP_TILES: TileDef[] = [
   // ─── CORNER 0: GO ───
@@ -119,7 +117,7 @@ export const AIRPORT_TILE = 24;
 export const GO_SALARY = 300;        // Collect when passing/landing on Go
 export const BAIL_COST = 200;         // Pay to get out of jail
 export const STARTING_MONEY = 20000;  // Starting cash per player
-export const MAX_PLAYERS = 6;
+export const MAX_PLAYERS = 8;
 export const MIN_PLAYERS = 2;
 export const TURN_TIMEOUT_MS = 300000; // 5 minutes per turn
 export const TAX_TILE = 30;
