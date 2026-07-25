@@ -2,9 +2,9 @@ import { Client, Room } from 'colyseus.js';
 import { useGameStore } from '../store/gameStore';
 
 // Lấy IP/domain hiện tại của trình duyệt. Tự động hỗ trợ HTTPS -> WSS và cổng reverse proxy.
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isDev = import.meta.env.DEV;
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const WS_URL = import.meta.env.VITE_WS_URL || (isLocal ? `ws://${window.location.hostname}:2567` : `${protocol}//${window.location.host}`);
+const WS_URL = import.meta.env.VITE_WS_URL || (isDev ? `${protocol}//${window.location.hostname}:2567` : `${protocol}//${window.location.host}`);
 
 let client: Client | null = null;
 let room: Room | null = null;

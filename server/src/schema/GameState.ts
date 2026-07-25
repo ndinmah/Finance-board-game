@@ -103,6 +103,8 @@ export class GameState extends Schema {
   @type('string') currentPlayerId: string = '';
   @type('number') currentPlayerIdx: number = 0;
   @type('number') turnNumber: number = 0;
+  @type('number') turnDeadline: number = 0;
+  @type('number') turnDurationMs: number = 0;
   @type('number') doublesCount: number = 0;   // consecutive doubles this turn
   @type('string') winnerId: string = '';
   @type('string') movementMode: 'steps' | 'teleport' = 'steps';

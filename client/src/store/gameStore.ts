@@ -58,6 +58,8 @@ interface GameStore {
   turnPhase: TurnPhase;
   currentPlayerId: string;
   turnNumber: number;
+  turnDeadline: number;
+  turnDurationMs: number;
   winnerId: string;
   movementMode: 'steps' | 'teleport';
   activeFestivalTile: number;
@@ -88,6 +90,8 @@ const defaultState = {
   turnPhase: 'wait_roll' as TurnPhase,
   currentPlayerId: '',
   turnNumber: 0,
+  turnDeadline: 0,
+  turnDurationMs: 0,
   winnerId: '',
   movementMode: 'steps' as const,
   activeFestivalTile: -1,
@@ -423,20 +427,23 @@ const resolveDevProperty = (draft: DevDraft, playerId: string, tile: TileState) 
 const resolveDevBirthday = (draft: DevDraft, playerId: string) => {
   const receiver = draft.players.get(playerId);
   if (!receiver) return;
-  let received = 0;
+  const moneyBeforeCollections = receiver.money;
+  let cashReceived = 0;
   draft.players.forEach(payer => {
     if (payer.id === playerId || payer.isBankrupt) return;
     const shortfall = chargeDevPlayer(draft, payer.id, 25);
     const paid = 25 - shortfall;
-    received += paid;
+    cashReceived += paid;
     if (shortfall > 0) {
       payer.debtAmount = shortfall;
       payer.debtTo = playerId;
       autoSellDevDebt(draft, payer.id);
     }
   });
-  receiver.money += received;
-  pushDevEvent(draft, 'chance_birthday', playerId, '', received, receiver.position, `${receiver.name} nhận ${received}K tiền sinh nhật.`);
+  const liquidationReceived = receiver.money - moneyBeforeCollections;
+  const totalReceived = cashReceived + liquidationReceived;
+  receiver.money += cashReceived;
+  pushDevEvent(draft, 'chance_birthday', playerId, '', totalReceived, receiver.position, `${receiver.name} nhận ${totalReceived}K tiền sinh nhật.`);
   if (draft.gamePhase !== 'ended') finishDevTurn(draft);
 };
 
@@ -591,6 +598,8 @@ export const useGameStore = create<GameStore>((set) => ({
       turnPhase: state.turnPhase as TurnPhase,
       currentPlayerId: state.currentPlayerId || '',
       turnNumber: state.turnNumber || 0,
+      turnDeadline: state.turnDeadline || 0,
+      turnDurationMs: state.turnDurationMs || 0,
       winnerId: state.winnerId || '',
       movementMode: state.movementMode === 'teleport' ? 'teleport' : 'steps',
       activeFestivalTile: state.activeFestivalTile ?? -1,
@@ -653,6 +662,8 @@ export const useGameStore = create<GameStore>((set) => ({
       turnPhase: 'wait_roll',
       currentPlayerId: 'dev1',
       turnNumber: 0,
+      turnDeadline: Date.now() + 300000,
+      turnDurationMs: 300000,
       players,
       board,
       turnOrder: ['dev1', 'dev2'],
@@ -675,8 +686,8 @@ export const useGameStore = create<GameStore>((set) => ({
 
     if (type === 'rollDice') {
       if (state.turnPhase !== 'wait_roll' && state.turnPhase !== 'airport_select') return;
-      const d1 = Number.isFinite(data?.d1) ? Math.max(1, Math.min(6, Math.trunc(data.d1))) : Math.ceil(Math.random() * 6);
-      const d2 = Number.isFinite(data?.d2) ? Math.max(1, Math.min(6, Math.trunc(data.d2))) : Math.ceil(Math.random() * 6);
+      const d1 = Number.isFinite(data?.d1) ? Math.max(1, Math.min(6, Math.trunc(data.d1))) : Math.floor(Math.random() * 6) + 1;
+      const d2 = Number.isFinite(data?.d2) ? Math.max(1, Math.min(6, Math.trunc(data.d2))) : Math.floor(Math.random() * 6) + 1;
       const draft = cloneDevDraft(state);
       const p = draft.players.get(DEV_PLAYER_ID)!;
       let isDouble = d1 === d2;
