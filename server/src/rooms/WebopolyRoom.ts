@@ -13,7 +13,7 @@ import {
   ChanceCardId, CHANCE_CARDS
 } from '../config/mapData';
 
-const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#FF9F43', '#F472B6'];
 // Also covers a 4s Chance card before a follow-up movement begins.
 const MOVE_ANIMATION_FALLBACK_MS = 9000;
 const CHANCE_CARD_PRESENTATION_MS = 4000;
@@ -50,7 +50,7 @@ export class WebopolyRoom extends Room<GameState> {
     // Register message handlers
     this.onMessage('ready',           (client) => this._handleReady(client));
     this.onMessage('addBot',          (client) => this._handleAddBot(client));
-    this.onMessage('rollDice',        (client, data) => this._handleRollDice(client, data));
+    this.onMessage('rollDice',        (client) => this._handleRollDice(client));
     this.onMessage('buyProperty',     (client, data) => this._handleBuyProperty(client, data));
     this.onMessage('skipBuy',         (client) => this._handleSkipBuy(client));
     this.onMessage('acceptBuyout',    (client) => this._handleAcceptBuyout(client));
@@ -220,7 +220,10 @@ export class WebopolyRoom extends Room<GameState> {
       playerIndex++;
     }
 
-    const botId = 'bot_' + Math.floor(Math.random() * 100000);
+    let botId = '';
+    do {
+      botId = 'bot_' + Math.floor(Math.random() * 100000);
+    } while (state.players.has(botId));
     const color = PLAYER_COLORS[playerIndex % PLAYER_COLORS.length] || '#888';
 
     const p = new Player();
@@ -302,6 +305,9 @@ export class WebopolyRoom extends Room<GameState> {
     this.turnTimer?.clear();
     const state = this.state;
     const curPlayer = state.players.get(state.currentPlayerId);
+    const turnDurationMs = (state.turnPhase.startsWith('chance_') ? 15000 : TURN_TIMEOUT_MS) + extraDelayMs;
+    state.turnDurationMs = turnDurationMs;
+    state.turnDeadline = Date.now() + turnDurationMs;
 
     if (curPlayer?.isBot) {
       this._scheduleBotAction(extraDelayMs);
@@ -311,7 +317,7 @@ export class WebopolyRoom extends Room<GameState> {
       if (!curPlayer) return;
       // Auto-roll or auto-skip depending on phase
       if (state.turnPhase === 'wait_roll') {
-        this._doRollDice(state.currentPlayerId, true);
+        this._doRollDice(state.currentPlayerId);
       } else if (state.turnPhase === 'buy_decision') {
         this._doSkipBuy(state.currentPlayerId);
       } else if (state.turnPhase === 'buyout_decision') {
@@ -330,31 +336,26 @@ export class WebopolyRoom extends Room<GameState> {
       } else if (state.turnPhase.startsWith('chance_')) {
         this._handleChanceTimeout(state.currentPlayerId);
       }
-    }, (state.turnPhase.startsWith('chance_') ? 15000 : TURN_TIMEOUT_MS) + extraDelayMs);
+    }, turnDurationMs);
   }
 
   // ─── Roll Dice ───────────────────────────────────────────────────────────────
 
-  private _handleRollDice(client: Client, data?: any) {
+  private _handleRollDice(client: Client) {
     const state = this.state;
     if (client.sessionId !== state.currentPlayerId) return;
     if (state.turnPhase !== 'wait_roll' && state.turnPhase !== 'airport_select') return;
-    this._doRollDice(client.sessionId, false, data);
+    this._doRollDice(client.sessionId);
   }
 
-  private _doRollDice(playerId: string, isAuto: boolean, devData?: any) {
+  private _doRollDice(playerId: string) {
     const state = this.state;
     const player = state.players.get(playerId);
     if (!player || player.isBankrupt) return;
 
-    // Server-side RNG — client cannot influence this (except in dev mode)
-    let die1 = Math.ceil(Math.random() * 6);
-    let die2 = Math.ceil(Math.random() * 6);
-
-    if (devData && typeof devData.d1 === 'number' && typeof devData.d2 === 'number') {
-      die1 = Math.max(1, Math.min(6, devData.d1));
-      die2 = Math.max(1, Math.min(6, devData.d2));
-    }
+    // Server-authoritative RNG. The standalone client dev mode handles fixed dice locally.
+    const die1 = Math.floor(Math.random() * 6) + 1;
+    const die2 = Math.floor(Math.random() * 6) + 1;
 
     let isDouble = die1 === die2;
 
@@ -453,6 +454,8 @@ export class WebopolyRoom extends Room<GameState> {
 
   private _waitForMovementAnimation(playerId: string) {
     this.turnTimer?.clear();
+    this.state.turnDeadline = 0;
+    this.state.turnDurationMs = 0;
     this.movementTimer?.clear();
     this.pendingMovementPlayerId = playerId;
     this.movementTimer = this.clock.setTimeout(
@@ -1447,13 +1450,14 @@ export class WebopolyRoom extends Room<GameState> {
     const player = state.players.get(playerId);
     if (!player) return;
 
-    let totalReceived = 0;
+    const moneyBeforeCollections = player.money;
+    let cashReceived = 0;
 
     state.players.forEach(p => {
       if (p.id === playerId || p.isBankrupt) return;
       const shortfall = this._applyMoneyChange(p.id, -BIRTHDAY_AMOUNT, 'birthday_pay');
       const paid = BIRTHDAY_AMOUNT - shortfall;
-      totalReceived += paid;
+      cashReceived += paid;
 
       if (shortfall > 0) {
         let totalSellValue = 0;
@@ -1472,7 +1476,9 @@ export class WebopolyRoom extends Room<GameState> {
       }
     });
 
-    this._applyMoneyChange(playerId, totalReceived, 'birthday_receive');
+    const liquidationReceived = player.money - moneyBeforeCollections;
+    const totalReceived = cashReceived + liquidationReceived;
+    this._applyMoneyChange(playerId, cashReceived, 'birthday_receive');
     this._pushEvent('chance_birthday', playerId, '', totalReceived, player.position, `${player.name} nhận được ${formatMoney(totalReceived)} tiền mừng sinh nhật!`);
     this._advanceTurn();
   }
@@ -1777,6 +1783,8 @@ export class WebopolyRoom extends Room<GameState> {
     state.turnPhase = 'game_over';
     state.winnerId = winnerId;
     this.turnTimer?.clear();
+    state.turnDeadline = 0;
+    state.turnDurationMs = 0;
     this.gameTimer?.clear();
 
     const winner = state.players.get(winnerId);
@@ -1812,7 +1820,7 @@ export class WebopolyRoom extends Room<GameState> {
       if (state.currentPlayerId !== playerId) return;
 
       if (state.turnPhase === 'wait_roll') {
-        this._doRollDice(playerId, true);
+        this._doRollDice(playerId);
       } else if (state.turnPhase === 'buy_decision') {
         const tile = state.board.get(String(player.position));
         if (tile) {
