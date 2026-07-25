@@ -33,7 +33,9 @@ export default function GameScreen() {
   const gamePhase = useGameStore(s => s.gamePhase);
   const turnPhase = useGameStore(s => s.turnPhase);
   const currentPlayerId = useGameStore(s => s.currentPlayerId);
+  const myPlayerId = useGameStore(s => s.myPlayerId);
   const movementMode = useGameStore(s => s.movementMode);
+  const pendingChanceEffect = useGameStore(s => s.pendingChanceEffect);
   const events = useGameStore(s => s.events);
   const setSelectedTileFn = useGameStore(s => s.setSelectedTile);
   const [prevSelected, setPrevSelected] = useState<number | null>(null);
@@ -90,12 +92,13 @@ export default function GameScreen() {
   const previousTurnContextRef = useRef({ currentPlayerId, turnPhase });
   useEffect(() => {
     const previous = previousTurnContextRef.current;
-    if (previous.currentPlayerId !== currentPlayerId || previous.turnPhase !== turnPhase) {
+    const turnContextChanged = previous.currentPlayerId !== currentPlayerId || previous.turnPhase !== turnPhase;
+    if (turnContextChanged && currentPlayerId === myPlayerId) {
       setSelectedTileFn(null);
       setPrevSelected(null);
     }
     previousTurnContextRef.current = { currentPlayerId, turnPhase };
-  }, [currentPlayerId, setSelectedTileFn, turnPhase]);
+  }, [currentPlayerId, myPlayerId, setSelectedTileFn, turnPhase]);
 
   useEffect(() => {
     if (turnPhase !== 'moving') settledPlayersRef.current = players;
@@ -110,9 +113,10 @@ export default function GameScreen() {
       if (disposed || !canvasRef.current) return;
       iso = new IsoBoard({
         onTileClick: (id) => {
-          if (turnPhaseRef.current === 'moving' || showChanceCardRef.current || dicePresentationActiveRef.current) return;
-          if (turnPhaseRef.current === 'go_remote_upgrade') {
-            const state = useGameStore.getState();
+          const state = useGameStore.getState();
+          const isMyTurn = state.currentPlayerId === state.myPlayerId;
+          if (isMyTurn && (turnPhaseRef.current === 'moving' || showChanceCardRef.current || dicePresentationActiveRef.current)) return;
+          if (isMyTurn && turnPhaseRef.current === 'go_remote_upgrade') {
             const me = state.players.get(state.myPlayerId);
             const tile = state.board.get(id);
             if (!me || !tile || tile.ownerId !== me.id || tile.tileType !== 'property') return;
@@ -121,8 +125,7 @@ export default function GameScreen() {
             const nextLevelCost = tile.houseCount === 3 ? tile.hotelCost : tile.buildCost;
             if (tile.houseCount >= maxHouses || me.money < nextLevelCost) return;
           }
-          if (turnPhaseRef.current === 'airport_select') {
-            const state = useGameStore.getState();
+          if (isMyTurn && turnPhaseRef.current === 'airport_select') {
             const tile = state.board.get(id);
             const isValidType = tile?.tileType === 'property' || tile?.tileType === 'port';
             if (!tile || !isValidType || (tile.ownerId && tile.ownerId !== state.myPlayerId)) return;
@@ -250,55 +253,51 @@ export default function GameScreen() {
     const iso = boardRef.current;
 
     const validTiles = new Set<number>();
+    const activePlayer = players.get(currentPlayerId);
 
     if (turnPhase === 'chance_shield_select' || turnPhase === 'chance_give_city_select') {
       board.forEach((tile, id) => {
-        if (tile.ownerId === useGameStore.getState().myPlayerId && (tile.tileType === 'property' || tile.tileType === 'port')) {
+        if (tile.ownerId === currentPlayerId && (tile.tileType === 'property' || tile.tileType === 'port')) {
           validTiles.add(id);
         }
       });
     } else if (turnPhase === 'chance_festival_city_select') {
       board.forEach((tile, id) => {
-        if (tile.ownerId === useGameStore.getState().myPlayerId && (tile.tileType === 'property' || tile.tileType === 'port')) {
+        if (tile.ownerId === currentPlayerId && (tile.tileType === 'property' || tile.tileType === 'port')) {
           validTiles.add(id);
         }
       });
     } else if (turnPhase === 'chance_attack_select') {
-      const state = useGameStore.getState();
       board.forEach((tile, id) => {
-        if (tile.ownerId && tile.ownerId !== state.myPlayerId && tile.houseCount < 4) {
-          if (state.pendingChanceEffect === 'SABOTAGE' && tile.tileType === 'port') return;
+        if (tile.ownerId && tile.ownerId !== currentPlayerId && tile.houseCount < 4) {
+          if (pendingChanceEffect === 'SABOTAGE' && tile.tileType === 'port') return;
           validTiles.add(id);
         }
       });
     } else if (turnPhase === 'airport_select') {
       board.forEach((tile, id) => {
-        if ((tile.tileType === 'property' || tile.tileType === 'port') && (!tile.ownerId || tile.ownerId === useGameStore.getState().myPlayerId)) {
+        if ((tile.tileType === 'property' || tile.tileType === 'port') && (!tile.ownerId || tile.ownerId === currentPlayerId)) {
           validTiles.add(id);
         }
       });
     } else if (turnPhase === 'festival_select' || turnPhase === 'pay_debt') {
-      const state = useGameStore.getState();
-      const me = state.players.get(state.myPlayerId);
       board.forEach((tile, id) => {
-        const isOwnedAsset = tile.ownerId === state.myPlayerId && (tile.tileType === 'property' || tile.tileType === 'port');
-        if (isOwnedAsset && (turnPhase === 'pay_debt' || (me?.money ?? 0) >= 50)) validTiles.add(id);
+        const isOwnedAsset = tile.ownerId === currentPlayerId && (tile.tileType === 'property' || tile.tileType === 'port');
+        if (isOwnedAsset && (turnPhase === 'pay_debt' || (activePlayer?.money ?? 0) >= 50)) validTiles.add(id);
       });
     } else if (turnPhase === 'go_remote_upgrade') {
-      const state = useGameStore.getState();
-      const me = state.players.get(state.myPlayerId);
-      if (me) {
+      if (activePlayer) {
         board.forEach((tile, id) => {
-          if (tile.ownerId === me.id && tile.tileType === 'property') {
+          if (tile.ownerId === activePlayer.id && tile.tileType === 'property') {
             const getMaxHouses = (passCount: number, currentHouses: number) => {
               if (passCount === 0) return 2;
               if (currentHouses < 3) return 3;
               return 4;
             };
-            const maxHouses = getMaxHouses(me.passCount, tile.houseCount);
+            const maxHouses = getMaxHouses(activePlayer.passCount, tile.houseCount);
             if (tile.houseCount < maxHouses) {
               const nextLevelCost = tile.houseCount === 3 ? tile.hotelCost : tile.buildCost;
-              if (me.money >= nextLevelCost) {
+              if (activePlayer.money >= nextLevelCost) {
                 validTiles.add(id);
               }
             }
@@ -312,7 +311,7 @@ export default function GameScreen() {
     } else {
       iso.clearHighlights();
     }
-  }, [boardReady, turnPhase, board]);
+  }, [boardReady, board, currentPlayerId, pendingChanceEffect, players, turnPhase]);
 
   // Handle resize
   useEffect(() => {

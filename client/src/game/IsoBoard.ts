@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import type { TileState, PlayerState } from '../store/gameStore';
 import { TILE_COORDINATES } from './boardCoords';
 import { TILE_COUNT } from './tileConstants';
+import { formatMoney } from '../utils/format';
 
 export interface BoardCallbacks {
   onTileClick: (tileId: number) => void;
@@ -649,7 +650,7 @@ export class IsoBoard {
         // Render Giá Tiền
         if (tile.ownerId && tile.currentRent > 0) {
           const rentLabel = new PIXI.Text({
-            text: `${tile.currentRent}K`,
+            text: formatMoney(tile.currentRent),
             style: new PIXI.TextStyle({
               fontSize: 18,
               fill: 0x000000,

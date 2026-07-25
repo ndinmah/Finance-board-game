@@ -73,7 +73,7 @@ export default function FestivalModal({ onClose }: Props) {
                   <div className="flex justify-between items-center">
                     <div className="flex flex-col">
                       <span className="font-black text-[1.1rem] text-[#1e1b4b] tracking-wide">TỔ CHỨC LỄ HỘI</span>
-                      <span className="text-[0.6667rem] text-[#7e22ce] mt-[0.0667rem] font-semibold">Tăng vĩnh viễn hệ số thuê đất</span>
+                      <span className="text-[0.6667rem] text-[#7e22ce] mt-[0.0667rem] font-semibold">Nhân đôi tiền thuê tại địa điểm đang đăng cai</span>
                     </div>
                     <div className="text-right">
                       <div className="text-[0.6rem] text-[#7e22ce] uppercase font-bold">Chi phí đăng cai</div>
@@ -87,11 +87,11 @@ export default function FestivalModal({ onClose }: Props) {
                   <ul className="flex flex-col gap-2 p-0 m-0 list-none">
                     <li className="bg-white border border-[#e2e8f0] rounded-[0.6667rem] p-[0.5333rem_0.8rem] flex items-center gap-2.5 transition-all duration-200 hover:border-[#cbd5e1] hover:-translate-y-[0.0667rem] shadow-sm">
                       <span className="w-[1.8667rem] h-[1.8667rem] rounded-[0.4rem] bg-[#faf5ff] text-[#7e22ce] flex items-center justify-center text-[0.9333rem] shrink-0 shadow-sm border border-[#e2e8f0]">📈</span>
-                      <span className="flex-1 text-[0.7667rem] text-[#334155] leading-[1.35]">Tổ chức lễ hội làm <strong className="font-bold text-[#7e22ce]">tăng vĩnh viễn</strong> hệ số thu tiền thuê đất.</span>
+                      <span className="flex-1 text-[0.7667rem] text-[#334155] leading-[1.35]">Địa điểm đang tổ chức Festival được <strong className="font-bold text-[#7e22ce]">nhân đôi tiền thuê</strong>.</span>
                     </li>
                     <li className="bg-white border border-[#e2e8f0] rounded-[0.6667rem] p-[0.5333rem_0.8rem] flex items-center gap-2.5 transition-all duration-200 hover:border-[#cbd5e1] hover:-translate-y-[0.0667rem] shadow-sm">
                       <span className="w-[1.8667rem] h-[1.8667rem] rounded-[0.4rem] bg-[#faf5ff] text-[#7e22ce] flex items-center justify-center text-[0.9333rem] shrink-0 shadow-sm border border-[#e2e8f0]">📍</span>
-                      <span className="flex-1 text-[0.7667rem] text-[#334155] leading-[1.35]">Chỉ có thể tổ chức tại <strong className="font-bold text-[#7e22ce]">một thành phố duy nhất</strong> tại một thời điểm.</span>
+                      <span className="flex-1 text-[0.7667rem] text-[#334155] leading-[1.35]">Mỗi lần chọn địa điểm mới sẽ <strong className="font-bold text-[#7e22ce]">thay thế Festival đang hoạt động</strong>.</span>
                     </li>
                   </ul>
                 </div>
