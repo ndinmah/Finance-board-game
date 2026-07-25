@@ -11,8 +11,8 @@ export function formatMoney(val: number): string {
   if (absVal < 1000) {
     result = `${absVal}K`;
   } else {
-    // Keep up to 3 decimal places without trailing zeros (e.g., 1000 -> 1M, 1500 -> 1.5M, 1036 -> 1.036M)
-    result = `${Number((absVal / 1000).toFixed(3))}M`;
+    // Keep up to 1 decimal place without trailing zeros (e.g., 1000 -> 1M, 1325 -> 1.3M, 1500 -> 1.5M)
+    result = `${Number((absVal / 1000).toFixed(1))}M`;
   }
 
   return isNegative ? `-${result}` : result;
