@@ -25,14 +25,12 @@
 
 html, body, #root {
   width: 100%; height: 100%; overflow: hidden;
+  overscroll-behavior: none;
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
-  /* Kỹ thuật Root REM Scaling dựa trên iPhone 14 Pro Max (ngang 932px, dọc 430px). 
-     Ta dùng chuẩn font gốc là 15px.
-     15 / 932 * 100 = 1.609vw.
-     Dùng clamp để giới hạn: không quá nhỏ (10px) và không quá to trên PC (16px) */
-  font-size: clamp(10px, 1.609vw, 16px);
+  /* 15px tại iPhone 14 Pro Max ngang (932 × 430), scale theo cạnh giới hạn. */
+  font-size: clamp(12px, min(1.609vw, 3.488vh), 16px);
   line-height: 1.5;
 }
 
@@ -183,12 +181,3 @@ input::placeholder { color: var(--text2); }
   background: transparent; color: var(--text2); font-size: 0.9333rem; padding: 0.5333rem 1.0667rem;
 }
 .btn-ghost:hover { color: var(--text); }
-
-/* Tối ưu hóa cho thiết bị di động chế độ màn hình ngang (landscape) */
-@media (max-height: 480px) {
-  html, body, #root {
-    /* Khi chiều cao màn hình nhỏ (như iPhone xoay ngang), ta scale font-size theo vh (viewport height)
-       để các modal thiết kế bằng rem không bị tràn dọc và che khuất nút bấm */
-    font-size: clamp(9px, 2.9vh, 12.5px);
-  }
-}
