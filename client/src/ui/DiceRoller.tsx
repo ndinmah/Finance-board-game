@@ -234,15 +234,6 @@ export default function DiceRoller({ boardReady = true, onRollRevealed, onPresen
 
   return (
     <section className="dice-action-panel" aria-label="Bảng điều khiển lượt chơi">
-      <div className="dice-action-heading">
-        <div>
-          <p>Điều khiển lượt</p>
-          <strong>
-              Chọn hành động tiếp theo
-          </strong>
-        </div>
-      </div>
-
       {canAirport ? <div className="dice-action-message is-info"><p>Chọn một ô đất hoặc cảng hợp lệ trên bàn cờ.</p></div> : null}
       {canFestival ? <div className="dice-action-message is-festival"><p>Chọn đất của bạn để tổ chức lễ hội với phí 50K.</p><button type="button" className={SECONDARY_BUTTON} onClick={() => send('skipFestival')}>Bỏ qua</button></div> : null}
       {isPayingDebt ? <div className="dice-action-message is-danger"><div><strong>Cần thanh toán {formatMoney(me?.debtAmount || 0)}</strong><p>Chọn tài sản trên bàn cờ để bán và trả nợ.</p></div></div> : null}
