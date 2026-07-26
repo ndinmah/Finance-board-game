@@ -204,7 +204,7 @@ export class WebopolyRoom extends Room<GameState> {
     const player = state.players.get(client.sessionId);
     if (!player || state.gamePhase !== 'waiting') return;
 
-    player.isReady = true;
+    player.isReady = !player.isReady;
     this._checkReadyToStart();
   }
 
