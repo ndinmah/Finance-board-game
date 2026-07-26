@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useGameStore, type PlayerState } from '../store/gameStore';
 import { formatMoney } from '../utils/format';
+import PlayerAvatar from './PlayerAvatar';
+import { getAccessiblePlayerInk } from './playerVisuals';
 import './GameChrome.css';
 
 function WalletIcon() {
@@ -48,17 +50,8 @@ interface PlayerCardProps {
   turnDurationMs: number;
 }
 
-function getPlayerInk(color: string) {
-  const hex = color.replace('#', '');
-  if (!/^[0-9a-f]{6}$/i.test(hex)) return '#ffffff';
-  const red = parseInt(hex.slice(0, 2), 16);
-  const green = parseInt(hex.slice(2, 4), 16);
-  const blue = parseInt(hex.slice(4, 6), 16);
-  return (red * 299 + green * 587 + blue * 114) / 1000 > 165 ? '#10232d' : '#ffffff';
-}
-
 function PlayerCard({ player, isActive, isMe, turnDeadline, turnDurationMs }: PlayerCardProps) {
-  const playerInk = getPlayerInk(player.color);
+  const playerInk = getAccessiblePlayerInk(player.color);
   return (
     <article
       className={`game-hud-player ${isActive ? 'is-active' : ''} ${player.isBankrupt ? 'is-bankrupt' : ''}`}
@@ -84,10 +77,12 @@ function PlayerCard({ player, isActive, isMe, turnDeadline, turnDurationMs }: Pl
         ) : null}
       </div>
       <div className="game-hud-avatar">
-        <img
-          src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(player.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
-          alt=""
-          className="game-hud-avatar-img"
+        <PlayerAvatar
+          name={player.name}
+          color={player.color}
+          className="game-hud-avatar-visual"
+          imageClassName="game-hud-avatar-img"
+          loading="eager"
         />
         <span className={`game-hud-connection ${player.isConnected ? 'is-online' : 'is-offline'}`} aria-label={player.isConnected ? 'Đang kết nối' : 'Mất kết nối'} />
       </div>

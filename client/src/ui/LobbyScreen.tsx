@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createRoom, joinRoom } from '../net/colyseusClient';
 import { useGameStore } from '../store/gameStore';
+import PlayerAvatar from './PlayerAvatar';
 import './LobbyFlow.css';
 
 function DiceLogo() {
@@ -106,14 +107,7 @@ export default function LobbyScreen() {
 
           <form className="lobby-form" onSubmit={handleSubmit}>
             <div className="lobby-avatar-name-row">
-              <div className="lobby-avatar-preview" aria-hidden="true">
-                <img
-                  src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(name || 'guest')}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
-                  alt=""
-                  width="56"
-                  height="56"
-                />
-              </div>
+              <PlayerAvatar name={name || 'guest'} className="lobby-avatar-preview" loading="eager" />
               <label className="lobby-field" htmlFor="player-name" style={{ flex: 1 }}>
                 <span><UserIcon /> Tên hiển thị</span>
                 <input

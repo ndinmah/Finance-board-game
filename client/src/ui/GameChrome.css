@@ -4,15 +4,15 @@
 .dice-center-status,
 .dice-wait-status,
 .dice-action-panel {
-  --game-chrome-primary: #4bd5ff;
-  --game-chrome-bg: rgba(4, 31, 44, 0.92);
-  --game-chrome-bg-strong: rgba(3, 20, 31, 0.97);
+  --game-chrome-primary: var(--color-brand-primary);
+  --game-chrome-bg: color-mix(in srgb, var(--color-surface-raised) 92%, transparent);
+  --game-chrome-bg-strong: color-mix(in srgb, var(--color-surface-canvas) 97%, transparent);
   --game-chrome-panel: rgba(19, 105, 132, 0.78);
-  --game-chrome-border: rgba(75, 213, 255, 0.22);
-  --game-chrome-gold: #ffdc5d;
+  --game-chrome-border: var(--color-border-subtle);
+  --game-chrome-gold: var(--color-status-warning);
   --game-chrome-gold-deep: #d89a08;
-  --game-chrome-text: #f4fcff;
-  --game-chrome-muted: #91becb;
+  --game-chrome-text: var(--color-text-primary);
+  --game-chrome-muted: var(--color-text-secondary);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -57,12 +57,12 @@
 .game-hud-player {
   position: relative;
   isolation: isolate;
-  width: clamp(9.5rem, 16vw, 12.5rem);
+  width: clamp(11rem, 18vw, 14.5rem);
   min-width: 0;
-  height: 4.8rem;
+  height: 5.35rem;
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 3.7rem;
+  grid-template-columns: minmax(0, 1fr) 4rem;
   overflow: hidden;
   border: 3px solid var(--player-color, var(--game-chrome-primary));
   border-radius: 0.78rem;
@@ -93,6 +93,12 @@
   background: var(--player-color, #06141d);
 }
 
+.game-hud-avatar-visual {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
 .game-hud-avatar-img {
   width: 100%;
   height: 100%;
@@ -112,11 +118,11 @@
 }
 
 .game-hud-connection.is-online {
-  background: #55e7a2;
+  background: var(--color-status-success);
 }
 
 .game-hud-connection.is-offline {
-  background: #fb7185;
+  background: var(--color-status-danger);
 }
 
 .game-hud-player-copy {
@@ -132,10 +138,10 @@
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  min-height: 1.75rem;
-  padding: 0.28rem 0.5rem;
+  min-height: 2rem;
+  padding: 0.34rem 0.55rem;
   background:
-    linear-gradient(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12)),
+    linear-gradient(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05)),
     var(--player-color, var(--game-chrome-primary));
 }
 
@@ -143,7 +149,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--player-ink, #ffffff);
-  font-size: 0.7rem;
+  font-size: 0.88rem;
   font-weight: 950;
   letter-spacing: 0.035em;
   text-align: center;
@@ -155,31 +161,31 @@
 
 .game-hud-player-name span {
   flex: 0 0 auto;
-  padding: 0.12rem 0.3rem;
+  padding: 0.15rem 0.36rem;
   border-radius: 0.3rem;
   background: color-mix(in srgb, var(--player-ink, #ffffff), transparent 82%);
   color: var(--player-ink, #ffffff);
-  font-size: 0.43rem;
+  font-size: 0.62rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .game-hud-money {
   display: flex;
-  min-height: 2rem;
+  min-height: 2.25rem;
   flex: 1;
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
   color: #18272f;
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
 
 .game-hud-wallet-icon {
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 1.05rem;
+  height: 1.05rem;
   color: #75b800;
 }
 
@@ -204,14 +210,14 @@
 
 .game-hud-badges {
   position: absolute;
-  right: 3.88rem;
+  right: 4.18rem;
   bottom: 0.28rem;
   z-index: 2;
   display: flex;
   align-items: flex-end;
   gap: 0.22rem;
   color: #60737d;
-  font-size: 0.43rem;
+  font-size: 0.62rem;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -456,7 +462,7 @@
   height: 0.48rem;
   flex: 0 0 auto;
   border-radius: 999px;
-  background: #55e7a2;
+  background: var(--color-status-success);
   box-shadow: 0 0 0.65rem rgba(85, 231, 162, 0.85);
   animation: game-status-pulse 1.3s ease-in-out infinite;
 }
@@ -881,7 +887,8 @@
 
 @media (max-height: 480px) and (orientation: landscape) {
   .game-hud-player {
-    height: 4.15rem;
+    width: clamp(10.5rem, 17vw, 13rem);
+    height: 4.65rem;
     border-radius: 0.85rem;
   }
 

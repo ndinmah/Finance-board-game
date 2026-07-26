@@ -7,20 +7,49 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 :root {
-  --bg:       #0d1b3e;
-  --bg2:      #162040;
-  --surface:  #1e2d5a;
-  --surface2: #253470;
-  --border:   rgba(74,144,217,0.25);
-  --accent:   #4a90d9;
-  --accent2:  #7ec8e3;
-  --gold:     #f5c518;
-  --green:    #2ecc71;
-  --red:      #e74c3c;
-  --text:     #e8f0ff;
-  --text2:    #8faad4;
-  --radius:   0.8rem;
-  --shadow:   0 0.5333rem 2.1333rem rgba(0,0,0,0.4);
+  /* Semantic color tokens: components consume meaning, not palette names. */
+  --color-brand-primary: #4bd5ff;
+  --color-brand-primary-soft: #a8edff;
+  --color-brand-primary-deep: #087da3;
+  --color-surface-canvas: #04141f;
+  --color-surface-raised: #061d2a;
+  --color-surface-subtle: rgba(255, 255, 255, 0.055);
+  --color-border-subtle: rgba(75, 213, 255, 0.22);
+  --color-border-strong: rgba(75, 213, 255, 0.42);
+  --color-text-primary: #f4fcff;
+  --color-text-secondary: #91becb;
+  --color-text-on-brand: #052332;
+  --color-status-success: #55e7a2;
+  --color-status-warning: #ffdc5d;
+  --color-status-danger: #fb7185;
+  --color-status-danger-surface: rgba(76, 5, 25, 0.96);
+  --color-focus-ring: #a8edff;
+  --radius-control: 0.8rem;
+  --radius-panel: 1.5rem;
+  --shadow-panel: 0 1.2rem 4rem rgba(0, 0, 0, 0.42);
+  --motion-fast: 150ms;
+  --motion-normal: 240ms;
+  --layer-game-hud: 20;
+  --layer-game-overlay: 50;
+  --layer-app-state: 2900;
+  --layer-app-alert: 3000;
+  --layer-orientation-lock: 4000;
+
+  /* Compatibility aliases for existing game components. */
+  --bg: var(--color-surface-canvas);
+  --bg2: var(--color-surface-raised);
+  --surface: #0a3142;
+  --surface2: #10465b;
+  --border: var(--color-border-subtle);
+  --accent: var(--color-brand-primary);
+  --accent2: var(--color-brand-primary-soft);
+  --gold: var(--color-status-warning);
+  --green: var(--color-status-success);
+  --red: var(--color-status-danger);
+  --text: var(--color-text-primary);
+  --text2: var(--color-text-secondary);
+  --radius: var(--radius-control);
+  --shadow: var(--shadow-panel);
 }
 
 html, body, #root {

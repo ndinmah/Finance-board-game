@@ -31,7 +31,13 @@ function EventGlyph({ type }: { type: string }) {
 export default function EventLog() {
   const events = useGameStore(s => s.events);
   const [collapsed, setCollapsed] = useState(() => window.matchMedia(SHORT_LANDSCAPE_QUERY).matches);
+  const [announcement, setAnnouncement] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
+  const latestEvent = events.at(-1);
+  const latestEventKey = latestEvent
+    ? `${latestEvent.timestamp}-${latestEvent.type}-${latestEvent.playerId}-${latestEvent.tileId}-${latestEvent.message}`
+    : '';
+  const announcedEventKeyRef = useRef(latestEventKey);
 
   useEffect(() => {
     const shortLandscape = window.matchMedia(SHORT_LANDSCAPE_QUERY);
@@ -48,10 +54,17 @@ export default function EventLog() {
     bottomRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
   }, [events, collapsed]);
 
+  useEffect(() => {
+    if (!latestEvent || announcedEventKeyRef.current === latestEventKey) return;
+    announcedEventKeyRef.current = latestEventKey;
+    setAnnouncement(latestEvent.message);
+  }, [latestEvent, latestEventKey]);
+
   const recent = events.slice(-20);
 
   return (
     <aside className={`event-log ${collapsed ? 'is-collapsed' : 'is-expanded'}`} aria-label="Nhật ký trận đấu">
+      <span className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</span>
       <button type="button" onClick={() => setCollapsed(value => !value)} className="event-log-toggle" aria-expanded={!collapsed}>
         <span className="event-log-heading">
           <span className="event-log-heading-icon">
@@ -66,7 +79,7 @@ export default function EventLog() {
       </button>
 
       {!collapsed ? (
-        <div className="event-log-scroll" aria-live="polite">
+        <div className="event-log-scroll">
           {recent.length === 0 ? (
             <div className="event-log-empty">
               <p>Các giao dịch và sự kiện quan trọng sẽ xuất hiện tại đây.</p>

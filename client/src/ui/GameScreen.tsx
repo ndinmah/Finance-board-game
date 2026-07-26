@@ -16,7 +16,7 @@ import EventLog from './EventLog';
 import WinnerModal from './WinnerModal';
 import GoModal from './GoModal';
 import PlayerPickerModal from './PlayerPickerModal';
-import boardBg from '../assets/broad.png';
+import boardBg from '../assets/broad.webp';
 
 const DICE_RESULT_HOLD_MS = 1000;
 

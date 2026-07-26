@@ -1,9 +1,9 @@
 .lobby-flow-page {
-  --lobby-primary: #4bd5ff;
-  --lobby-primary-soft: #c9f3ff;
-  --lobby-primary-deep: #087da3;
-  --lobby-surface: #061d2a;
-  --lobby-surface-strong: #04141f;
+  --lobby-primary: var(--color-brand-primary);
+  --lobby-primary-soft: var(--color-brand-primary-soft);
+  --lobby-primary-deep: var(--color-brand-primary-deep);
+  --lobby-surface: var(--color-surface-raised);
+  --lobby-surface-strong: var(--color-surface-canvas);
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -19,7 +19,7 @@
   background:
     radial-gradient(circle at 14% 20%, rgba(75, 213, 255, 0.2), transparent 28rem),
     radial-gradient(circle at 88% 82%, rgba(75, 213, 255, 0.11), transparent 26rem),
-    linear-gradient(145deg, #04141f 0%, #082b3c 52%, #041720 100%);
+    linear-gradient(145deg, var(--color-surface-canvas) 0%, #082b3c 52%, #041720 100%);
   isolation: isolate;
 }
 
@@ -273,7 +273,7 @@
   overflow: hidden;
   border: 1px solid rgba(75, 213, 255, 0.3);
   border-radius: 0.9rem;
-  background: rgba(2, 16, 25, 0.76);
+  background: var(--avatar-color, var(--lobby-primary));
   display: grid;
   place-items: center;
   transition: border-color 180ms ease;
@@ -382,7 +382,7 @@
 
 .lobby-primary-button {
   color: #052332;
-  background: linear-gradient(145deg, #a8edff, var(--lobby-primary));
+  background: linear-gradient(145deg, var(--color-brand-primary-soft), var(--lobby-primary));
   box-shadow: 0 0.7rem 1.6rem rgba(75, 213, 255, 0.2);
 }
 
@@ -507,6 +507,60 @@
   line-height: 1.1;
 }
 
+.waiting-code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.waiting-code-row strong {
+  min-width: 0;
+  flex: 1;
+}
+
+.waiting-copy-button {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  border: 1px solid rgba(75, 213, 255, 0.34);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  color: #d8f7ff;
+  background: rgba(75, 213, 255, 0.1);
+  font-size: 0.68rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: border-color 180ms ease, background-color 180ms ease, transform 150ms ease;
+}
+
+.waiting-copy-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.waiting-copy-button:hover:not(:disabled) {
+  border-color: var(--lobby-primary);
+  background: rgba(75, 213, 255, 0.18);
+}
+
+.waiting-copy-button:focus-visible {
+  outline: 3px solid rgba(75, 213, 255, 0.48);
+  outline-offset: 2px;
+}
+
+.waiting-copy-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
 .waiting-code-card p,
 .waiting-progress p {
   color: #91bdc8;
@@ -540,6 +594,24 @@
 
 .waiting-actions {
   margin-top: auto;
+}
+
+.waiting-leave-button {
+  grid-column: 1 / -1;
+  border-color: rgba(251, 113, 133, 0.32);
+  color: #ffe4e6;
+  background: rgba(251, 113, 133, 0.08);
+}
+
+.waiting-leave-button:hover:not(:disabled) {
+  border-color: rgba(251, 113, 133, 0.62);
+  background: rgba(251, 113, 133, 0.14);
+}
+
+.waiting-cancel-ready {
+  border-color: rgba(255, 220, 93, 0.34);
+  color: #fff1b8;
+  background: rgba(255, 220, 93, 0.08);
 }
 
 .waiting-ready-badge {
@@ -641,12 +713,12 @@
   display: grid;
   flex: none;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--player-color, #8ca69d), white 22%);
+  border: 1px solid color-mix(in srgb, var(--avatar-color, #8ca69d), white 22%);
   border-radius: 0.82rem;
-  color: #ffffff;
+  color: var(--avatar-ink, #071a23);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.2), transparent),
-    var(--player-color, #506b62);
+    var(--avatar-color, #506b62);
   font-family: "Nunito", sans-serif;
   font-size: 1rem;
   font-weight: 900;

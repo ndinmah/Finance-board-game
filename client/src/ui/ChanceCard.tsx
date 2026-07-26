@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import type { MouseEvent } from 'react';
 import { useGameStore } from '../store/gameStore';
+import ModalShell from './ModalShell';
 
 interface Props {
   onClose: () => void;
@@ -112,13 +113,10 @@ export default function ChanceCard({ onClose }: Props) {
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[0.5333rem] flex items-center justify-center z-[1000] p-4" 
+    <ModalShell
+      ariaLabel={`Thẻ Cơ hội: ${meta.title}`}
+      onClose={onClose}
       style={{ perspective: '1200px' }}
-      role="dialog" 
-      aria-modal="true" 
-      aria-label="Thẻ Cơ Hội" 
-      onClick={onClose}
     >
       
       {/* Wrapper có animation trượt vào ban đầu */}
@@ -217,6 +215,6 @@ export default function ChanceCard({ onClose }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
