@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { TILE_IMAGE } from '../game/tileImages';
 import { formatMoneyFull } from '../utils/format';
+import ModalShell, { ModalCloseButton } from './ModalShell';
 
 const getMaxHouses = (passCount: number, currentHouses: number) => {
   if (passCount === 0) return 2;
@@ -122,7 +123,11 @@ export default function BuyUpgradeModal() {
     if (!tile.isActive) expectedRent = 0;
 
     return (
-      <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[0.5333rem] flex items-center justify-center z-[1000] p-[1rem]" onClick={handleSkip}>
+      <ModalShell
+        ariaLabel={`${isBuy ? 'Mua' : 'Nâng cấp'} ${tile.name}`}
+        onClose={handleSkip}
+        closeOnBackdrop={false}
+      >
         <div className="relative w-full max-w-[38.6667rem] h-auto max-h-[95vh] animate-card-modal-slide flex flex-col
           before:content-[''] before:absolute before:bg-[#fdfaf5] before:rounded-[1.6rem] before:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] before:-z-[1] before:inset-0 before:border before:border-[rgba(0,0,0,0.04)] before:transition-all before:duration-300 before:-rotate-2 before:-translate-x-1 before:translate-y-2
           after:content-[''] after:absolute after:bg-[#f5f0e6] after:rounded-[1.6rem] after:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] after:-z-[2] after:inset-0 after:border after:border-[rgba(0,0,0,0.04)] after:transition-all after:duration-300 after:rotate-3 after:translate-x-1.5 after:translate-y-3">
@@ -136,7 +141,11 @@ export default function BuyUpgradeModal() {
               {/* Header overlaid on top of image */}
               <div className="absolute top-0 left-0 right-0 p-[0.8rem_1.3333rem] flex justify-center items-center bg-gradient-to-b from-[rgba(0,0,0,0.65)] to-transparent z-10">
                 <h3 className="text-white font-extrabold text-[1.2rem] tracking-[0.1333rem] drop-shadow-[0_0.1333rem_0.5333rem_rgba(0,0,0,0.8)] text-center m-0">{tile.name.toUpperCase()}</h3>
-                <button className="absolute right-[0.9333rem] top-1/2 -translate-y-1/2 bg-[rgba(255,255,255,0.25)] border-[0.1rem] border-[rgba(255,255,255,0.6)] text-white w-[2.1333rem] h-[2.1333rem] rounded-full cursor-pointer text-[0.9333rem] flex items-center justify-center backdrop-blur-[0.4rem] transition-all duration-200 hover:bg-[rgba(255,255,255,0.45)] hover:scale-105 active:scale-95 z-[100] pointer-events-auto shadow-[0_0.1333rem_0.5333rem_rgba(0,0,0,0.3)]" onClick={(e) => { e.stopPropagation(); handleSkip(); }}>✕</button>
+                <ModalCloseButton
+                  className="absolute right-[0.9333rem] top-1/2 z-[100] -translate-y-1/2"
+                  onClick={handleSkip}
+                  ariaLabel={isBuy ? 'Bỏ qua mua tài sản' : 'Bỏ qua nâng cấp'}
+                />
               </div>
               <div className="absolute bottom-0 left-0 right-0 h-[4rem] bg-gradient-to-b from-transparent to-[#fdfbf7] pointer-events-none" />
             </div>
@@ -186,7 +195,7 @@ export default function BuyUpgradeModal() {
             </div>
           </div>
         </div>
-      </div>
+      </ModalShell>
     );
   }
 
@@ -243,7 +252,11 @@ export default function BuyUpgradeModal() {
     { level: 3, label: 'Nhà 3', image: '/images/house-3.png', maxAllowed: 3 },
   ];
   return (
-    <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[0.5333rem] flex items-center justify-center z-[1000] p-[1rem]" onClick={handleSkip}>
+    <ModalShell
+      ariaLabel={`${isBuy ? 'Mua' : 'Nâng cấp'} ${tile.name}`}
+      onClose={handleSkip}
+      closeOnBackdrop={false}
+    >
       <div className="relative w-full max-w-[42rem] h-auto max-h-[95vh] animate-card-modal-slide flex flex-col
         before:content-[''] before:absolute before:bg-[#fdfaf5] before:rounded-[1.6rem] before:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] before:-z-[1] before:inset-0 before:border before:border-[rgba(0,0,0,0.04)] before:transition-all before:duration-300 before:-rotate-2 before:-translate-x-1 before:translate-y-2
         after:content-[''] after:absolute after:bg-[#f5f0e6] after:rounded-[1.6rem] after:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] after:-z-[2] after:inset-0 after:border after:border-[rgba(0,0,0,0.04)] after:transition-all after:duration-300 after:rotate-3 after:translate-x-1.5 after:translate-y-3">
@@ -257,7 +270,11 @@ export default function BuyUpgradeModal() {
             {/* Header overlaid on top of image */}
             <div className="absolute top-0 left-0 right-0 p-[1.0667rem_1.3333rem] flex justify-center items-center bg-gradient-to-b from-[rgba(0,0,0,0.55)] to-transparent z-10">
               <h3 className="text-white font-extrabold text-[1.2rem] tracking-[0.1333rem] drop-shadow-[0_0.0667rem_0.5333rem_rgba(0,0,0,0.7)] text-center m-0">{tile.name.toUpperCase()}</h3>
-              <button className="absolute right-[0.9333rem] top-1/2 -translate-y-1/2 bg-[rgba(255,255,255,0.2)] border-[0.1rem] border-[rgba(255,255,255,0.5)] text-white w-[2.4rem] h-[2.4rem] rounded-full cursor-pointer text-[1.0667rem] flex items-center justify-center backdrop-blur-[0.2667rem] transition-all duration-200 hover:bg-[rgba(255,255,255,0.38)] active:scale-90 z-[100] pointer-events-auto" onClick={(e) => { e.stopPropagation(); handleSkip(); }}>✕</button>
+              <ModalCloseButton
+                className="absolute right-[0.9333rem] top-1/2 z-[100] -translate-y-1/2"
+                onClick={handleSkip}
+                ariaLabel={isBuy ? 'Bỏ qua mua tài sản' : 'Bỏ qua nâng cấp'}
+              />
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-[5.3333rem] bg-gradient-to-b from-transparent to-white pointer-events-none" />
           </div>
@@ -325,6 +342,6 @@ export default function BuyUpgradeModal() {
           </div>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

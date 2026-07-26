@@ -2,6 +2,7 @@
 import { useGameStore } from '../store/gameStore';
 import { leaveRoom } from '../net/colyseusClient';
 import { formatMoney } from '../utils/format';
+import ModalShell from './ModalShell';
 
 const IS_DEV_MODE = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev');
 
@@ -15,7 +16,12 @@ export default function WinnerModal() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[rgba(0,0,0,0.8)] backdrop-blur-[0.5333rem] flex items-center justify-center z-[2500]">
+    <ModalShell
+      ariaLabel="Kết quả ván đấu"
+      closeOnBackdrop={false}
+      closeOnEscape={false}
+      zIndex={2500}
+    >
       <div className="bg-gradient-to-br from-[#1e2d5a] to-[#162040] border-[0.1333rem] border-[rgba(245,197,24,0.5)] rounded-[1.0667rem] md:rounded-[1.6rem] p-[2.1333rem_1.3333rem] md:p-[3.2rem_2.6667rem] text-center w-[90%] max-w-[25.3333rem] shadow-[0_0_4rem_rgba(245,197,24,0.2),0_1.6rem_4.2667rem_rgba(0,0,0,0.7)] animate-winner-slide">
         <div className="text-[4rem] md:text-[5.3333rem] animate-trophy-bounce block">{isMe ? '🏆' : '🥈'}</div>
         <h2 className="font-nunito text-[1.6rem] md:text-[2.1333rem] font-black bg-gradient-to-br from-[#f5c518] to-[#e67e22] text-transparent bg-clip-text m-[0.8rem_0_0.5333rem]">{isMe ? 'Bạn thắng!' : `${winner?.name || 'Người chơi'} thắng!`}</h2>
@@ -31,6 +37,6 @@ export default function WinnerModal() {
           {IS_DEV_MODE ? 'Chơi lại' : 'Quay về Sảnh'}
         </button>
       </div>
-    </div>
+    </ModalShell>
   );
 }

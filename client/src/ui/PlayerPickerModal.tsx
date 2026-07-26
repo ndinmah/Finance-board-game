@@ -1,6 +1,7 @@
 import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { formatMoneyFull } from '../utils/format';
+import ModalShell from './ModalShell';
 
 interface Props {
   onClose?: () => void;
@@ -35,7 +36,11 @@ export default function PlayerPickerModal({ onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[0.5333rem] flex items-center justify-center z-[1000] p-4">
+    <ModalShell
+      ariaLabel="Chọn người nhận đất"
+      closeOnBackdrop={false}
+      closeOnEscape={false}
+    >
       <div className="relative w-full max-w-[32rem] bg-white rounded-[1.6rem] overflow-hidden shadow-[0_1.6rem_3.2rem_rgba(0,0,0,0.25),inset_0_0.1333rem_0.2667rem_rgba(255,255,255,0.8)] animate-card-modal-slide">
         
         <div className="p-[1.3333rem_1.6rem] bg-[#8b5cf6] text-white flex justify-between items-center border-b border-[rgba(0,0,0,0.08)]">
@@ -82,6 +87,6 @@ export default function PlayerPickerModal({ onClose }: Props) {
         </div>
 
       </div>
-    </div>
+    </ModalShell>
   );
 }

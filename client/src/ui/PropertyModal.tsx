@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { send } from '../net/colyseusClient';
 import { formatMoneyFull } from '../utils/format';
 import { TILE_IMAGE } from '../game/tileImages';
+import ModalShell, { ModalCloseButton } from './ModalShell';
 
 interface Props { tileId: number; onClose: () => void; }
 
@@ -58,7 +59,7 @@ export default function PropertyModal({ tileId, onClose }: Props) {
   const illustrationSrc = TILE_IMAGE[tileId] ?? '/images/go.webp';
 
   return (
-    <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[0.8rem] flex items-center justify-center z-[1000] p-4" onClick={onClose}>
+    <ModalShell ariaLabel={`Thông tin ${tile.name}`} onClose={onClose}>
       <div className="relative w-full max-w-[42rem] h-auto max-h-[95vh] animate-card-modal-slide flex flex-col
         before:content-[''] before:absolute before:bg-[#fdfaf5] before:rounded-[1.2rem] before:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] before:-z-[1] before:inset-0 before:border before:border-[rgba(0,0,0,0.04)] before:transition-all before:duration-300 before:-rotate-2 before:-translate-x-1 before:translate-y-2
         after:content-[''] after:absolute after:bg-[#f5f0e6] after:rounded-[1.2rem] after:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] after:-z-[2] after:inset-0 after:border after:border-[rgba(0,0,0,0.04)] after:transition-all after:duration-300 after:rotate-3 after:translate-x-1.5 after:translate-y-3">
@@ -74,7 +75,7 @@ export default function PropertyModal({ tileId, onClose }: Props) {
               {tile.isShielded && <span title="Đang có Khiên bảo vệ" className="text-[1.1rem] drop-shadow-[0_0.1333rem_0.2667rem_rgba(0,0,0,0.5)]">🛡️</span>}
               {!tile.isActive && <span title="Đang bị Cúp Điện" className="text-[1.1rem] drop-shadow-[0_0.1333rem_0.2667rem_rgba(0,0,0,0.5)]">⚡</span>}
             </h3>
-            <button className="absolute right-[0.8rem] bg-[rgba(0,0,0,0.2)] text-white border-none w-8 h-8 rounded-full flex items-center justify-center text-[0.9rem] cursor-pointer transition-all duration-200 hover:bg-[rgba(0,0,0,0.4)] hover:scale-110 shrink-0 shadow-inner" onClick={onClose}>✕</button>
+            <ModalCloseButton className="absolute right-[0.8rem]" onClick={onClose} />
           </div>
 
           {/* ── Body ── */}
@@ -220,6 +221,6 @@ export default function PropertyModal({ tileId, onClose }: Props) {
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

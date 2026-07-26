@@ -1,4 +1,5 @@
 import { formatMoneyFull } from '../utils/format';
+import ModalShell, { ModalCloseButton } from './ModalShell';
 
 interface Props {
   onClose: () => void;
@@ -10,7 +11,7 @@ const GoIllustration = () => (
 
 export default function GoModal({ onClose }: Props) {
   return (
-    <div className="fixed inset-0 bg-[rgba(15,15,20,0.65)] backdrop-blur-[0.5333rem] flex items-center justify-center z-[1000] p-4" onClick={onClose}>
+    <ModalShell ariaLabel="Thông tin ô Xuất phát" onClose={onClose}>
       <div className="relative w-full max-w-[38.6667rem] md:max-w-[48rem] animate-card-modal-slide
         before:content-[''] before:absolute before:bg-[#fdfaf5] before:rounded-[1.6rem] before:shadow-[0_0.2667rem_0.8rem_rgba(0,0,0,0.1)] before:-z-[1] before:inset-0 before:border before:border-[rgba(0,0,0,0.04)] before:transition-all before:duration-300 before:-rotate-2 before:-translate-x-1 before:translate-y-2
         after:content-[''] after:absolute after:bg-[#f5f0e6] after:rounded-[1.6rem] after:shadow-[0_0.2667rem_0.8rem_rgba(0,0,0,0.1)] after:-z-[2] after:inset-0 after:border after:border-[rgba(0,0,0,0.04)] after:transition-all after:duration-300 after:rotate-3 after:translate-x-1.5 after:translate-y-3">
@@ -21,7 +22,7 @@ export default function GoModal({ onClose }: Props) {
             <h3 className="text-[1.3333rem] font-black m-0 leading-tight tracking-[0.0667rem] drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] flex items-center gap-2">
               🚀 TRẠM KHỞI HÀNH (START)
             </h3>
-            <button className="absolute right-[0.9333rem] top-1/2 -translate-y-1/2 bg-[rgba(255,255,255,0.25)] border-[1.5px] border-[rgba(255,255,255,0.6)] text-white w-[2.1333rem] h-[2.1333rem] rounded-full cursor-pointer text-[0.9333rem] flex items-center justify-center backdrop-blur-[6px] transition-all duration-200 hover:bg-[rgba(255,255,255,0.45)] hover:scale-105 active:scale-95 shadow-[0_2px_8px_rgba(0,0,0,0.2)]" onClick={onClose}>✕</button>
+            <ModalCloseButton className="absolute right-[0.75rem] top-1/2 -translate-y-1/2" onClick={onClose} />
           </div>
           
           <div className="p-[1.0667rem] md:p-[1.3333rem_1.6rem]">
@@ -104,6 +105,6 @@ export default function GoModal({ onClose }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
