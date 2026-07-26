@@ -71,7 +71,7 @@ button {
   border-radius: var(--radius);
   touch-action: manipulation;
 }
-button:active { transform: scale(0.96); }
+button:not(.modal-close-button):active { transform: scale(0.96); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 input {

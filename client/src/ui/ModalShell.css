@@ -16,36 +16,45 @@
 }
 
 .modal-close-button {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-grid;
-  place-items: center;
-  border: 1.5px solid rgba(255, 255, 255, 0.58);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.24);
+  width: 2.2rem;
+  height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   color: #ffffff;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: 900;
+  font-size: 1.5rem;
+  font-weight: 700;
   line-height: 1;
-  box-shadow: 0 0.2rem 0.7rem rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(6px);
-  transition: background-color 180ms ease, transform 180ms ease;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  transition: opacity 150ms ease;
+}
+
+.modal-close-button:hover,
+.modal-close-button:active,
+.modal-close-button:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
 
 .modal-close-button:hover {
-  background: rgba(0, 0, 0, 0.42);
-  transform: scale(1.05);
+  opacity: 0.75;
 }
 
 .modal-close-button:active {
-  transform: scale(0.94);
+  opacity: 1;
 }
 
 .modal-close-button:focus-visible {
-  outline: 3px solid var(--color-focus-ring);
+  outline: 2px solid var(--color-focus-ring, #38bdf8);
   outline-offset: 2px;
 }
 

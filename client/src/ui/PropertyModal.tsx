@@ -75,7 +75,7 @@ export default function PropertyModal({ tileId, onClose }: Props) {
               {tile.isShielded && <span title="Đang có Khiên bảo vệ" className="text-[1.1rem] drop-shadow-[0_0.1333rem_0.2667rem_rgba(0,0,0,0.5)]">🛡️</span>}
               {!tile.isActive && <span title="Đang bị Cúp Điện" className="text-[1.1rem] drop-shadow-[0_0.1333rem_0.2667rem_rgba(0,0,0,0.5)]">⚡</span>}
             </h3>
-            <ModalCloseButton className="absolute right-[0.8rem]" onClick={onClose} />
+            <ModalCloseButton className="absolute right-[0.8rem] top-1/2 -translate-y-1/2" onClick={onClose} />
           </div>
 
           {/* ── Body ── */}
