@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useGameStore, type PlayerState } from '../store/gameStore';
-import { formatMoney } from '../utils/format';
 import PlayerAvatar from './PlayerAvatar';
 import { getAccessiblePlayerInk } from './playerVisuals';
 import './GameChrome.css';
@@ -66,11 +65,9 @@ function PlayerCard({ player, isActive, isMe, turnDeadline, turnDurationMs }: Pl
       <div className="game-hud-player-copy">
         <div className="game-hud-player-name">
           <p>{player.name}</p>
-          {isMe ? <span>Bạn</span> : null}
         </div>
         <div className="game-hud-money">
-          <WalletIcon />
-          <span>{formatMoney(player.money)}</span>
+          <span>{player.money} K</span>
         </div>
         {isActive && turnDeadline > 0 && turnDurationMs > 0 ? (
           <TurnTimer deadline={turnDeadline} durationMs={turnDurationMs} />
@@ -85,10 +82,6 @@ function PlayerCard({ player, isActive, isMe, turnDeadline, turnDurationMs }: Pl
           loading="eager"
         />
         <span className={`game-hud-connection ${player.isConnected ? 'is-online' : 'is-offline'}`} aria-label={player.isConnected ? 'Đang kết nối' : 'Mất kết nối'} />
-      </div>
-      <div className="game-hud-badges">
-        {player.isInJail ? <span className="is-jail">Trong tù</span> : null}
-        {player.isBot ? <span>Bot</span> : null}
       </div>
     </article>
   );
