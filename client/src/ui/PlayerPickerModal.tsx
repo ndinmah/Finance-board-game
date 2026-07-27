@@ -60,7 +60,7 @@ export default function PlayerPickerModal({ onClose }: Props) {
               <button
                 key={p.id}
                 onClick={() => handleSelect(p.id)}
-                className="w-full flex items-center p-3 bg-white border border-[rgba(0,0,0,0.08)] rounded-[0.8rem] shadow-sm hover:border-[#8b5cf6] hover:shadow-md transition-all text-left group"
+                className="font-inter cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96] w-full flex items-center p-3 bg-white border border-[rgba(0,0,0,0.08)] rounded-[0.8rem] shadow-sm hover:border-[#8b5cf6] hover:shadow-md transition-all text-left group"
               >
                 <div 
                   className="w-12 h-12 rounded-full border-2 border-white shadow-sm flex-shrink-0 mr-4 flex items-center justify-center text-white font-bold text-xl"

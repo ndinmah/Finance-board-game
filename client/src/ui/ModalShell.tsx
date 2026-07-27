@@ -6,7 +6,6 @@ import {
   type PointerEvent,
   type ReactNode,
 } from 'react';
-import './ModalShell.css';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -51,7 +50,7 @@ export function ModalCloseButton({
   return (
     <button
       type="button"
-      className={`modal-close-button ${className}`}
+      className={`font-inter cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed modal-close-button [width:2.2rem] [height:2.2rem] [display:inline-flex] [align-items:center] [justify-content:center] [padding:0] [margin:0] ![border:none] ![border-radius:0] ![background:transparent] [color:#ffffff] [cursor:pointer] [font-size:1.5rem] [font-weight:700] [line-height:1] ![box-shadow:none] ![backdrop-filter:none] [transition:opacity_150ms_ease] [&:hover]:![background:transparent] [&:hover]:![border:none] [&:hover]:![box-shadow:none] [&:hover]:![border-radius:0] [&:active]:![background:transparent] [&:active]:![border:none] [&:active]:![box-shadow:none] [&:active]:![border-radius:0] [&:focus]:![background:transparent] [&:focus]:![border:none] [&:focus]:![box-shadow:none] [&:focus]:![border-radius:0] [&:hover]:[opacity:0.75] [&:active]:[opacity:1] [&:focus-visible]:[outline:2px_solid_var(--color-focus-ring,_#38bdf8)] [&:focus-visible]:[outline-offset:2px] motion-reduce:[transition:none] ${className}`}
       onClick={onClick}
       aria-label={ariaLabel}
     >
@@ -149,7 +148,7 @@ export default function ModalShell({
   return (
     <div
       ref={shellRef}
-      className={`modal-shell ${className}`}
+      className={`modal-shell [position:fixed] [inset:0] [z-index:1000] [display:flex] [align-items:center] [justify-content:center] [padding:1rem] [background:rgba(15,_15,_20,_0.65)] [backdrop-filter:blur(0.5333rem)] [outline:none] focus-visible:[outline:none] ${className}`}
       style={{ ...style, zIndex: zIndex ?? style?.zIndex }}
       role="dialog"
       aria-modal="true"
