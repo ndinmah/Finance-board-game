@@ -348,13 +348,13 @@ export default function GameScreen() {
       {/* <div className="hidden md:flex absolute top-2.5 right-2.5 z-[9999] gap-2 pointer-events-auto">
         <button
           onClick={() => boardRef.current?.toggleEditMode()}
-          className="bg-red-500 text-white border-none py-2 px-3 rounded cursor-pointer font-bold"
+          className="font-inter cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96] [transition:all_0.15s_ease] bg-red-500 text-white border-none py-2 px-3 rounded cursor-pointer font-bold"
         >
           Toggle Map Editor
         </button>
         <button
           onClick={() => boardRef.current?.exportWaypoints()}
-          className="bg-blue-500 text-white border-none py-2 px-3 rounded cursor-pointer font-bold"
+          className="font-inter cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96] [transition:all_0.15s_ease] bg-blue-500 text-white border-none py-2 px-3 rounded cursor-pointer font-bold"
         >
           Export Waypoints
         </button>
