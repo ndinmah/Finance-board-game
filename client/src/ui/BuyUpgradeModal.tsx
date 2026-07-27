@@ -128,15 +128,15 @@ export default function BuyUpgradeModal() {
         onClose={handleSkip}
         closeOnBackdrop={false}
       >
-        <div className="relative w-full max-w-[38.6667rem] h-auto max-h-[95vh] animate-card-modal-slide flex flex-col
+        <div className="relative w-full max-w-[38.6667rem] h-auto max-h-[95vh] animate-card-modal-slide flex flex-col [@media(max-height:480px)_and_(orientation:landscape)]:[max-height:calc(100dvh_-_1rem)]
           before:content-[''] before:absolute before:bg-[#fdfaf5] before:rounded-[1.6rem] before:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] before:-z-[1] before:inset-0 before:border before:border-[rgba(0,0,0,0.04)] before:transition-all before:duration-300 before:-rotate-2 before:-translate-x-1 before:translate-y-2
           after:content-[''] after:absolute after:bg-[#f5f0e6] after:rounded-[1.6rem] after:shadow-[0_0.2667rem_1.0667rem_rgba(0,0,0,0.15)] after:-z-[2] after:inset-0 after:border after:border-[rgba(0,0,0,0.04)] after:transition-all after:duration-300 after:rotate-3 after:translate-x-1.5 after:translate-y-3">
           <div
-            className="bg-gradient-to-b from-[#fdfbf7] to-[#f4f0e6] rounded-[1.6rem] overflow-hidden shadow-[0_1.6rem_3.2rem_rgba(0,0,0,0.25),0_0_0_0.0667rem_rgba(0,0,0,0.05),inset_0_0.1333rem_0.2667rem_rgba(255,255,255,0.8)] relative z-10 flex flex-col"
+            className="bg-gradient-to-b from-[#fdfbf7] to-[#f4f0e6] rounded-[1.6rem] overflow-hidden shadow-[0_1.6rem_3.2rem_rgba(0,0,0,0.25),0_0_0_0.0667rem_rgba(0,0,0,0.05),inset_0_0.1333rem_0.2667rem_rgba(255,255,255,0.8)] relative z-10 flex flex-col max-h-full"
             onClick={e => e.stopPropagation()}
           >
             {/* ── Ticket Photo: covers full header + photo zone ── */}
-            <div className="relative w-full h-[9.3333rem] shrink-0 rounded-t-[1.6rem] overflow-hidden" style={{ borderTop: `5px solid ${headerColor}` }}>
+            <div className="relative w-full h-[9.3333rem] shrink-0 rounded-t-[1.6rem] overflow-hidden [@media(max-height:480px)_and_(orientation:landscape)]:[height:6rem]" style={{ borderTop: `5px solid ${headerColor}` }}>
               <img src={'/images/port.webp'} alt={tile.name} className="w-full h-full object-cover block brightness-105 contrast-110 saturate-[1.2]" />
               {/* Header overlaid on top of image */}
               <div className="absolute top-0 left-0 right-0 p-[0.8rem_1.3333rem] flex justify-center items-center bg-gradient-to-b from-[rgba(0,0,0,0.65)] to-transparent z-10">
@@ -150,39 +150,39 @@ export default function BuyUpgradeModal() {
               <div className="absolute bottom-0 left-0 right-0 h-[4rem] bg-gradient-to-b from-transparent to-[#fdfbf7] pointer-events-none" />
             </div>
 
-            <div className="p-[1.0667rem] pt-0 relative z-10 flex flex-col items-center">
-              <div className="w-full max-w-[32rem] bg-white rounded-[1.0667rem] p-[1.0667rem] shadow-[0_0.5333rem_1.6rem_rgba(0,0,0,0.06),0_0.1333rem_0.5333rem_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.05)] mb-[0.8rem] mt-[-1.5rem]">
-                <p className="text-[0.8667rem] font-bold text-[#4a5568] leading-[1.4] text-center m-[0_0_0.8rem_0] border-b border-[rgba(0,0,0,0.06)] pb-[0.8rem]">
+            <div className="p-[1.0667rem] pt-0 relative z-10 flex min-h-0 flex-col items-center [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0_0.65rem_0.65rem]">
+              <div className="w-full max-w-[32rem] bg-white rounded-[1.0667rem] p-[1.0667rem] shadow-[0_0.5333rem_1.6rem_rgba(0,0,0,0.06),0_0.1333rem_0.5333rem_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.05)] mb-[0.8rem] mt-[-1.5rem] [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.55rem_0.75rem] [@media(max-height:480px)_and_(orientation:landscape)]:[margin-top:-0.8rem] [@media(max-height:480px)_and_(orientation:landscape)]:[margin-bottom:0.35rem]">
+                <p className="text-[0.8667rem] font-bold text-[#4a5568] leading-[1.4] text-center m-[0_0_0.8rem_0] border-b border-[rgba(0,0,0,0.06)] pb-[0.8rem] [@media(max-height:480px)_and_(orientation:landscape)]:[margin-bottom:0.25rem] [@media(max-height:480px)_and_(orientation:landscape)]:[padding-bottom:0.25rem] [@media(max-height:480px)_and_(orientation:landscape)]:[font-size:0.72rem]">
                   Phí tăng theo số cảng sở hữu (không thể bị cướp đất)
                 </p>
                 <table className="w-full border-collapse font-medium text-[0.9333rem] text-[#2d3748]">
                   <tbody>
                     <tr className={`border-b border-[rgba(0,0,0,0.04)] transition-colors duration-200 ${nextPortCount === 1 ? 'bg-[rgba(74,144,217,0.12)] shadow-[inset_0.2667rem_0_0_#4a90d9]' : 'hover:bg-[rgba(0,0,0,0.02)]'}`}>
-                      <td className="p-[0.5333rem_0.8rem] font-semibold">1 Cảng</td>
-                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem]">{formatMoneyFull(25)} <span className="text-[#22c55e] font-black drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
+                      <td className="p-[0.5333rem_0.8rem] font-semibold [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.22rem_0.6rem]">1 Cảng</td>
+                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem] [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.22rem_0.6rem] [@media(max-height:480px)_and_(orientation:landscape)]:[font-size:0.82rem]">{formatMoneyFull(25)} <span className="text-[#22c55e] font-black drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
                     </tr>
                     <tr className={`border-b border-[rgba(0,0,0,0.04)] transition-colors duration-200 ${nextPortCount === 2 ? 'bg-[rgba(74,144,217,0.12)] shadow-[inset_0.2667rem_0_0_#4a90d9]' : 'hover:bg-[rgba(0,0,0,0.02)]'}`}>
-                      <td className="p-[0.5333rem_0.8rem] font-semibold">2 Cảng</td>
-                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem]">{formatMoneyFull(50)} <span className="text-[#22c55e] font-black drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
+                      <td className="p-[0.5333rem_0.8rem] font-semibold [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.22rem_0.6rem]">2 Cảng</td>
+                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem] [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.22rem_0.6rem] [@media(max-height:480px)_and_(orientation:landscape)]:[font-size:0.82rem]">{formatMoneyFull(50)} <span className="text-[#22c55e] font-black drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
                     </tr>
                     <tr className={`border-b border-[rgba(0,0,0,0.04)] transition-colors duration-200 ${nextPortCount === 3 ? 'bg-[rgba(74,144,217,0.12)] shadow-[inset_0.2667rem_0_0_#4a90d9]' : 'hover:bg-[rgba(0,0,0,0.02)]'}`}>
-                      <td className="p-[0.5333rem_0.8rem] font-semibold">3 Cảng</td>
-                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem]">{formatMoneyFull(100)} <span className="text-[#22c55e] font-black drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
+                      <td className="p-[0.5333rem_0.8rem] font-semibold [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.22rem_0.6rem]">3 Cảng</td>
+                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem] [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.22rem_0.6rem] [@media(max-height:480px)_and_(orientation:landscape)]:[font-size:0.82rem]">{formatMoneyFull(100)} <span className="text-[#22c55e] font-black drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)] ml-0.5">$</span></td>
                     </tr>
                     <tr className={`transition-colors duration-200 ${nextPortCount === 4 ? 'bg-[rgba(74,144,217,0.12)] shadow-[inset_0.2667rem_0_0_#4a90d9]' : 'hover:bg-[rgba(0,0,0,0.02)]'}`}>
-                      <td className="p-[0.5333rem_0.8rem] font-semibold">4 Cảng</td>
-                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem] font-black text-[#e67e22] tracking-wide">THẮNG LẬP TỨC! 🏆</td>
+                      <td className="p-[0.5333rem_0.8rem] font-semibold [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.22rem_0.6rem]">4 Cảng</td>
+                      <td className="p-[0.5333rem_0.8rem] text-right text-[1rem] font-black text-[#e67e22] tracking-wide [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.22rem_0.6rem] [@media(max-height:480px)_and_(orientation:landscape)]:[font-size:0.78rem]">THẮNG LẬP TỨC! 🏆</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
               <div className="flex flex-col items-center w-full">
-                <div className="text-[1.1333rem] text-[#2c3e50] mb-[0.8rem] font-medium">
+                <div className="text-[1.1333rem] text-[#2c3e50] mb-[0.8rem] font-medium [@media(max-height:480px)_and_(orientation:landscape)]:[margin-bottom:0.35rem] [@media(max-height:480px)_and_(orientation:landscape)]:[font-size:0.82rem]">
                   Thu nhập mỗi lượt: <strong className="text-[1.4rem] ml-1">{formatMoneyFull(expectedRent)}</strong> <span className="text-[#22c55e] font-black text-[1.1em] drop-shadow-[0_0.0667rem_0.1333rem_rgba(0,0,0,0.2)]">$</span>
                 </div>
                 <button
-                  className={`font-inter cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed btn-3d [background-color:var(--btn-color,_#0ea5e9)] [color:var(--btn-text,_white)] [border:none] [border-radius:2rem] [padding:var(--btn-pad,_0.8rem_1.8667rem)] [font-size:var(--btn-size,_1.0667rem)] [font-weight:800] [cursor:pointer] [display:inline-flex] [justify-content:center] [align-items:center] [gap:0.5333rem] [box-shadow:0_0.4rem_0_var(--btn-shadow,_#0284c7)] [transition:transform_0.1s,_box-shadow_0.1s,_filter_0.1s] [text-transform:uppercase] [letter-spacing:0.5px] [&:active:not(.disabled):not(:disabled)]:[transform:translateY(0.4rem)] [&:active:not(.disabled):not(:disabled)]:[box-shadow:0_0px_0_var(--btn-shadow,_#0284c7)] [&:hover:not(.disabled):not(:disabled)]:[filter:brightness(1.1)] [&.disabled]:![background-color:#94a3b8] disabled:![background-color:#94a3b8] [&.disabled]:![box-shadow:0_0.4rem_0_#64748b] disabled:![box-shadow:0_0.4rem_0_#64748b] [&.disabled]:![cursor:not-allowed] disabled:![cursor:not-allowed] [&.disabled]:![transform:translateY(0)] disabled:![transform:translateY(0)] [&.disabled]:![filter:none] disabled:![filter:none] [&.disabled]:![color:#e2e8f0] disabled:![color:#e2e8f0] w-full max-w-[24rem] p-[0.8rem_2rem] text-[1.0667rem] font-bold tracking-[0.0667rem] shadow-[0_0.8rem_2rem_rgba(74,144,217,0.4)] ${!canAfford ? 'opacity-50 cursor-not-allowed bg-gray-500' : 'btn-3d-blue hover:scale-[1.02] active:scale-[0.98]'}`}
+                  className={`font-inter cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed btn-3d [background-color:var(--btn-color,_#0ea5e9)] [color:var(--btn-text,_white)] [border:none] [border-radius:2rem] [padding:var(--btn-pad,_0.8rem_1.8667rem)] [font-size:var(--btn-size,_1.0667rem)] [font-weight:800] [cursor:pointer] [display:inline-flex] [justify-content:center] [align-items:center] [gap:0.5333rem] [box-shadow:0_0.4rem_0_var(--btn-shadow,_#0284c7)] [transition:transform_0.1s,_box-shadow_0.1s,_filter_0.1s] [text-transform:uppercase] [letter-spacing:0.5px] [&:active:not(.disabled):not(:disabled)]:[transform:translateY(0.4rem)] [&:active:not(.disabled):not(:disabled)]:[box-shadow:0_0px_0_var(--btn-shadow,_#0284c7)] [&:hover:not(.disabled):not(:disabled)]:[filter:brightness(1.1)] [&.disabled]:![background-color:#94a3b8] disabled:![background-color:#94a3b8] [&.disabled]:![box-shadow:0_0.4rem_0_#64748b] disabled:![box-shadow:0_0.4rem_0_#64748b] [&.disabled]:![cursor:not-allowed] disabled:![cursor:not-allowed] [&.disabled]:![transform:translateY(0)] disabled:![transform:translateY(0)] [&.disabled]:![filter:none] disabled:![filter:none] [&.disabled]:![color:#e2e8f0] disabled:![color:#e2e8f0] w-full max-w-[24rem] p-[0.8rem_2rem] text-[1.0667rem] font-bold tracking-[0.0667rem] shadow-[0_0.8rem_2rem_rgba(74,144,217,0.4)] [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.55rem_1.25rem] [@media(max-height:480px)_and_(orientation:landscape)]:[font-size:0.82rem] ${!canAfford ? 'opacity-50 cursor-not-allowed bg-gray-500' : 'btn-3d-blue hover:scale-[1.02] active:scale-[0.98]'}`}
                   onClick={() => {
                     if (canAfford) send('buyProperty', { houses: 0 });
                   }}
@@ -215,7 +215,7 @@ export default function BuyUpgradeModal() {
   else if (selectedLevel === 2) rentAtLevel = tile.rent2;
   else if (selectedLevel === 3) rentAtLevel = tile.rent3;
   else if (selectedLevel === 4) rentAtLevel = tile.rentHotel;
-  
+
   let willHaveMonopoly = tile.hasMonopoly;
   if (isBuy && tile.tileType === 'property' && tile.colorGroup) {
     let ownsAllOthers = true;
@@ -226,7 +226,7 @@ export default function BuyUpgradeModal() {
     });
     willHaveMonopoly = ownsAllOthers;
   }
-  
+
   if (willHaveMonopoly) rentAtLevel *= 2;
   if (tile.isTouristSpot) rentAtLevel *= 2;
   if (activeFestivalTile === tile.id) rentAtLevel *= 2;
@@ -294,32 +294,39 @@ export default function BuyUpgradeModal() {
               {cards.map((card) => {
                 const isBuilt = card.level <= tile.houseCount && !isBuy;
                 const isAllowed = card.level <= maxAllowed;
-                const isSelected = selectedLevel >= card.level;
+                const isSelected = selectedLevel === card.level;
+                const isIncluded = selectedLevel > card.level;
+                const isChecked = selectedLevel >= card.level;
                 const isDisabled = isBuilt || !isAllowed;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={card.level}
-                    className={`flex-1 bg-[rgba(255,255,255,0.92)] border-[0.1333rem] ${isSelected ? 'border-[#84cc16] bg-[rgba(247,254,231,0.95)] shadow-[0_0.5333rem_1.8667rem_rgba(132,204,22,0.3),0_0.1333rem_0.2667rem_rgba(0,0,0,0.08)]' : isDisabled ? 'border-[rgba(163,230,53,0.4)] opacity-60 cursor-not-allowed bg-[rgba(241,241,241,0.9)]' : 'border-[rgba(163,230,53,0.4)] cursor-pointer hover:border-[#a3e635] hover:-translate-y-1 hover:shadow-[0_0.8rem_2.1333rem_rgba(0,0,0,0.2),0_0.2667rem_0.5333rem_rgba(0,0,0,0.12)] shadow-[0_0.5333rem_1.6rem_rgba(0,0,0,0.15),0_0.1333rem_0.2667rem_rgba(0,0,0,0.08)]'} rounded-[0.9333rem] p-[0.9333rem_0.2rem] flex flex-col items-center relative transition-all duration-200 backdrop-blur-[0.2667rem]`}
+                    className={`flex-1 min-w-0 border-[0.1333rem] ${isSelected ? 'border-[#15803d] bg-[linear-gradient(160deg,#f0fdf4,#dcfce7)] -translate-y-1 shadow-[0_0_0_0.2rem_rgba(34,197,94,0.2),0_0.8rem_1.8rem_rgba(21,128,61,0.28)]' : isDisabled ? 'border-[#d1d5db] opacity-55 cursor-not-allowed bg-[#f3f4f6]' : isIncluded ? 'border-[#86efac] bg-[#f0fdf4] cursor-pointer shadow-[0_0.35rem_1rem_rgba(21,128,61,0.12)]' : 'border-[#d1d5db] bg-white cursor-pointer hover:border-[#4ade80] hover:-translate-y-0.5 hover:shadow-[0_0.65rem_1.5rem_rgba(0,0,0,0.16)] shadow-[0_0.35rem_1rem_rgba(0,0,0,0.1)]'} rounded-[0.9333rem] p-[0.9333rem_0.2rem] flex flex-col items-center relative transition-all duration-200 backdrop-blur-[0.2667rem] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-300 [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.55rem_0.15rem]`}
                     onClick={() => {
                       if (!isDisabled) setSelectedLevel(card.level);
                     }}
+                    disabled={isDisabled}
+                    aria-pressed={isSelected}
+                    aria-label={`${card.label}${isSelected ? ', đang chọn' : ''}`}
                   >
-                    <div className="w-[5.3333rem] h-[4rem] relative mb-[1rem] flex justify-center items-center">
-                       <div className="w-[4rem] h-[4rem] bg-[#a3e635] absolute top-[0.6667rem] [transform:rotateX(60deg)_rotateZ(-45deg)] shadow-[-0.1333rem_0.1333rem_0_#65a30d,-0.2rem_0.2rem_0_#65a30d]"></div>
+
+                    <div className="w-[5.3333rem] h-[4rem] relative mb-[1rem] flex justify-center items-center [@media(max-height:480px)_and_(orientation:landscape)]:[height:3.2rem] [@media(max-height:480px)_and_(orientation:landscape)]:[margin-bottom:0.45rem]">
+                       <div className={`w-[4rem] h-[4rem] absolute top-[0.6667rem] [transform:rotateX(60deg)_rotateZ(-45deg)] shadow-[-0.1333rem_0.1333rem_0_#65a30d,-0.2rem_0.2rem_0_#65a30d] ${isSelected ? 'bg-[#22c55e]' : 'bg-[#a3e635]'}`}></div>
                        <img src={card.image} alt={card.label} className="relative w-[3.2rem] h-[3.2rem] object-contain z-10 bottom-[0.0667rem] drop-shadow-[0.1333rem_0.1333rem_0.1333rem_rgba(0,0,0,0.3)]" />
                     </div>
-                    <div className="text-[0.9333rem] font-semibold text-[#333] mb-[0.8rem] whitespace-nowrap">{card.label}</div>
+                    <div className={`text-[0.9333rem] font-extrabold mb-[0.8rem] whitespace-nowrap [@media(max-height:480px)_and_(orientation:landscape)]:[margin-bottom:0.35rem] ${isSelected ? 'text-[#166534]' : 'text-[#333]'}`}>{card.label}</div>
 
                     {/* Checkbox */}
-                    <div className={`absolute bottom-[0.6667rem] right-[0.6667rem] w-[1.4667rem] h-[1.4667rem] border-[0.1333rem] ${isSelected ? 'border-[#84cc16] text-[#84cc16]' : 'border-[#ccc] text-transparent'} rounded-[0.2667rem] bg-white flex justify-center items-center text-[1.0667rem] font-bold`}>
-                      {isSelected && '✔'}
+                    <div className={`absolute bottom-[0.6667rem] right-[0.6667rem] w-[1.4667rem] h-[1.4667rem] border-[0.1333rem] ${isSelected ? 'border-[#15803d] bg-[#15803d] text-white' : isIncluded ? 'border-[#22c55e] bg-[#dcfce7] text-[#15803d]' : 'border-[#ccc] text-transparent'} rounded-full flex justify-center items-center text-[0.9rem] font-bold`}>
+                      {isChecked && '✔'}
                     </div>
                     {!isAllowed && (
                        <div className="absolute top-[0.6667rem] -left-1 w-[110%] bg-white border-[0.1333rem] border-[#e91e63] text-[#e91e63] text-[0.7333rem] font-bold p-1 text-center -rotate-12 rounded-[0.2667rem] z-10 shadow-[0.1333rem_0.1333rem_0.3333rem_rgba(0,0,0,0.1)] leading-tight">
                          Không thực hiện được ở vòng đầu tiên
                        </div>
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>
