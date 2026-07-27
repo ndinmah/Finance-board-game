@@ -124,7 +124,7 @@ export default function ChanceCard({ onClose }: Props) {
         {/* Khung thẻ xoay 3D */}
         <div 
           ref={cardRef}
-          className="relative w-[21.3333rem] md:w-[25.3333rem] max-h-[82vh] aspect-[2.5/3.5] transition-transform ease-out will-change-transform"
+          className="relative w-[21.3333rem] md:w-[25.3333rem] max-h-[82vh] aspect-[2.5/3.5] transition-transform ease-out will-change-transform [@media(max-height:480px)_and_(orientation:landscape)]:[width:16rem] [@media(max-height:480px)_and_(orientation:landscape)]:[max-height:calc(100dvh_-_1.5rem)]"
           style={{
             transform: `rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(${isHovering ? 1.05 : 1}, ${isHovering ? 1.05 : 1}, ${isHovering ? 1.05 : 1})`,
             transitionDuration: isHovering ? '75ms' : '500ms',
@@ -153,7 +153,7 @@ export default function ChanceCard({ onClose }: Props) {
             </div>
 
             {/* Khung ảnh */}
-            <div className="w-full h-[55%] relative flex-shrink-0 border-b-2 border-gray-100 flex items-center justify-center overflow-hidden p-4 bg-gray-50 z-20" style={{ transformStyle: 'preserve-3d' }}>
+            <div className="w-full h-[55%] relative flex-shrink-0 border-b-2 border-gray-100 flex items-center justify-center overflow-hidden p-4 bg-gray-50 z-20 [@media(max-height:480px)_and_(orientation:landscape)]:[height:43%] [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.65rem]" style={{ transformStyle: 'preserve-3d' }}>
                {/* Glow mờ ảo phía sau */}
                <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full blur-3xl opacity-30 animate-pulse ${meta.color === 'green' ? 'bg-emerald-400' : meta.color === 'red' ? 'bg-rose-400' : 'bg-amber-400'}`} />
                
@@ -178,13 +178,13 @@ export default function ChanceCard({ onClose }: Props) {
 
             {/* Nội dung text */}
             <div 
-              className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white z-20" 
+              className="flex-1 min-h-0 flex flex-col items-center justify-center p-6 text-center bg-white z-20 [@media(max-height:480px)_and_(orientation:landscape)]:[padding:0.75rem_1rem_0.9rem]"
               style={{ transform: `translateZ(${isHovering ? '25px' : '0px'})`, transition: 'transform 200ms ease-out' }}
             >
-              <h2 className={`text-[1.8rem] font-black leading-[1.1] mb-3 tracking-tight drop-shadow-sm ${textColors[meta.color]}`}>
+              <h2 className={`text-[1.8rem] font-black leading-[1.1] mb-3 tracking-tight drop-shadow-sm [@media(max-height:480px)_and_(orientation:landscape)]:[font-size:1.25rem] [@media(max-height:480px)_and_(orientation:landscape)]:[margin-bottom:0.4rem] ${textColors[meta.color]}`}>
                 {meta.title}
               </h2>
-              <p className="text-[1.1rem] text-gray-700 font-medium leading-relaxed m-0">
+              <p className="text-[1.1rem] text-gray-700 font-medium leading-relaxed m-0 [@media(max-height:480px)_and_(orientation:landscape)]:[font-size:0.78rem] [@media(max-height:480px)_and_(orientation:landscape)]:[line-height:1.35]">
                 {meta.desc}
               </p>
             </div>
