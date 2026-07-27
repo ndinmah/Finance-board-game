@@ -1,14 +1,34 @@
 <!doctype html>
-<html lang="vi">
+<html
+  lang="vi"
+  class="h-full w-full overflow-hidden overscroll-none bg-[var(--bg)] text-[var(--text)] font-inter
+    text-[clamp(12px,_min(1.609vw,_3.488vh),_16px)] leading-[1.5] [-webkit-tap-highlight-color:transparent]
+    [--color-brand-primary:#4bd5ff] [--color-brand-primary-soft:#a8edff] [--color-brand-primary-deep:#087da3]
+    [--color-surface-canvas:#04141f] [--color-surface-raised:#061d2a] [--color-surface-subtle:rgba(255,_255,_255,_0.055)]
+    [--color-border-subtle:rgba(75,_213,_255,_0.22)] [--color-border-strong:rgba(75,_213,_255,_0.42)]
+    [--color-text-primary:#f4fcff] [--color-text-secondary:#91becb] [--color-text-on-brand:#052332]
+    [--color-status-success:#55e7a2] [--color-status-warning:#ffdc5d] [--color-status-danger:#fb7185]
+    [--color-status-danger-surface:rgba(76,_5,_25,_0.96)] [--color-focus-ring:#a8edff]
+    [--radius-control:0.8rem] [--radius-panel:1.5rem] [--shadow-panel:0_1.2rem_4rem_rgba(0,_0,_0,_0.42)]
+    [--motion-fast:150ms] [--motion-normal:240ms] [--layer-game-hud:20] [--layer-game-overlay:50]
+    [--layer-app-state:2900] [--layer-app-alert:3000] [--layer-orientation-lock:4000]
+    [--bg:var(--color-surface-canvas)] [--bg2:var(--color-surface-raised)] [--surface:#0a3142] [--surface2:#10465b]
+    [--border:var(--color-border-subtle)] [--accent:var(--color-brand-primary)] [--accent2:var(--color-brand-primary-soft)]
+    [--gold:var(--color-status-warning)] [--green:var(--color-status-success)] [--red:var(--color-status-danger)]
+    [--text:var(--color-text-primary)] [--text2:var(--color-text-secondary)] [--radius:var(--radius-control)]
+    [--shadow:var(--shadow-panel)]"
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="description" content="Webopoly - Board game bất động sản nhiều người chơi trên trình duyệt. Lấy cảm hứng từ Business Tour." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
     <title>🎲 Webopoly — Board Game Bất Động Sản</title>
-    <style>body { margin: 0; background: #0d1b3e; }</style>
   </head>
-  <body>
-    <div id="root"></div>
+  <body class="h-full w-full overflow-hidden overscroll-none bg-[var(--bg)] text-[var(--text)] font-inter">
+    <div id="root" class="h-full w-full overflow-hidden overscroll-none bg-[var(--bg)] text-[var(--text)] font-inter"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

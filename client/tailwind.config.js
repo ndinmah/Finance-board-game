@@ -4,9 +4,6 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  corePlugins: {
-    preflight: false,
-  },
   theme: {
     extend: {
       fontFamily: {
@@ -57,7 +54,31 @@ export default {
         trophyBounce: {
           '0%, 100%': { transform: 'rotate(-8deg) scale(1)' },
           '50%': { transform: 'rotate(8deg) scale(1.12)' },
-        }
+        },
+        appSpin: {
+          'to': { transform: 'rotate(1turn)' },
+        },
+        rotateHint: {
+          '0%, 100%': { transform: 'rotate(0deg)' },
+          '40%, 60%': { transform: 'rotate(90deg)' },
+        },
+        lobbyShellEnter: {
+          'from': { opacity: '0', transform: 'translateY(1.2rem) scale(0.985)' },
+          'to': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        gameStatusPulse: {
+          '50%': { opacity: '0.48', transform: 'scale(0.78)' },
+        },
+        gameDieSpin: {
+          'from': { transform: 'rotate(-8deg) scale(1.05)' },
+          'to': { transform: 'rotate(10deg) scale(0.96)' },
+        },
+        gameDiceArrive: {
+          'from': { opacity: '0', transform: 'translateY(0.8rem) scale(0.92)' },
+        },
+        gameEventEnter: {
+          'from': { opacity: '0', transform: 'translateX(0.5rem)' },
+        },
       },
       animation: {
         'slide-up': 'slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -71,6 +92,13 @@ export default {
         'card-modal-slide': 'cardModalSlide 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)',
         'winner-slide': 'winnerSlide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
         'trophy-bounce': 'trophyBounce 1s ease-in-out infinite',
+        'app-spin': 'appSpin 850ms linear infinite',
+        'rotate-hint': 'rotateHint 2s ease-in-out infinite',
+        'lobby-shell-enter': 'lobbyShellEnter 360ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        'game-status-pulse': 'gameStatusPulse 1.3s ease-in-out infinite',
+        'game-die-spin': 'gameDieSpin 130ms ease-in-out infinite alternate',
+        'game-dice-arrive': 'gameDiceArrive 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+        'game-event-enter': 'gameEventEnter 240ms cubic-bezier(0.22, 1, 0.36, 1)',
       },
       colors: {
         bg: '#0d1b3e',
