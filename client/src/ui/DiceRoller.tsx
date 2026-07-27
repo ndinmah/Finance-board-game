@@ -11,6 +11,7 @@ const DIE_DOTS: Record<number, number[]> = {
 };
 const PRIMARY_BUTTON = 'dice-primary-button [min-height:44px] [display:inline-flex] [align-items:center] [justify-content:center] [gap:0.48rem] [border-radius:0.72rem] [cursor:pointer] [font-weight:900] [touch-action:manipulation] [transition:transform_150ms_ease,_filter_150ms_ease,_background-color_150ms_ease,_border-color_150ms_ease] [padding:0.58rem_1.2rem] [border:1px_solid_rgba(255,_244,_189,_0.4)] [background:linear-gradient(180deg,_#ffe879,_#f7b916)] [box-shadow:0_0.28rem_0_#b87900,_0_0.8rem_2rem_rgba(216,_154,_8,_0.34)] [color:#3e2a00] [font-size:0.78rem] [letter-spacing:0.07em] [text-transform:uppercase] [&:hover]:[filter:brightness(1.08)] [&:active]:[transform:translateY(2px)_scale(0.98)] [&:focus-visible]:[outline:2px_solid_var(--game-chrome-gold)] [&:focus-visible]:[outline-offset:3px] motion-reduce:[transition:none]';
 const SECONDARY_BUTTON = 'dice-secondary-button [min-height:44px] [display:inline-flex] [align-items:center] [justify-content:center] [gap:0.48rem] [border-radius:0.72rem] [cursor:pointer] [font-weight:900] [touch-action:manipulation] [transition:transform_150ms_ease,_filter_150ms_ease,_background-color_150ms_ease,_border-color_150ms_ease] [padding:0.48rem_0.8rem] [border:1px_solid_var(--game-chrome-border)] [background:rgba(255,_255,_255,_0.055)] [color:#e6f4ee] [font-size:0.68rem] [&.is-danger]:[border-color:rgba(251,_113,_133,_0.25)] [&.is-danger]:[color:#ffe4e6] [&.is-warning]:[border-color:rgba(255,_220,_93,_0.25)] [&.is-warning]:[background:rgba(255,_220,_93,_0.1)] [&.is-warning]:[color:#fef3c7] [&:hover]:[filter:brightness(1.08)] [&:active]:[transform:translateY(2px)_scale(0.98)] [&:focus-visible]:[outline:2px_solid_var(--game-chrome-gold)] [&:focus-visible]:[outline-offset:3px] motion-reduce:[transition:none]';
+const JAIL_ACTION_BUTTON = '[min-width:8.75rem] [min-height:3.35rem] [display:grid] [grid-template-columns:2.25rem_1fr] [align-items:center] [gap:0.55rem] [padding:0.48rem_0.7rem] [border:1px_solid_rgba(255,_255,_255,_0.2)] [border-radius:0.9rem] [box-shadow:0_0.55rem_1.4rem_rgba(1,_12,_11,_0.32),_inset_0_1px_rgba(255,_255,_255,_0.14)] [color:white] [text-align:left] [transition:transform_150ms_ease,_filter_150ms_ease,_box-shadow_150ms_ease] [&_.dice-action-icon]:[width:1.15rem] [&_.dice-action-icon]:[height:1.15rem] [&_.jail-action-icon]:[width:2.25rem] [&_.jail-action-icon]:[height:2.25rem] [&_.jail-action-icon]:[display:flex] [&_.jail-action-icon]:[align-items:center] [&_.jail-action-icon]:[justify-content:center] [&_.jail-action-icon]:[border-radius:0.68rem] [&_.jail-action-icon]:[background:rgba(255,_255,_255,_0.14)] [&_.jail-action-copy]:[display:flex] [&_.jail-action-copy]:[flex-direction:column] [&_.jail-action-copy]:[gap:0.08rem] [&_.jail-action-copy_small]:[font-size:0.5rem] [&_.jail-action-copy_small]:[font-weight:800] [&_.jail-action-copy_small]:[letter-spacing:0.09em] [&_.jail-action-copy_small]:[opacity:0.76] [&_.jail-action-copy_small]:[text-transform:uppercase] [&_.jail-action-copy_strong]:[font-size:0.72rem] [&_.jail-action-copy_strong]:[font-weight:950] [&_.jail-action-copy_strong]:[line-height:1.15] [&:hover]:[filter:brightness(1.08)] [&:active]:[transform:translateY(2px)_scale(0.98)] [&:focus-visible]:[outline:2px_solid_#ffffff] [&:focus-visible]:[outline-offset:3px]';
 
 function Die({ value, rolling, delay = false }: { value: number; rolling: boolean; delay?: boolean }) {
   const dots = DIE_DOTS[value] || DIE_DOTS[1];
@@ -23,12 +24,13 @@ function Die({ value, rolling, delay = false }: { value: number; rolling: boolea
   );
 }
 
-function ActionIcon({ type }: { type: 'roll' | 'plane' | 'jail' }) {
+function ActionIcon({ type }: { type: 'roll' | 'plane' | 'jail' | 'card' }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="dice-action-icon [width:1rem] [height:1rem]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       {type === 'roll' ? <><rect x="4" y="4" width="16" height="16" rx="4" /><circle cx="9" cy="9" r="1" fill="currentColor" /><circle cx="15" cy="15" r="1" fill="currentColor" /></> : null}
       {type === 'plane' ? <><path d="m2 16 20-8-8 20-2-9-10-3Z" /><path d="m12 19 4-7" /></> : null}
       {type === 'jail' ? <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M9 3v18m6-18v18M4 9h16m-16 6h16" /></> : null}
+      {type === 'card' ? <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 9h10M7 13h6" /><path d="m16 15 1.4 1.4L21 12.8" /></> : null}
     </svg>
   );
 }
@@ -222,8 +224,18 @@ export default function DiceRoller({ boardReady = true, onRollRevealed, onPresen
           {canStartAirport || canPayBail || canUseJailCard ? (
             <div className="dice-secondary-actions [display:flex] [flex-wrap:wrap] [justify-content:center] [gap:0.5rem]">
               {canStartAirport ? <button type="button" className={`font-inter cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96] rounded-[var(--radius)] [transition:all_0.15s_ease] ${SECONDARY_BUTTON}`} onClick={() => send('startAirportSelect')}><ActionIcon type="plane" /> Mua vé 50K</button> : null}
-              {canPayBail ? <button id="btn-bail" type="button" className={`font-inter cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96] rounded-[var(--radius)] [transition:all_0.15s_ease] ${SECONDARY_BUTTON} is-danger`} onClick={() => send('payBail')}><ActionIcon type="jail" /> Nộp 200K</button> : null}
-              {canUseJailCard ? <button type="button" className={`font-inter cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96] rounded-[var(--radius)] [transition:all_0.15s_ease] ${SECONDARY_BUTTON}`} onClick={() => send('useJailCard')}>Dùng thẻ ra tù</button> : null}
+              {canPayBail ? (
+                <button id="btn-bail" type="button" className={`font-inter cursor-pointer touch-manipulation ${JAIL_ACTION_BUTTON} [background:linear-gradient(145deg,_#9f1239,_#e11d48)]`} onClick={() => send('payBail')}>
+                  <span className="jail-action-icon"><ActionIcon type="jail" /></span>
+                  <span className="jail-action-copy"><small>Thanh toán bảo lãnh</small><strong>Nộp 200K</strong></span>
+                </button>
+              ) : null}
+              {canUseJailCard ? (
+                <button type="button" className={`font-inter cursor-pointer touch-manipulation ${JAIL_ACTION_BUTTON} [background:linear-gradient(145deg,_#047857,_#10b981)]`} onClick={() => send('useJailCard')}>
+                  <span className="jail-action-icon"><ActionIcon type="card" /></span>
+                  <span className="jail-action-copy"><small>Không tốn tiền</small><strong>Dùng thẻ ra tù</strong></span>
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
