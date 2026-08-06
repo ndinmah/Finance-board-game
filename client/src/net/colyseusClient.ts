@@ -6,12 +6,11 @@ import {
   saveReconnectSession,
   type ReconnectSession,
 } from './reconnectSession';
+import { resolveColyseusEndpoint } from './colyseusEndpoint';
 
-// Lấy IP/domain hiện tại của trình duyệt. Tự động hỗ trợ HTTPS -> WSS và cổng reverse proxy.
 const isDev = import.meta.env.DEV;
 const isDevGame = window.location.search.includes('dev=1') || window.location.pathname.startsWith('/dev');
-const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const WS_URL = import.meta.env.VITE_WS_URL || (isDev ? `${protocol}//${window.location.hostname}:2567` : `${protocol}//${window.location.host}`);
+const WS_URL = resolveColyseusEndpoint(import.meta.env.VITE_WS_URL, isDev, window.location);
 const RECONNECT_DELAYS_MS = [0, 350, 900];
 
 let client: Client | null = null;
