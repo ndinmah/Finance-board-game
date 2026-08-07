@@ -1,0 +1,21 @@
+{
+  "name": "Bất Động Sản — Game",
+  "short_name": "Bất Động Sản",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#04141f",
+  "theme_color": "#04141f",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/images/house-0.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/house-0.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

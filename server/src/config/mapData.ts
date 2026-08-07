@@ -116,10 +116,10 @@ export const AIRPORT_TILE = 24;
 
 export const GO_SALARY = 300;        // Collect when passing/landing on Go
 export const BAIL_COST = 200;         // Pay to get out of jail
-export const STARTING_MONEY = 20000;  // Starting cash per player
+export const STARTING_MONEY = 2000;  // Starting cash per player
 export const MAX_PLAYERS = 8;
 export const MIN_PLAYERS = 2;
-export const TURN_TIMEOUT_MS = 300000; // 5 minutes per turn
+export const TURN_TIMEOUT_MS = 15000; // 15 seconds per turn
 export const TAX_TILE = 30;
 export const HOTEL_LEVEL = 4;
 export const BIRTHDAY_AMOUNT = 25;
