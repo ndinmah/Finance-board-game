@@ -13,7 +13,7 @@ import {
   ChanceCardId, CHANCE_CARDS
 } from '../config/mapData';
 
-const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#FF9F43', '#F472B6'];
+const PLAYER_COLORS = ['#FF4A4A', '#00C853', '#2979FF', '#FF9100', '#AA00FF', '#00E5FF', '#FF4081', '#FFEA00'];
 // Also covers a 4s Chance card before a follow-up movement begins.
 const MOVE_ANIMATION_FALLBACK_MS = 9000;
 const CHANCE_CARD_PRESENTATION_MS = 4000;
