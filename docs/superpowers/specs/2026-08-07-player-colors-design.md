@@ -1,23 +1,24 @@
-# Spec: Update Player Colors for Better Distinction
+# Design Spec - Player Colors Update
 
-This specification outlines the changes required to replace the existing pastel player colors with a modern, high-contrast palette to improve visual distinction and avoid player confusion.
+## 1. Overview
+Update the player colors in the Colyseus game room backend to make players' tokens and avatars clearly distinguishable from each other during gameplay.
 
-## Proposed Changes
+## 2. Proposed Changes
+Modify the `PLAYER_COLORS` constant in [WebopolyRoom.ts](file:///home/ndinmah/Projects/Finance-board-game/server/src/rooms/WebopolyRoom.ts#L16) to use the following vibrant palette (Option 1):
 
-### Server
+1. **Red/Coral:** `#FF4A4A`
+2. **Emerald Green:** `#00C853`
+3. **Royal Blue:** `#2979FF`
+4. **Vibrant Orange:** `#FF9100`
+5. **Electric Purple:** `#AA00FF`
+6. **Vivid Cyan:** `#00E5FF`
+7. **Hot Pink:** `#FF4081`
+8. **Bright Yellow:** `#FFEA00`
 
-#### [MODIFY] [WebopolyRoom.ts](file:///home/ndinmah/Projects/Finance-board-game/server/src/rooms/WebopolyRoom.ts)
-Update `PLAYER_COLORS` array at line 16 to:
 ```typescript
 const PLAYER_COLORS = ['#FF4A4A', '#00C853', '#2979FF', '#FF9100', '#AA00FF', '#00E5FF', '#FF4081', '#FFEA00'];
 ```
 
-### Client Tests
-
-#### [MODIFY] [playerVisuals.test.ts](file:///home/ndinmah/Projects/Finance-board-game/client/tests/playerVisuals.test.ts)
-Update the unit test to verify accessibility/contrast properties of the new colors. We will adjust the test cases to ensure that `getAccessiblePlayerInk` returns the correct readable text color for each new color in the palette.
-
-## Verification Plan
-
-### Automated Tests
-- Run client tests using `npm test` or the appropriate test runner in `client/` to verify contrast ratio calculations.
+## 3. Verification Plan
+- Verify that player colors display correctly in the client's game board and lobby.
+- Verify that the accessibility contrast helper `getAccessiblePlayerInk` correctly calculates white vs. dark text colors on top of these backgrounds.
