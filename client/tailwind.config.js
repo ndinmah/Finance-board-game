@@ -79,6 +79,12 @@ export default {
         gameEventEnter: {
           'from': { opacity: '0', transform: 'translateX(0.5rem)' },
         },
+        gameMoneyChange: {
+          '0%': { opacity: '0', transform: 'translate(-50%, 0.35rem) scale(0.82)' },
+          '18%': { opacity: '1', transform: 'translate(-50%, -0.2rem) scale(1.08)' },
+          '72%': { opacity: '1', transform: 'translate(-50%, -1.15rem) scale(1)' },
+          '100%': { opacity: '0', transform: 'translate(-50%, -1.8rem) scale(0.96)' },
+        },
       },
       animation: {
         'slide-up': 'slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -99,6 +105,7 @@ export default {
         'game-die-spin': 'gameDieSpin 130ms ease-in-out infinite alternate',
         'game-dice-arrive': 'gameDiceArrive 220ms cubic-bezier(0.22, 1, 0.36, 1)',
         'game-event-enter': 'gameEventEnter 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+        'game-money-change': 'gameMoneyChange 1.6s cubic-bezier(0.22, 1, 0.36, 1) both',
       },
       colors: {
         bg: '#0d1b3e',

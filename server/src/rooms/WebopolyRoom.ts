@@ -412,7 +412,9 @@ export class WebopolyRoom extends Room<GameState> {
     }
 
     state.turnPhase = 'moving';
-    state.movementMode = 'steps';
+    // Entering jail always flies directly to the jail tile instead of hopping
+    // through every intermediate tile. Other dice moves remain tile-by-tile.
+    state.movementMode = newPos === JAIL_TILE ? 'teleport' : 'steps';
     player.position = newPos;
     this.turnTimer?.clear();
 

@@ -732,7 +732,9 @@ export const useGameStore = create<GameStore>((set) => ({
       }
       p.position = nextPosition;
       draft.turnPhase = 'moving';
-      draft.movementMode = 'steps';
+      // Keep standalone dev mode consistent with the server: entering jail
+      // flies directly to the jail tile instead of hopping tile-by-tile.
+      draft.movementMode = nextPosition === 8 ? 'teleport' : 'steps';
       set(draft);
 
       scheduleDevMovementFallback(DEV_PLAYER_ID, nextPosition);
