@@ -9,7 +9,7 @@
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
-**Trò chơi Cờ Tỷ Phú tài chính trực tuyến thời gian thực (Multiplayer 2.5D Isometric Board Game)** lấy cảm hứng từ các địa danh nổi tiếng của Việt Nam, xây dựng trên kiến trúc Client-Server hiện đại với khả năng đồng bộ trạng thái cực nhanh.
+**Trò chơi Cờ Tỷ Phú tài chính trực tuyến thời gian thực (Multiplayer 2.5D Isometric Board Game)** lấy cảm hứng từ các địa danh nổi tiếng của Việt Nam, xây dựng trên kiến trúc Client-Server hiện đại với khả năng đồng bộ trạng thái theo thời gian thực bằng Colyseus.
 
 [Luật Chơi Chi Tiết](rule.md) • [Cài Đặt & Khởi Chạy](#-cài-đặt--khởi-chạy) • [Cấu Trúc Dự Án](#-cấu-trúc-dự-án) • [Công Nghệ](#-công-nghệ-sử-dụng)
 
@@ -22,7 +22,7 @@
 - 🎮 **Chơi nhiều người thời gian thực (Real-time Multiplayer):**
   - Hỗ trợ phòng chơi từ **2 đến 8 người**.
   - Đồng bộ trạng thái game theo thời gian thực dựa trên kiến trúc Authoritative Server của **Colyseus**.
-  - Cơ chế **Reconnection & AI Bot Takeover**: Tự động chuyển quyền điều khiển cho Bot thông minh khi người chơi mất kết nối quá 30 giây.
+  - Cơ chế **Reconnection & AI Bot Takeover**: Tự động chuyển quyền điều khiển cho bot tự động khi người chơi mất kết nối quá 30 giây.
 
 - 🗺️ **Bản đồ 32 ô đậm chất Việt Nam:**
   - 20 ô đất thuộc 8 nhóm màu trải dọc theo các tỉnh/thành phố Việt Nam (Cà Mau, Cần Thơ, Đà Nẵng, Huế, Hà Nội, TP.HCM, Đà Lạt...).
@@ -32,7 +32,7 @@
 - 🏙️ **Chiến thuật Kinh tế & Bất động sản sâu sắc:**
   - Mua đất, xây dựng từ Cấp 1, 2, 3 đến **Khách Sạn**.
   - **Hệ số nhân tiền thuê cộng dồn**: Sở hữu trọn nhóm màu (x2) × Điểm du lịch (x2) × Lễ hội (x2) $\rightarrow$ Tiền thuê tối đa lên đến **x8**.
-  - **Cơ chế Cướp đất (Land Stealing)**: Cơ hội lật kèo ngoạn mục bằng cách mua đứt tài sản của đối thủ với giá $2 \times$ tổng vốn đầu tư (áp dụng cho đất chưa có khách sạn hoặc khiên).
+  - **Cơ chế Cướp đất (Land Stealing)**: Mua đứt tài sản của đối thủ với giá $2 \times$ tổng vốn đầu tư (áp dụng cho đất chưa có khách sạn hoặc khiên).
 
 - 🃏 **18 Thẻ Cơ Hội phong phú & bất ngờ:**
   - Hiệu ứng đa dạng: Khiên phòng thủ (`SHIELD`), Động đất (`EARTHQUAKE`), Cúp điện (`BLACKOUT`), Phá hoại (`SABOTAGE`), Ép bán (`FORCE_SELL`), Sinh nhật đòi quà (`BIRTHDAY`), v.v.
@@ -138,7 +138,7 @@ Finance-board-game/
 
 ### 1. Yêu Cầu Môi Trường (Prerequisites)
 
-- **Node.js**: Phiên bản `>= 20.19.0` hoặc `>= 22.12.0` (Do yêu cầu của Vite 8).
+- **Node.js**: Phiên bản `>= 22.6.0`.
 - **npm**: Phiên bản `>= 9.x` (đi kèm Node.js).
 
 ### 2. Cài Đặt Dependencies
@@ -170,15 +170,42 @@ _(Vite dev server đã được cấu hình sẵn proxy `/colyseus` trỏ về b
 
 ## 📜 Các Lệnh Scripts Khác (Available Scripts)
 
-| Lệnh                        | Thư mục             | Mô tả                                                   |
+| Lệnh                        | Workspace           | Mô tả                                                   |
 | --------------------------- | ------------------- | ------------------------------------------------------- |
-| `npm run dev`               | Gốc                 | Chạy đồng thời cả Server và Client trong môi trường dev |
-| `npm run dev:server`        | Gốc                 | Chỉ khởi chạy Server (reload tự động với `ts-node-dev`) |
-| `npm run dev:client`        | Gốc                 | Chỉ khởi chạy Client với Vite HMR                       |
-| `npm run build -w client`   | `client`            | Build source code TypeScript thành mã production        |
-| `npm run build -w server`   | `server`            | Build source code TypeScript thành mã production        |
-| `npm run test -w client`    | `client`            | Chạy bộ kiểm thử (Node Test Runner)                     |
-| `npm run lint -w client`    | `client`            | Kiểm tra cú pháp và code style bằng Oxlint              |
+| `npm run dev`               | Root                | Chạy đồng thời cả Server và Client trong môi trường dev |
+| `npm run dev:server`        | Root                | Chỉ khởi chạy Server (reload tự động với `ts-node-dev`) |
+| `npm run dev:client`        | Root                | Chỉ khởi chạy Client với Vite HMR                       |
+| `npm run build -w client`   | Root                | Build source code TypeScript thành mã production        |
+| `npm run build -w server`   | Root                | Build source code TypeScript thành mã production        |
+| `npm run test -w client`    | Root                | Chạy bộ kiểm thử (Node Test Runner)                     |
+| `npm run lint -w client`    | Root                | Kiểm tra cú pháp và code style bằng Oxlint              |
+
+*(Lưu ý: Tất cả các lệnh trên đều được chạy từ thư mục gốc của dự án).*
+
+---
+
+## ⚙️ Biến Môi Trường (Environment Variables)
+
+| Biến | Scope | Mặc định | Mô tả |
+|------|-------|----------|-------|
+| `PORT` | Server | `2567` | Cổng lắng nghe của Colyseus/Express |
+| `VITE_WS_URL` | Client (build) | _(tự động)_ | Override URL WebSocket; nếu không đặt, dev dùng proxy `/colyseus`, production dùng origin |
+
+---
+
+## 🏭 Build & Chạy Production
+
+```bash
+# Build
+npm run build -w client   # Output: client/dist/
+npm run build -w server   # Output: server/dist/
+
+# Chạy server production
+npm start -w server
+
+# Preview client (static)
+npm run preview -w client
+```
 
 ---
 
@@ -211,4 +238,4 @@ _(Vite dev server đã được cấu hình sẵn proxy `/colyseus` trỏ về b
 
 ## 📄 Bản Quyền (License)
 
-Dự án hiện chưa xác định giấy phép cụ thể (Private repository).
+Dự án được phát hành theo giấy phép MIT. Xem chi tiết tại file [LICENSE](LICENSE).
